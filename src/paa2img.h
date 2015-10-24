@@ -17,33 +17,27 @@
  */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#define DXT1     0xFF01
+#define DXT3     0xFF03
+#define DXT5     0xFF05
+#define RGBA4444 0x4444
+#define RGBA5551 0x1555
+#define GRAY     0x8080
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#include "minilzo.h"
-
-#include "img2paa.h"
-
-
-int img2dxt1(unsigned char *input, unsigned char *output, int width, int height) {
-    return 0;
-}
+#define COMP_NONE 0
+#define COMP_LZSS 1
+#define COMP_LZO  2
 
 
-int img2dxt3(unsigned char *input, unsigned char *output, int width, int height) {
-    return 0;
-}
+typedef struct {
+    unsigned int i : 24;
+} uint24_t;
 
 
-int img2dxt5(unsigned char *input, unsigned char *output, int width, int height) {
-    return 0;
-}
+int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
 
+int dxt32img(unsigned char *input, unsigned char *output, int width, int height);
 
-int img2paa(char *source, char *target, int force) {
-    return 0;
-}
+int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
+
+int paa2img(char *source, char *target, int force);

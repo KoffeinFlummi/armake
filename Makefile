@@ -5,19 +5,30 @@ LIB = lib
 CC = gcc
 CFLAGS = -Wall -I$(LIB) -lm
 
-$(BIN)/img2paa: $(SRC)/img2paa.c $(LIB)/minilzo.c bin
-	$(CC) $(CFLAGS) -o $(BIN)/img2paa $(SRC)/img2paa.c $(LIB)/minilzo.c
+$(BIN)/flummitools: \
+		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
+		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
+	@mkdir -p $(BIN)
+	@echo " LINK $(BIN)/flummitools"
+	@$(CC) $(CFLAGS) -o $(BIN)/flummitools \
+		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
+		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
 
-all: $(BIN)/img2paa
+$(SRC)/%.o: $(SRC)/%.c
+	@echo "  CC  $<"
+	@$(CC) $(CFLAGS) -o $@ -c $<
+
+$(LIB)/%.o: $(LIB)/%.c
+	@echo "  CC  $<"
+	@$(CC) $(CFLAGS) -o $@ -c $<
+
+all: $(BIN)/flummitools
 
 install: all
-	install -m 0755 $(BIN)/* $(PREFIX)/usr/bin
+	install -m 0755 $(BIN)/flummitools $(PREFIX)/usr/bin
 
 uninstall:
-	rm $(PREFIX)/usr/bin/img2paa
+	rm $(PREFIX)/usr/bin/flummitools
 
 clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
-
-bin:
-	mkdir -p $(BIN)
