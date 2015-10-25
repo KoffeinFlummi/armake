@@ -16,6 +16,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifndef __paa2img_h
+#define __paa2img_h
 
 #define DXT1     0xFF01
 #define DXT3     0xFF03
@@ -29,6 +31,9 @@
 #define COMP_LZO  2
 
 
+#include "docopt.h"
+
+
 typedef struct {
     unsigned int i : 24;
 } uint24_t;
@@ -40,4 +45,6 @@ int dxt32img(unsigned char *input, unsigned char *output, int width, int height)
 
 int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
 
-int paa2img(char *source, char *target, int force);
+int paa2img(DocoptArgs args);
+
+#endif

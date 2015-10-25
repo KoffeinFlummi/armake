@@ -22,91 +22,43 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "docopt.h"
 #include "img2paa.h"
 #include "paa2img.h"
 
 
-#define USAGE "flummitools - Cause I suck at names.\n"\
-    "\n"\
-    "Usage:\n"\
-    "    flummitools [command] [options]\n"\
-    "    flummitools [command] (-h | --help)\n"\
-    "    flummitools (-h | --help)\n"\
-    "    flummitools (-v | --version)\n"\
-    "\n"\
-    "Commands:\n"\
-    "    img2paa      Convert image to PAA\n"\
-    "    paa2img      Convert PAA to image\n"\
-    "    binarize     Binarize a file\n"\
-    "    debinarize   Debinarize a file\n"\
-    "    pack         Packs a folder into a PBO (without any binarization)\n"\
-    "    build        Binarize and pack an addon folder\n"\
-    "\n"\
-    "Options:\n"\
-    "    -h --help      Show usage information and exit\n"\
-    "    -v --version   Print the version number and exit\n"
 #define VERSION "v1.0"
 
 
 int main(int argc, char *argv[]) {
-    typedef struct args {
-        char *source;
-        char *target;
-        int force;
-        int verbose;
-    } args_t;
+    DocoptArgs args = docopt(argc, argv, 1, VERSION);
+    char *halp[] = {argv[0], "-h"};
 
-    if (argc == 1) {
-        printf("%s\n", USAGE);
-        return 1;
-    }
-    if (argc == 2 && (strcmp(argv[1], "-h") || strcmp(argv[1], "--help"))) {
-        printf("%s\n", USAGE);
-        return 0;
-    }
-    if (argc == 2 && (strcmp(argv[1], "-v") || strcmp(argv[1], "--version"))) {
-        printf("%s\n", VERSION);
-        return 0;
-    }
-
-    args_t args;
-    args.source = "";
-    args.target = "";
-    args.force = 0;
-    args.verbose = 0;
-
-    for (int i = 1; i < argc; i++) {
-        char *arg = argv[i];
-        if (strcmp(arg, "-f") == 0 || strcmp(arg, "--force") == 0) {
-            args.force = 1;
+    // Docopt doesn't yet support positional arguments
+    int j = 0;
+    for (int i; i < argc; i++) {
+        if (argv[i][0] == '-') { continue; }
+        if (j < 2) {
+            j++;
             continue;
         }
-        if (strcmp(arg, "-v") == 0 || strcmp(arg, "--verbose") == 0) {
-            args.verbose = 1;
+        if (j == 2) {
+            args.source = argv[i];
+            j++;
             continue;
         }
-        if (strlen(args.source) == 0) {
-            args.source = arg;
+        if (j == 3) {
+            args.target = argv[i];
+            j++;
             continue;
         }
-        if (strlen(args.target) == 0) {
-            args.target = arg;
-            continue;
-        }
-        printf("%s\n", USAGE);
-        return 1;
+        docopt(2, halp, 1, VERSION);
     }
 
-    if (strlen(args.target) == 0 || strlen(args.source) < 5) {
-        printf("%s\n", USAGE);
-        return 1;
-    }
+    if (args.img2paa)
+        return img2paa(args);
+    else if (args.paa2img)
+        return paa2img(args);
 
-    char *extension = args.source + strlen(args.source) - 4;
-
-    if (strcmp(extension, ".paa") == 0) {
-        return paa2img(args.source, args.target, args.force);
-    } else {
-        return img2paa(args.source, args.target, args.force);
-    }
+    docopt(2, halp, 1, VERSION);
 }

@@ -26,7 +26,9 @@
 #include "stb_image_write.h"
 #include "minilzo.h"
 
+#include "docopt.h"
 #include "paa2img.h"
+
 
 int dxt12img(unsigned char *input, unsigned char *output, int width, int height) {
     /* Convert DXT1 data into a PNG image array. */
@@ -313,12 +315,12 @@ int dxt52img(unsigned char *input, unsigned char *output, int width, int height)
 }
 
 
-int paa2img(char *source, char *target, int force) {
+int paa2img(DocoptArgs args) {
     // @todo: implement force
 
     printf("Converting PAA to image ...\n\n");
 
-    FILE *f = fopen(source, "rb");
+    FILE *f = fopen(args.source, "rb");
     if (!f) {
         printf("Couldn't open source file.");
         return 2;
@@ -448,7 +450,7 @@ int paa2img(char *source, char *target, int force) {
     free(imgdata);
 
     printf("Writing to file ... ");
-    if (!stbi_write_png(target, width, height, 4, outputdata, width * 4)) {
+    if (!stbi_write_png(args.target, width, height, 4, outputdata, width * 4)) {
         printf("failed.\n");
         return 9;
     }

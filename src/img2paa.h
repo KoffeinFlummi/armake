@@ -17,6 +17,9 @@
  */
 
 
+#ifndef __img2paa_h
+#define __img2paa_h
+
 #define DXT1     0xFF01
 #define DXT3     0xFF03
 #define DXT5     0xFF05
@@ -29,10 +32,15 @@
 #define COMP_LZO  2
 
 
+#include "docopt.h"
+
+
 int img2dxt1(unsigned char *input, unsigned char *output, int width, int height);
 
 int img2dxt3(unsigned char *input, unsigned char *output, int width, int height);
 
 int img2dxt5(unsigned char *input, unsigned char *output, int width, int height);
 
-int img2paa(char *source, char *target, int force);
+int img2paa(DocoptArgs args);
+
+#endif

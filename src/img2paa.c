@@ -26,6 +26,7 @@
 #include "stb_image.h"
 #include "minilzo.h"
 
+#include "docopt.h"
 #include "img2paa.h"
 
 
@@ -44,6 +45,6 @@ int img2dxt5(unsigned char *input, unsigned char *output, int width, int height)
 }
 
 
-int img2paa(char *source, char *target, int force) {
+int img2paa(DocoptArgs args) {
     return 0;
 }
