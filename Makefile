@@ -2,6 +2,7 @@ PREFIX = ""
 BIN = bin
 SRC = src
 LIB = lib
+EXT = ""
 CC = gcc
 CFLAGS = -Wall -I$(LIB) -lm
 
@@ -9,8 +10,8 @@ $(BIN)/flummitools: \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
 		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
 	@mkdir -p $(BIN)
-	@echo " LINK $(BIN)/flummitools"
-	@$(CC) $(CFLAGS) -o $(BIN)/flummitools \
+	@echo " LINK $(BIN)/flummitools$(EXT)"
+	@$(CC) $(CFLAGS) -o $(BIN)/flummitools$(EXT) \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
 		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
 
@@ -32,3 +33,9 @@ uninstall:
 
 clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
+
+win32: clean
+	make CC=i686-w64-mingw32-gcc EXT=.exe
+
+win64: clean
+	make CC=x86_64-w64-mingw32-gcc EXT=.exe
