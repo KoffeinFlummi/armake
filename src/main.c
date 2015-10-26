@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     // Docopt doesn't yet support positional arguments
     int j = 0;
-    for (int i; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         if (argv[i][0] == '-') { continue; }
         if (j < 2) {
             j++;
