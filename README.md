@@ -33,7 +33,6 @@ Usage:
     flummitools paa2img [-f] <source> <target>
     flummitools binarize <source> <target>
     flummitools debinarize <source> <target>
-    flummitools pack [-x <exclusions>] <source> <target>
     flummitools build [-p] [-x <exclusions>] <source> <target>
     flummitools (-h | --help)
     flummitools (-v | --version)
@@ -43,7 +42,6 @@ Commands:
     paa2img      Convert PAA to image
     binarize     Binarize a file
     debinarize   Debinarize a file
-    pack         Packs a folder into a PBO (without any binarization)
     build        Binarize and pack an addon folder
 
 Options:

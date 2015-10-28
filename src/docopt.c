@@ -39,7 +39,6 @@ const char help_message[] =
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize <source> <target>\n"
 "    flummitools debinarize <source> <target>\n"
-"    flummitools pack [-x <exclusions>] <source> <target>\n"
 "    flummitools build [-p] [-x <exclusions>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)\n"
@@ -49,7 +48,6 @@ const char help_message[] =
 "    paa2img      Convert PAA to image\n"
 "    binarize     Binarize a file\n"
 "    debinarize   Debinarize a file\n"
-"    pack         Packs a folder into a PBO (without any binarization)\n"
 "    build        Binarize and pack an addon folder\n"
 "\n"
 "Options:\n"
@@ -68,7 +66,6 @@ const char usage_pattern[] =
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize <source> <target>\n"
 "    flummitools debinarize <source> <target>\n"
-"    flummitools pack [-x <exclusions>] <source> <target>\n"
 "    flummitools build [-p] [-x <exclusions>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)";
@@ -280,8 +277,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->img2paa = command->value;
         } else if (!strcmp(command->name, "paa2img")) {
             args->paa2img = command->value;
-        } else if (!strcmp(command->name, "pack")) {
-            args->pack = command->value;
         }
     }
     /* arguments */
@@ -316,8 +311,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"build", 0},
         {"debinarize", 0},
         {"img2paa", 0},
-        {"paa2img", 0},
-        {"pack", 0}
+        {"paa2img", 0}
     };
     Argument arguments[] = {
         {"<exclusions>", NULL, NULL},
