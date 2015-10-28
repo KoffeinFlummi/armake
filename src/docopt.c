@@ -39,7 +39,7 @@ const char help_message[] =
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize <source> <target>\n"
 "    flummitools debinarize <source> <target>\n"
-"    flummitools build [-p] [-x <exclusions>] <source> <target>\n"
+"    flummitools build [-p] [-c <patterns>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)\n"
 "\n"
@@ -54,7 +54,7 @@ const char help_message[] =
 "    -f --force      Overwrite the target file/folder if it already exists\n"
 "    -z --compress   Compress final PAA where possible\n"
 "    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY\n"
-"    -x --exclude    Exclude the following types from packing\n"
+"    -c --copy       Copy the files matching these patterns directly\n"
 "    -p --packonly   Don't binarize models, worlds and configs before packing\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
@@ -66,7 +66,7 @@ const char usage_pattern[] =
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize <source> <target>\n"
 "    flummitools debinarize <source> <target>\n"
-"    flummitools build [-p] [-x <exclusions>] <source> <target>\n"
+"    flummitools build [-p] [-c <patterns>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)";
 
@@ -250,8 +250,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             return 1;
         } else if (!strcmp(option->olong, "--compress")) {
             args->compress = option->value;
-        } else if (!strcmp(option->olong, "--exclude")) {
-            args->exclude = option->value;
+        } else if (!strcmp(option->olong, "--copy")) {
+            args->copy = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
@@ -282,8 +282,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
     /* arguments */
     for (i=0; i < elements->n_arguments; i++) {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<exclusions>")) {
-            args->exclusions = argument->value;
+        if (!strcmp(argument->name, "<patterns>")) {
+            args->patterns = argument->value;
         } else if (!strcmp(argument->name, "<paatype>")) {
             args->paatype = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
@@ -314,14 +314,14 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"paa2img", 0}
     };
     Argument arguments[] = {
-        {"<exclusions>", NULL, NULL},
+        {"<patterns>", NULL, NULL},
         {"<paatype>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL}
     };
     Option options[] = {
         {"-z", "--compress", 0, 0, NULL},
-        {"-x", "--exclude", 0, 0, NULL},
+        {"-c", "--copy", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},

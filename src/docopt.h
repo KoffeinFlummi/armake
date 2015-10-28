@@ -41,13 +41,13 @@ typedef struct {
     int paa2img;
     int pack;
     /* arguments */
-    char *exclusions;
+    char *patterns;
     char *paatype;
     char *source;
     char *target;
     /* options without arguments */
     int compress;
-    int exclude;
+    int copy;
     int force;
     int help;
     int packonly;

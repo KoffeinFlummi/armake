@@ -5,7 +5,7 @@ Usage:
     flummitools paa2img [-f] <source> <target>
     flummitools binarize <source> <target>
     flummitools debinarize <source> <target>
-    flummitools build [-p] [-x <exclusions>] <source> <target>
+    flummitools build [-p] [-c <patterns>] <source> <target>
     flummitools (-h | --help)
     flummitools (-v | --version)
 
@@ -20,7 +20,7 @@ Options:
     -f --force      Overwrite the target file/folder if it already exists
     -z --compress   Compress final PAA where possible
     -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY
-    -x --exclude    Exclude the following types from packing
+    -c --copy       Copy the files matching these patterns directly
     -p --packonly   Don't binarize models, worlds and configs before packing
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit
