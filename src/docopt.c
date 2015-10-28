@@ -328,7 +328,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-t", "--type", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL}
     };
-    Elements elements = {6, 4, 7, commands, arguments, options};
+    Elements elements = {5, 4, 7, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
