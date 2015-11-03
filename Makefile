@@ -4,7 +4,8 @@ SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -I$(LIB) -lm
+CFLAGS = -Wall -std=c99
+CLIBS = -I$(LIB) -lm
 
 $(BIN)/flummitools: \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
@@ -13,15 +14,16 @@ $(BIN)/flummitools: \
 	@echo " LINK $(BIN)/flummitools$(EXT)"
 	@$(CC) $(CFLAGS) -o $(BIN)/flummitools$(EXT) \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
-		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
+		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c)) \
+		$(CLIBS)
 
 $(SRC)/%.o: $(SRC)/%.c
 	@echo "  CC  $<"
-	@$(CC) $(CFLAGS) -o $@ -c $<
+	@$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
 $(LIB)/%.o: $(LIB)/%.c
 	@echo "  CC  $<"
-	@$(CC) $(CFLAGS) -o $@ -c $<
+	@$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
 all: $(BIN)/flummitools
 
