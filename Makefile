@@ -4,7 +4,7 @@ SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -std=c99
+CFLAGS = -Wall -std=gnu99
 CLIBS = -I$(LIB) -lm
 
 $(BIN)/flummitools: \
