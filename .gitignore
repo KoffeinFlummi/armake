@@ -33,5 +33,7 @@ bin/*
 *.dSYM/
 
 # Testing files
+test/*
 *.png
 *.paa
+*.pbo
