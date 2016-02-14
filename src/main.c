@@ -57,9 +57,9 @@ int main(int argc, char *argv[]) {
 
     if (args.img2paa)
         return img2paa(args);
-    else if (args.paa2img)
+    if (args.paa2img)
         return paa2img(args);
-    else if (args.build)
+    if (args.build)
         return build(args);
 
     docopt(2, halp, 1, VERSION);

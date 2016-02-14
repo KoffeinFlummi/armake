@@ -320,7 +320,7 @@ int paa2img(DocoptArgs args) {
 
     printf("Converting PAA to image ...\n\n");
 
-    FILE *f = fopen(args.source, "rb");
+    FILE *f = fopen(args.source, "r");
     if (!f) {
         printf("Couldn't open source file.");
         return 2;
