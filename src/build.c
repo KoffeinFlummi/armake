@@ -44,6 +44,7 @@ int write_header_to_pbo(char *root, char *source, char *target) {
         return -1;
 
     fwrite(filename, strlen(filename), 1, f_target);
+    fputc(0, f_target);
 
     // replace pathseps on linux
 #ifndef _WIN32
@@ -69,7 +70,6 @@ int write_header_to_pbo(char *root, char *source, char *target) {
         uint32_t datasize;
     } header;
     header.method = 0;
-    header.originalsize = 0;
     header.reserved = 0;
     header.timestamp = 0;
 
@@ -78,6 +78,7 @@ int write_header_to_pbo(char *root, char *source, char *target) {
         return -2;
     fseek(f_source, 0, SEEK_END);
     header.datasize = ftell(f_source);
+    header.originalsize = header.datasize;
     fclose(f_source);
 
     fwrite(&header, sizeof(header), 1, f_target);
@@ -171,11 +172,9 @@ int build(DocoptArgs args) {
     FILE *f_prefix;
     prefixpath[0] = 0;
     strcat(prefixpath, args.source);
-#ifdef _WIN32
-    strcat(prefixpath, "\\$PBOPREFIX$");
-#else
-    strcat(prefixpath, "/$PBOPREFIX$");
-#endif
+    prefixpath[strlen(prefixpath) + 1] = 0;
+    prefixpath[strlen(prefixpath) - 1] = PATHSEP;
+    strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "r");
     if (!f_prefix)
         strcat(addonprefix, "placeholder"); // @todo
@@ -190,6 +189,7 @@ int build(DocoptArgs args) {
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     fwrite(addonprefix, strlen(addonprefix), 1, f_target);
     fwrite("\0\0", 2, 1, f_target);
+    fclose(f_target);
 
     // replace pathseps on linux
 #ifndef _WIN32
@@ -236,7 +236,7 @@ int build(DocoptArgs args) {
         printf("Failed to write header boundary to PBO.\n");
         return 5;
     }
-    for (int i; i < 21; i++)
+    for (int i = 0; i < 21; i++)
         fputc(0, f_target);
     fclose(f_target);
 
@@ -250,9 +250,7 @@ int build(DocoptArgs args) {
     printf("\nWriting checksum ...\n");
     unsigned char checksum[21];
     checksum[0] = 0;
-    printf("%s\n", checksum);
     hash_file(args.target, checksum+1);
-    printf("%s\n", checksum);
     f_target = fopen(args.target, "a");
     if (!f_target) {
         printf("Failed to write checksum to file.\n");
@@ -265,7 +263,7 @@ int build(DocoptArgs args) {
     printf("\nRemoving temp folder ...\n");
     if (remove_temp_folder()) {
         printf("Failed to remove temp folder.\n");
-        return 7;
+        return 8;
     }
 
     return 0;
