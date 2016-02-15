@@ -36,31 +36,9 @@ int write_header_to_pbo(char *root, char *source, char *target) {
 
     printf("Writing header: %s\n", source + strlen(root) + 1);
 
-    filename[0] = 0;
-    strcat(filename, source + strlen(root) + 1);
-
     f_target = fopen(target, "a");
     if (!f_target)
         return -1;
-
-    fwrite(filename, strlen(filename), 1, f_target);
-    fputc(0, f_target);
-
-    // replace pathseps on linux
-#ifndef _WIN32
-    char tmp[1024];
-    char *p = NULL;
-    tmp[0] = 0;
-    for (p = filename; *p; p++) {
-        tmp[strlen(tmp) + 1] = 0;
-        if (*p == '\\')
-            tmp[strlen(tmp) - 1] = '/';
-        else
-            tmp[strlen(tmp) - 1] = *p;
-    }
-    filename[0] = 0;
-    strcat(filename, tmp);
-#endif
 
     struct {
         uint32_t method;
@@ -80,6 +58,20 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     header.datasize = ftell(f_source);
     header.originalsize = header.datasize;
     fclose(f_source);
+
+    filename[0] = 0;
+    strcat(filename, source + strlen(root) + 1);
+
+    // replace pathseps on linux
+#ifndef _WIN32
+    for (int i = 0; i < strlen(filename); i++) {
+        if (filename[i] == '/')
+            filename[i] = '\\';
+    }
+#endif
+
+    fwrite(filename, strlen(filename), 1, f_target);
+    fputc(0, f_target);
 
     fwrite(&header, sizeof(header), 1, f_target);
     fclose(f_target);
@@ -173,7 +165,7 @@ int build(DocoptArgs args) {
     prefixpath[0] = 0;
     strcat(prefixpath, args.source);
     prefixpath[strlen(prefixpath) + 1] = 0;
-    prefixpath[strlen(prefixpath) - 1] = PATHSEP;
+    prefixpath[strlen(prefixpath)] = PATHSEP;
     strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "r");
     if (!f_prefix)
