@@ -48,8 +48,14 @@ int create_folder(char *path) {
 
 #ifdef _WIN32
 
-    // @todo
-    int success = 0;
+    if (!CreateDirectory(path, NULL)) {
+        if (GetLastError() == ERROR_ALREADY_EXISTS)
+            return -2;
+        else
+            return -1;
+    }
+
+    return 0;
 
 #else
 
@@ -58,14 +64,9 @@ int create_folder(char *path) {
     if (stat(path, &st) != -1)
         return -2;
 
-    int success = mkdir(path, 0755);
-
-    if (success == 0)
-        return 0;
+    return mkdir(path, 0755);
 
 #endif
-
-    return success;
 }
 
 
@@ -112,11 +113,17 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
      * on success.
      */
 
-    char *temp = TEMPPATH;
+    char temp[2048] = TEMPPATH;
+#ifdef _WIN32
+    temp[0] = 0;
+    GetTempPath(sizeof(temp), temp);
+    strcat(temp, "flummitools\\");
+#endif
 
     if (strlen(temp) + strlen(addon) + 1 > bufsize)
         return -1;
 
+    temp_folder[0] = 0;
     strcat(temp_folder, temp);
     strcat(temp_folder, addon);
 
@@ -137,11 +144,15 @@ int remove_folder(char *folder) {
 
 #ifdef _WIN32
 
-    // @todo
+    // MASSIVE @todo
+    char cmd[512];
+    sprintf(cmd, "rmdir %s /s /q", folder);
+    if (system(cmd))
+        return -1;
 
 #else
 
-    // MASSIVE @todo
+    // ALSO MASSIVE @todo
     char cmd[512];
     sprintf(cmd, "rm -rf %s", folder);
     if (system(cmd))
@@ -154,7 +165,12 @@ int remove_folder(char *folder) {
 
 
 int remove_temp_folder() {
-    return remove_folder(TEMPPATH);
+    char tempfolder[2048] = TEMPPATH;
+#ifdef _WIN32
+    GetTempPath(sizeof(tempfolder), tempfolder);
+    strcat(tempfolder, "flummitools\\");
+#endif
+    return remove_folder(tempfolder);
 }
 
 
@@ -230,11 +246,51 @@ int copy_file(char *source, char *target) {
 }
 
 
+#ifdef _WIN32
+
+int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, char *, char *), char *third_arg) {
+    WIN32_FIND_DATA file;
+    HANDLE handle = NULL;
+    char mask[2048];
+    int success;
+
+    if (cwd[strlen(cwd) - 1] == '\\')
+        cwd[strlen(cwd) - 1] = 0;
+
+    GetFullPathName(cwd, 2048, mask, NULL);
+    sprintf(mask, "%s\\*", mask);
+
+    handle = FindFirstFile(mask, &file);
+    if (handle == INVALID_HANDLE_VALUE)
+        return 1;
+
+    do {
+        if (strcmp(file.cFileName, ".") == 0 || strcmp(file.cFileName, "..") == 0)
+            continue;
+
+        sprintf(mask, "%s\\%s", cwd, file.cFileName);
+        if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            traverse_directory_recursive(root, mask, callback, third_arg);
+        } else {
+            success = callback(root, mask, third_arg);
+            if (success)
+                return success;
+        }
+    } while (FindNextFile(handle, &file));
+
+    FindClose(handle);
+
+    return 0;
+}
+
+#endif
+
+
 int traverse_directory(char *root, int (*callback)(char *, char *, char *), char *third_arg) {
     /*
-     * Traverse the given (absolute) path and call the callback with the root
-     * folder as the first, the current file path as the second, and the given
-     * third arg as the third argument.
+     * Traverse the given path and call the callback with the root folder as
+     * the first, the current file path as the second, and the given third
+     * arg as the third argument.
      *
      * The callback should return 0 success and any negative integer on
      * failure.
@@ -245,7 +301,7 @@ int traverse_directory(char *root, int (*callback)(char *, char *, char *), char
 
 #ifdef _WIN32
 
-    // @todo
+    return traverse_directory_recursive(root, root, callback, third_arg);
 
 #else
 
@@ -279,9 +335,9 @@ int traverse_directory(char *root, int (*callback)(char *, char *, char *), char
     if (fts_close(tree) < 0)
         return 3;
 
-#endif
-
     return 0;
+
+#endif
 }
 
 
