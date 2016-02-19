@@ -41,3 +41,19 @@ win32: clean
 
 win64: clean
 	make CC=x86_64-w64-mingw32-gcc EXT=.exe
+
+docopt:
+	mkdir tmp || rm -rf tmp/*
+	git clone https://github.com/docopt/docopt.c tmp/docopt.c
+	head -n 19 src/main.c > tmp/license
+	python2 ./tmp/docopt.c/docopt_c.py -o tmp/docopt src/usage
+	cat tmp/license > src/docopt.h
+	echo -e "#ifndef __docopt_h\n#define __docopt_h\n\n" >> src/docopt.h
+	grep -A 2 "#" tmp/docopt >> src/docopt.h
+	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n" tmp/docopt >> src/docopt.h
+	grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
+	echo -e "\n#endif" >> src/docopt.h
+	sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
+	cat tmp/license > src/docopt.c
+	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
+	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c

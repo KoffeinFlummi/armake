@@ -3,9 +3,8 @@ flummitools - Cause I suck at names.
 Usage:
     flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>
     flummitools paa2img [-f] <source> <target>
-    flummitools binarize <source> <target>
-    flummitools debinarize <source> <target>
-    flummitools build [-p] [-c <patterns>] <source> <target>
+    flummitools binarize [-f] [-i <includefolders>] <source> <target>
+    flummitools build [-f] [-p] [-c <patterns>] <source> <target>
     flummitools (-h | --help)
     flummitools (-v | --version)
 
@@ -22,5 +21,6 @@ Options:
     -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY
     -c --copy       Copy the files matching these patterns directly
     -p --packonly   Don't binarize models, worlds and configs before packing
+    -i --include    Folders to search for includes, seperated by colons
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit

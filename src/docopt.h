@@ -20,6 +20,7 @@
 #ifndef __docopt_h
 #define __docopt_h
 
+
 #ifdef __cplusplus
 #include <cstdio>
 #include <cstdlib>
@@ -36,13 +37,12 @@ typedef struct {
     /* commands */
     int binarize;
     int build;
-    int debinarize;
     int img2paa;
     int paa2img;
-    int pack;
     /* arguments */
-    char *patterns;
+    char *includefolders;
     char *paatype;
+    char *patterns;
     char *source;
     char *target;
     /* options without arguments */
@@ -50,6 +50,7 @@ typedef struct {
     int copy;
     int force;
     int help;
+    int include;
     int packonly;
     int type;
     int version;
@@ -86,11 +87,6 @@ typedef struct {
     Option *options;
 } Elements;
 
-
-/*
- * Tokens object
- */
-
 typedef struct Tokens {
     int argc;
     char **argv;
@@ -101,10 +97,6 @@ typedef struct Tokens {
 Tokens tokens_new(int argc, char **argv);
 
 Tokens* tokens_move(Tokens *ts);
-
-/*
- * ARGV parsing functions
- */
 
 int parse_doubledash(Tokens *ts, Elements *elements);
 
@@ -119,11 +111,7 @@ int parse_args(Tokens *ts, Elements *elements);
 int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
                   const char *version);
 
-
-/*
- * Main docopt function
- */
-
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version);
+
 
 #endif

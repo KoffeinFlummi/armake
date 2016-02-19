@@ -17,6 +17,9 @@
  */
 
 
+#include "docopt.h"
+
+
 #ifdef __cplusplus
 #include <cstdio>
 #include <cstdlib>
@@ -28,7 +31,6 @@
 #include <string.h>
 #endif
 
-#include "docopt.h"
 
 
 const char help_message[] =
@@ -37,9 +39,8 @@ const char help_message[] =
 "Usage:\n"
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize <source> <target>\n"
-"    flummitools debinarize <source> <target>\n"
-"    flummitools build [-p] [-c <patterns>] <source> <target>\n"
+"    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
+"    flummitools build [-f] [-p] [-c <patterns>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)\n"
 "\n"
@@ -56,6 +57,7 @@ const char help_message[] =
 "    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY\n"
 "    -c --copy       Copy the files matching these patterns directly\n"
 "    -p --packonly   Don't binarize models, worlds and configs before packing\n"
+"    -i --include    Folders to search for includes, seperated by colons\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
 "";
@@ -64,16 +66,20 @@ const char usage_pattern[] =
 "Usage:\n"
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize <source> <target>\n"
-"    flummitools debinarize <source> <target>\n"
-"    flummitools build [-p] [-c <patterns>] <source> <target>\n"
+"    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
+"    flummitools build [-f] [-p] [-c <patterns>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)";
+
+
+
+
 
 
 /*
  * Tokens object
  */
+
 
 Tokens tokens_new(int argc, char **argv) {
     Tokens ts = {argc, argv, 0, argv[0]};
@@ -256,6 +262,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
             args->help = option->value;
+        } else if (!strcmp(option->olong, "--include")) {
+            args->include = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
             args->packonly = option->value;
         } else if (!strcmp(option->olong, "--type")) {
@@ -271,8 +279,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->binarize = command->value;
         } else if (!strcmp(command->name, "build")) {
             args->build = command->value;
-        } else if (!strcmp(command->name, "debinarize")) {
-            args->debinarize = command->value;
         } else if (!strcmp(command->name, "img2paa")) {
             args->img2paa = command->value;
         } else if (!strcmp(command->name, "paa2img")) {
@@ -282,10 +288,12 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
     /* arguments */
     for (i=0; i < elements->n_arguments; i++) {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<patterns>")) {
-            args->patterns = argument->value;
+        if (!strcmp(argument->name, "<includefolders>")) {
+            args->includefolders = argument->value;
         } else if (!strcmp(argument->name, "<paatype>")) {
             args->paatype = argument->value;
+        } else if (!strcmp(argument->name, "<patterns>")) {
+            args->patterns = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
@@ -302,20 +310,20 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
     Command commands[] = {
         {"binarize", 0},
         {"build", 0},
-        {"debinarize", 0},
         {"img2paa", 0},
         {"paa2img", 0}
     };
     Argument arguments[] = {
-        {"<patterns>", NULL, NULL},
+        {"<includefolders>", NULL, NULL},
         {"<paatype>", NULL, NULL},
+        {"<patterns>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL}
     };
@@ -324,11 +332,12 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-c", "--copy", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
+        {"-i", "--include", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
         {"-t", "--type", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL}
     };
-    Elements elements = {5, 4, 7, commands, arguments, options};
+    Elements elements = {4, 5, 8, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
