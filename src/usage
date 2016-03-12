@@ -4,7 +4,7 @@ Usage:
     flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>
     flummitools paa2img [-f] <source> <target>
     flummitools binarize [-f] [-i <includefolders>] <source> <target>
-    flummitools build [-f] [-p] [-c <patterns>] <source> <target>
+    flummitools build [-f] [-p] <source> <target>
     flummitools (-h | --help)
     flummitools (-v | --version)
 
@@ -12,15 +12,13 @@ Commands:
     img2paa      Convert image to PAA
     paa2img      Convert PAA to image
     binarize     Binarize a file
-    debinarize   Debinarize a file
-    build        Binarize and pack an addon folder
+    build        Pack a folder into a PBO
 
 Options:
     -f --force      Overwrite the target file/folder if it already exists
     -z --compress   Compress final PAA where possible
     -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY
-    -c --copy       Copy the files matching these patterns directly
-    -p --packonly   Don't binarize models, worlds and configs before packing
+    -p --packonly   Don't binarize models, configs etc.
     -i --include    Folders to search for includes, seperated by colons
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit

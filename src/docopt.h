@@ -42,12 +42,10 @@ typedef struct {
     /* arguments */
     char *includefolders;
     char *paatype;
-    char *patterns;
     char *source;
     char *target;
     /* options without arguments */
     int compress;
-    int copy;
     int force;
     int help;
     int include;

@@ -40,7 +40,7 @@ const char help_message[] =
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
-"    flummitools build [-f] [-p] [-c <patterns>] <source> <target>\n"
+"    flummitools build [-f] [-p] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)\n"
 "\n"
@@ -48,15 +48,13 @@ const char help_message[] =
 "    img2paa      Convert image to PAA\n"
 "    paa2img      Convert PAA to image\n"
 "    binarize     Binarize a file\n"
-"    debinarize   Debinarize a file\n"
-"    build        Binarize and pack an addon folder\n"
+"    build        Pack a folder into a PBO\n"
 "\n"
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
 "    -z --compress   Compress final PAA where possible\n"
 "    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY\n"
-"    -c --copy       Copy the files matching these patterns directly\n"
-"    -p --packonly   Don't binarize models, worlds and configs before packing\n"
+"    -p --packonly   Don't binarize models, configs etc.\n"
 "    -i --include    Folders to search for includes, seperated by colons\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
@@ -67,7 +65,7 @@ const char usage_pattern[] =
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
 "    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
-"    flummitools build [-f] [-p] [-c <patterns>] <source> <target>\n"
+"    flummitools build [-f] [-p] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)";
 
@@ -256,8 +254,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             return 1;
         } else if (!strcmp(option->olong, "--compress")) {
             args->compress = option->value;
-        } else if (!strcmp(option->olong, "--copy")) {
-            args->copy = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
@@ -292,8 +288,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->includefolders = argument->value;
         } else if (!strcmp(argument->name, "<paatype>")) {
             args->paatype = argument->value;
-        } else if (!strcmp(argument->name, "<patterns>")) {
-            args->patterns = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
@@ -310,7 +304,7 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -323,13 +317,11 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     Argument arguments[] = {
         {"<includefolders>", NULL, NULL},
         {"<paatype>", NULL, NULL},
-        {"<patterns>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL}
     };
     Option options[] = {
         {"-z", "--compress", 0, 0, NULL},
-        {"-c", "--copy", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
@@ -337,7 +329,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-t", "--type", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL}
     };
-    Elements elements = {4, 5, 8, commands, arguments, options};
+    Elements elements = {4, 4, 7, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

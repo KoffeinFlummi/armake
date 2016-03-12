@@ -25,6 +25,7 @@
 #include "docopt.h"
 #include "img2paa.h"
 #include "paa2img.h"
+#include "binarize.h"
 #include "build.h"
 
 #define VERSION "v1.0"
@@ -59,6 +60,8 @@ int main(int argc, char *argv[]) {
         return img2paa(args);
     if (args.paa2img)
         return paa2img(args);
+    if (args.binarize)
+        return binarize(args);
     if (args.build)
         return build(args);
 
