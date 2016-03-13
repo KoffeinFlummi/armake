@@ -40,7 +40,7 @@ typedef struct {
     int img2paa;
     int paa2img;
     /* arguments */
-    char *includefolders;
+    char *includefolder;
     char *paatype;
     char *source;
     char *target;

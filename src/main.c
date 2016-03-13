@@ -36,25 +36,26 @@ int main(int argc, char *argv[]) {
     char *halp[] = {argv[0], "-h"};
 
     // Docopt doesn't yet support positional arguments
-    int j = 0;
-    for (int i = 0; i < argc; i++) {
-        if (argv[i][0] == '-') { continue; }
-        if (j < 2) {
-            j++;
-            continue;
-        }
-        if (j == 2) {
-            args.source = argv[i];
-            j++;
-            continue;
-        }
-        if (j == 3) {
-            args.target = argv[i];
-            j++;
-            continue;
-        }
+    if (argc < 4)
         docopt(2, halp, 1, VERSION);
+
+    args.source = argv[argc - 2];
+    args.target = argv[argc - 1];
+
+    if (args.source[0] == '-' || args.target[0] == '-')
+        docopt(2, halp, 1, VERSION);
+
+
+    // @todo
+    for (int i; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0) {
+            if (i + 1 < argc)
+                args.includefolder = argv[i+1];
+            else
+                docopt(2, halp, 1, VERSION);
+        }
     }
+
 
     if (args.img2paa)
         return img2paa(args);
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]) {
         return binarize(args);
     if (args.build)
         return build(args);
+
 
     docopt(2, halp, 1, VERSION);
 }

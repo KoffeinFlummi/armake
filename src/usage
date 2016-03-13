@@ -3,8 +3,8 @@ flummitools - Cause I suck at names.
 Usage:
     flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>
     flummitools paa2img [-f] <source> <target>
-    flummitools binarize [-f] [-i <includefolders>] <source> <target>
-    flummitools build [-f] [-p] <source> <target>
+    flummitools binarize [-f] [-i <includefolder>] <source> <target>
+    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>
     flummitools (-h | --help)
     flummitools (-v | --version)
 
@@ -19,6 +19,6 @@ Options:
     -z --compress   Compress final PAA where possible
     -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY
     -p --packonly   Don't binarize models, configs etc.
-    -i --include    Folders to search for includes, seperated by colons
+    -i --include    Folder to search for includes, defaults to CWD
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit

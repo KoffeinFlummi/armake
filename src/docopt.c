@@ -39,8 +39,8 @@ const char help_message[] =
 "Usage:\n"
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
-"    flummitools build [-f] [-p] <source> <target>\n"
+"    flummitools binarize [-f] [-i <includefolder>] <source> <target>\n"
+"    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)\n"
 "\n"
@@ -55,7 +55,7 @@ const char help_message[] =
 "    -z --compress   Compress final PAA where possible\n"
 "    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY\n"
 "    -p --packonly   Don't binarize models, configs etc.\n"
-"    -i --include    Folders to search for includes, seperated by colons\n"
+"    -i --include    Folder to search for includes, defaults to CWD\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
 "";
@@ -64,8 +64,8 @@ const char usage_pattern[] =
 "Usage:\n"
 "    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize [-f] [-i <includefolders>] <source> <target>\n"
-"    flummitools build [-f] [-p] <source> <target>\n"
+"    flummitools binarize [-f] [-i <includefolder>] <source> <target>\n"
+"    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>\n"
 "    flummitools (-h | --help)\n"
 "    flummitools (-v | --version)";
 
@@ -284,8 +284,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
     /* arguments */
     for (i=0; i < elements->n_arguments; i++) {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<includefolders>")) {
-            args->includefolders = argument->value;
+        if (!strcmp(argument->name, "<includefolder>")) {
+            args->includefolder = argument->value;
         } else if (!strcmp(argument->name, "<paatype>")) {
             args->paatype = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
@@ -315,7 +315,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"paa2img", 0}
     };
     Argument arguments[] = {
-        {"<includefolders>", NULL, NULL},
+        {"<includefolder>", NULL, NULL},
         {"<paatype>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL}
