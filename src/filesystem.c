@@ -117,7 +117,7 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
 #ifdef _WIN32
     temp[0] = 0;
     GetTempPath(sizeof(temp), temp);
-    strcat(temp, "flummitools\\");
+    strcat(temp, "armake\\");
 #endif
 
     if (strlen(temp) + strlen(addon) + 1 > bufsize)
@@ -168,7 +168,7 @@ int remove_temp_folder() {
     char tempfolder[2048] = TEMPPATH;
 #ifdef _WIN32
     GetTempPath(sizeof(tempfolder), tempfolder);
-    strcat(tempfolder, "flummitools\\");
+    strcat(tempfolder, "armake\\");
 #endif
     return remove_folder(tempfolder);
 }

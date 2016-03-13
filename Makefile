@@ -7,12 +7,12 @@ CC = gcc
 CFLAGS = -Wall -std=gnu99
 CLIBS = -I$(LIB) -lm
 
-$(BIN)/flummitools: \
+$(BIN)/armake: \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
 		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c))
 	@mkdir -p $(BIN)
-	@echo " LINK $(BIN)/flummitools$(EXT)"
-	@$(CC) $(CFLAGS) -o $(BIN)/flummitools$(EXT) \
+	@echo " LINK $(BIN)/armake$(EXT)"
+	@$(CC) $(CFLAGS) -o $(BIN)/armake$(EXT) \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
 		$(patsubst %.c, %.o, $(wildcard $(LIB)/*.c)) \
 		$(CLIBS)
@@ -25,13 +25,13 @@ $(LIB)/%.o: $(LIB)/%.c
 	@echo "  CC  $<"
 	@$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
-all: $(BIN)/flummitools
+all: $(BIN)/armake
 
 install: all
-	install -m 0755 $(BIN)/flummitools $(PREFIX)/usr/bin
+	install -m 0755 $(BIN)/armake $(PREFIX)/usr/bin
 
 uninstall:
-	rm $(PREFIX)/usr/bin/flummitools
+	rm $(PREFIX)/usr/bin/armake
 
 clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o

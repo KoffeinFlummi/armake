@@ -34,15 +34,15 @@
 
 
 const char help_message[] =
-"flummitools - Cause I suck at names.\n"
+"armake\n"
 "\n"
 "Usage:\n"
-"    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
-"    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>\n"
-"    flummitools (-h | --help)\n"
-"    flummitools (-v | --version)\n"
+"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
+"    armake paa2img [-f] <source> <target>\n"
+"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake (-h | --help)\n"
+"    armake (-v | --version)\n"
 "\n"
 "Commands:\n"
 "    img2paa      Convert image to PAA\n"
@@ -62,12 +62,12 @@ const char help_message[] =
 
 const char usage_pattern[] =
 "Usage:\n"
-"    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
-"    flummitools paa2img [-f] <source> <target>\n"
-"    flummitools binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>\n"
-"    flummitools (-h | --help)\n"
-"    flummitools (-v | --version)";
+"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
+"    armake paa2img [-f] <source> <target>\n"
+"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake (-h | --help)\n"
+"    armake (-v | --version)";
 
 
 

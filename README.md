@@ -1,11 +1,7 @@
-flummitools
-===========
+armake
+======
 
-(No that name is not final, leave me alone.)
-
-This is my attempt to reimplement BI's arma tools in a cross-platform, open-source way. I'm fully aware that this might be a pipe dream, but why not.
-
-I'm starting with PAA conversion to get my feet wet, not sure what to go for next.
+A C implementation of Arma modding tools (PAA conversion, binarization/rapification, PBO packing). (WIP)
 
 
 ### Used Libraries
@@ -18,4 +14,4 @@ I'm starting with PAA conversion to get my feet wet, not sure what to go for nex
 
 ### Usage
 
-See `$ flummitools --help`.
+See `$ armake --help`.

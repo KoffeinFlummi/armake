@@ -1,12 +1,12 @@
-flummitools - Cause I suck at names.
+armake
 
 Usage:
-    flummitools img2paa [-f] [-z] [-t <paatype>] <source> <target>
-    flummitools paa2img [-f] <source> <target>
-    flummitools binarize [-f] [-i <includefolder>] <source> <target>
-    flummitools build [-f] [-p] [-i <includefolder>] <source> <target>
-    flummitools (-h | --help)
-    flummitools (-v | --version)
+    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>
+    armake paa2img [-f] <source> <target>
+    armake binarize [-f] [-i <includefolder>] <source> <target>
+    armake build [-f] [-p] [-i <includefolder>] <source> <target>
+    armake (-h | --help)
+    armake (-v | --version)
 
 Commands:
     img2paa      Convert image to PAA

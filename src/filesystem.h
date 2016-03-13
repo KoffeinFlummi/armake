@@ -22,10 +22,10 @@
 
 #ifdef _WIN32
 #define PATHSEP '\\'
-#define TEMPPATH "C:\\Windows\\Temp\\flummitools\\"
+#define TEMPPATH "C:\\Windows\\Temp\\armake\\"
 #else
 #define PATHSEP '/'
-#define TEMPPATH "/tmp/flummitools/"
+#define TEMPPATH "/tmp/armake/"
 #endif
 
 
