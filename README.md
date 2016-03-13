@@ -13,14 +13,7 @@ I'm starting with PAA conversion to get my feet wet, not sure what to go for nex
 - [docopt](https://github.com/docopt/docopt.c)
 - [MiniLZO](http://www.oberhumer.com/opensource/lzo/)
 - [STB's image libraries](https://github.com/nothings/stb)
-
-
-### Sources
-
-- https://community.bistudio.com/wiki/PAA_File_Format
-- http://www.buckarooshangar.com/flightgear/tut_dds.html
-- https://en.wikipedia.org/wiki/S3_Texture_Compression
-- https://msdn.microsoft.com/en-us/library/bb694531(v=vs.85).aspx
+- [Paul E. Jones's SHA-1 implementation](https://www.packetizer.com/security/sha1/)
 
 
 ### Usage
