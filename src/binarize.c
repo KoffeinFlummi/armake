@@ -33,10 +33,26 @@
 
 #include "docopt.h"
 #include "filesystem.h"
+#include "binarize.h"
 
 
 int mlod2odol(char *source, char *target) {
     return 0;
+}
+
+
+void get_word(char *target, char *source) {
+    char *ptr;
+    int len = 0;
+    ptr = source;
+    while (*ptr == ',' || *ptr == '(' || *ptr == ')' ||
+            *ptr == ' ' || *ptr == '\t')
+        ptr++;
+    while (ptr[len] != ',' && ptr[len] != '(' && ptr[len] != ')' &&
+            ptr[len] != ' ' && ptr[len] != '\t')
+        len++;
+    strncpy(target, ptr, len);
+    target[len + 1] = 0;
 }
 
 
@@ -120,7 +136,7 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
      * Returns 0 on success, 1 on error and 2 if no file could be found.
      *
      * Please note that relative includes always return a path, even if that
-     * file exists.
+     * file does not exist.
      */
 
     // relative include, this shit is easy
@@ -212,7 +228,219 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 }
 
 
-int resolve_includes(char *source, FILE *f_target, char *includefolder, char definitions[512][256]) {
+void replace_string(char *string, char *search, char *replace) {
+    /*
+     * Replaces the search string with the given replacement in string.
+     * string has to be at least 4096 bytes in size.
+     */
+
+    if (strstr(string, search) == NULL)
+        return;
+
+    char tmp[4096];
+    char *ptr;
+    strncpy(tmp, string, sizeof(tmp));
+
+    for (ptr = string; *ptr != 0; ptr++) {
+        if (strlen(ptr) < strlen(search))
+            break;
+
+        if (strncmp(ptr, search, strlen(search)) == 0) {
+            strncpy(ptr, replace, 4096 - (ptr - string));
+            ptr += strlen(replace);
+            strncpy(ptr, tmp + (ptr - string) - (strlen(replace) - strlen(search)),
+                    4096 - (ptr - string));
+
+            strncpy(tmp, string, sizeof(tmp));
+        }
+    }
+}
+
+
+void quote(char *string) {
+    char tmp[1024] = "\"";
+    strncat(tmp, string, 1022);
+    strcat(tmp, "\"");
+    strncpy(string, tmp, 1024);
+}
+
+
+int resolve_macros(char *string, struct constant *constants) {
+    int i;
+    int j;
+    int level;
+    int success;
+    char tmp[4096];
+    char constant[4096];
+    char replacement[4096];
+    char argsearch[4096];
+    char argvalue[4096];
+    char argquote[4096];
+    char args[MAXARGS][4096];
+    char *ptr;
+    char *ptr_args;
+    char *ptr_args_end;
+    char *ptr_arg_end;
+    char in_string;
+
+    for (i = 0; i < MAXCONSTS; i++) {
+        if (constants[i].name[0] == 0)
+            continue;
+        if (constants[i].value[0] == 0)
+            continue;
+        if (strstr(string, constants[i].name) == NULL)
+            continue;
+
+        ptr = string;
+        while (true) {
+            ptr = strstr(ptr, constants[i].name);
+            if (ptr == NULL)
+                break;
+
+            // Check if start of constant invocation is correct
+            if (ptr - string >= 2 && strncmp(ptr - 2, "##", 2) == 0) {
+                snprintf(constant, sizeof(constant), "##%.*s", (int)strlen(constants[i].name), constants[i].name);
+            } else if (ptr - string >= 1 && strncmp(ptr - 1, "#", 1) == 0) {
+                snprintf(constant, sizeof(constant), "#%.*s", (int)strlen(constants[i].name), constants[i].name);
+            } else if (ptr - string >= 1 && (
+                    (*(ptr - 1) >= 'a' && *(ptr - 1) <= 'z') ||
+                    (*(ptr - 1) >= 'A' && *(ptr - 1) <= 'Z') ||
+                    (*(ptr - 1) >= '0' && *(ptr - 1) <= '9') ||
+                    *(ptr - 1) == '_')) {
+                ptr++;
+                continue;
+            } else {
+                snprintf(constant, sizeof(constant), "%.*s", (int)strlen(constants[i].name), constants[i].name);
+            }
+
+            // Check if end of constant invocation is correct
+            if (constants[i].arguments[0][0] == 0) {
+                if (strlen(ptr + strlen(constants[i].name)) >= 2 &&
+                        strncmp(ptr + strlen(constants[i].name), "##", 2) == 0) {
+                    strncat(constant, "##", sizeof(constant) - strlen(constant));
+                } else if (strlen(ptr + strlen(constants[i].name)) >= 1 && (
+                        (*(ptr + strlen(constants[i].name)) >= 'a' && *(ptr + strlen(constants[i].name)) <= 'z') ||
+                        (*(ptr + strlen(constants[i].name)) >= 'A' && *(ptr + strlen(constants[i].name)) <= 'Z') ||
+                        (*(ptr + strlen(constants[i].name)) >= '0' && *(ptr + strlen(constants[i].name)) <= '9') ||
+                        *(ptr + strlen(constants[i].name)) == '_')) {
+                    ptr++;
+                    continue;
+                }
+            } else {
+                ptr_args = strchr(ptr, '(');
+                ptr_args_end = strchr(ptr, ')');
+                if (ptr_args == NULL || ptr_args_end == NULL || ptr_args > ptr_args_end) {
+                    ptr++;
+                    continue;
+                }
+                if (ptr + strlen(constants[i].name) != ptr_args) {
+                    ptr++;
+                    continue;
+                }
+
+                in_string = 0;
+                level = 0;
+                for (ptr_args_end = ptr_args + 1; *ptr_args_end != 0; ptr_args_end++) {
+                    if (in_string != 0) {
+                        if (*ptr_args_end == in_string && *(ptr_args_end - 1) != '\\')
+                            in_string = 0;
+                    } else if (level > 0) {
+                        if (*ptr_args_end == '(')
+                            level++;
+                        if (*ptr_args_end == ')')
+                            level--;
+                    } else if ((*ptr_args_end == '"' || *ptr_args_end == '\'') && *(ptr_args_end - 1) != '\\') {
+                        in_string = *ptr_args_end;
+                    } else if (*ptr_args_end == '(') {
+                        level++;
+                    } else if (*ptr_args_end == ')') {
+                        break;
+                    }
+                }
+
+                strcpy(tmp, constant);
+                snprintf(constant, sizeof(constant), "%s%.*s", tmp, (int)(ptr_args_end - ptr_args + 1), ptr_args);
+
+                if (strlen(ptr + strlen(constants[i].name)) >= 2 &&
+                        strncmp(ptr + strlen(constants[i].name), "##", 2) == 0) {
+                    strncat(constant, "##", sizeof(constant) - strlen(constant));
+                } else if (strlen(ptr_args_end) >= 1 && (
+                        (*(ptr_args_end + 1) >= 'a' && *(ptr_args_end + 1) <= 'z') ||
+                        (*(ptr_args_end + 1) >= 'A' && *(ptr_args_end + 1) <= 'Z') ||
+                        (*(ptr_args_end + 1) >= '0' && *(ptr_args_end + 1) <= '9') ||
+                        *(ptr_args_end + 1) == '_')) {
+                    ptr++;
+                    continue;
+                }
+            }
+
+            strncpy(replacement, constants[i].value, sizeof(replacement));
+
+            // Replace arguments in replacement string
+            if (constants[i].arguments[0][0] != 0) {
+                // extract values for arguments
+                for (j = 0; j < MAXARGS && constants[i].arguments[j][0] != 0; j++) {
+                    in_string = 0;
+                    level = 0;
+                    for (ptr_arg_end = ptr_args + 1; *ptr_arg_end != 0; ptr_arg_end++) {
+                        if (ptr_arg_end > ptr_args_end)
+                            return 2;
+                        if (in_string != 0) {
+                            if (*ptr_arg_end == in_string && *(ptr_arg_end - 1) != '\\')
+                                in_string = 0;
+                        } else if (level > 0) {
+                            if (*ptr_arg_end == '(')
+                                level++;
+                            if (*ptr_arg_end == ')')
+                                level--;
+                        } else if ((*ptr_arg_end == '"' || *ptr_arg_end == '\'') && *(ptr_arg_end - 1) != '\\') {
+                            in_string = *ptr_arg_end;
+                        } else if (*ptr_arg_end == '(') {
+                            level++;
+                        } else if (*ptr_arg_end == ')' || *ptr_arg_end == ',') {
+                            strncpy(args[j], ptr_args + 1, ptr_arg_end - ptr_args - 1);
+                            args[j][ptr_arg_end - ptr_args - 1] = 0;
+                            ptr_args = ptr_arg_end;
+                            break;
+                        }
+                    }
+                }
+
+                // replace arguments with values
+                for (j = 0; j < MAXARGS && constants[i].arguments[j][0] != 0; j++) {
+                    strncpy(argvalue, args[j], sizeof(argvalue));
+                    replace_string(argvalue, constants[i].arguments[j], "\%\%\%TOKENARG\%\%\%");
+
+                    sprintf(argsearch, "##%s##", constants[i].arguments[j]);
+                    replace_string(replacement, argsearch, argvalue);
+                    sprintf(argsearch, "%s##", constants[i].arguments[j]);
+                    replace_string(replacement, argsearch, argvalue);
+                    sprintf(argsearch, "##%s", constants[i].arguments[j]);
+                    replace_string(replacement, argsearch, argvalue);
+
+                    sprintf(argsearch, "#%s", constants[i].arguments[j]);
+                    sprintf(argquote, "\"%s\"", argvalue);
+                    replace_string(replacement, argsearch, argquote);
+
+                    replace_string(replacement, constants[i].arguments[j], argvalue);
+
+                    replace_string(replacement, "\%\%\%TOKENARG\%\%\%", constants[i].arguments[j]);
+                }
+            }
+
+            success = resolve_macros(replacement, constants);
+            if (success)
+                return success;
+
+            replace_string(string, constant, replacement);
+        }
+    }
+
+    return 0;
+}
+
+
+int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants) {
     /*
      * Writes the contents of source into the target file pointer, while
      * recursively resolving includes using the includefolder for finding
@@ -224,11 +452,11 @@ int resolve_includes(char *source, FILE *f_target, char *includefolder, char def
      * preprocessing of defines as well. Things that are not supported here:
      *     - constants in/as include paths
      *     - nested ifs
-     *     - undefining constants
      */
 
     int line = 0;
     int i = 0;
+    int j = 0;
     int level = 0;
     int level_true = 0;
     int level_comment = 0;
@@ -247,24 +475,92 @@ int resolve_includes(char *source, FILE *f_target, char *includefolder, char def
         return 1;
     }
 
+    // first constant is file name
+    // @todo: what form?
+    strcpy(constants[0].name, "__FILE__");
+    snprintf(constants[0].value, sizeof(constants[0].value), "\"%s\"", source);
+
     while (true) {
+        // get line
         line++;
-        buffer = (char *)malloc(buffsize+1);
+        buffsize = 4096;
+        buffer = (char *)malloc(buffsize + 1);
         if (getline(&buffer, &buffsize, f_source) == -1)
             break;
 
-        trim_leading(buffer);
-
-        if (level > level_true) {
-            if ((strlen(buffer) < 5 || strncmp(buffer, "#else", 5) != 0) &&
-                    (strlen(buffer) < 6 || strncmp(buffer, "#endif", 6) != 0))
-                continue;
+        // fix Windows line endings
+        if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {
+            buffer[strlen(buffer) - 2] = '\n';
+            buffer[strlen(buffer) - 1] = 0;
         }
 
-        // Get the constant name
-        if ((strlen(buffer) >= 9 && strncmp(buffer, "#define", 7) == 0) ||
-                (strlen(buffer) >= 10 && (strncmp(buffer, "#ifdef", 6) == 0 ||
-                strncmp(buffer, "#ifndef", 7) == 0))) {
+        // add next lines if line ends with a backslash
+        while (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\\') {
+            buffsize -= strlen(buffer);
+            ptr = (char *)malloc(buffsize + 1);
+            if (getline(&ptr, &buffsize, f_source) == -1)
+                break;
+            strncpy(strrchr(buffer, '\\'), ptr, buffsize);
+            line++;
+            free(ptr);
+
+            // fix windows line endings again
+            if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {
+                buffer[strlen(buffer) - 2] = '\n';
+                buffer[strlen(buffer) - 1] = 0;
+            }
+        }
+
+        // remove line comments
+        if (strstr(buffer, "//") != NULL) {
+            *(strstr(buffer, "//") + 1) = 0;
+            buffer[strlen(buffer) - 1] = '\n';
+        }
+
+        // Check for block comment delimiters
+        for (i = 0; i < strlen(buffer); i++) {
+            if (i == strlen(buffer) - 1) {
+                if (level_comment > 0)
+                    buffer[i] = ' ';
+                break;
+            }
+
+            if (buffer[i] == '/' && buffer[i+1] == '*') {
+                level_comment++;
+                buffer[i] = ' ';
+                buffer[i+1] = ' ';
+            } else if (buffer[i] == '*' && buffer[i+1] == '/') {
+                level_comment--;
+                if (level_comment < 0)
+                    level_comment = 0;
+                buffer[i] = ' ';
+                buffer[i+1] = ' ';
+            }
+            if (level_comment > 0)
+                buffer[i] = ' ';
+        }
+
+        // trim leading spaces
+        trim_leading(buffer);
+
+        // skip lines inside untrue ifs
+        if (level > level_true) {
+            if ((strlen(buffer) < 5 || strncmp(buffer, "#else", 5) != 0) &&
+                    (strlen(buffer) < 6 || strncmp(buffer, "#endif", 6) != 0)) {
+                free(buffer);
+                continue;
+            }
+        }
+
+        // second constant is line number
+        strcpy(constants[1].name, "__LINE__");
+        sprintf(constants[1].value, "%i", line);
+
+        // get the constant name
+        if (strlen(buffer) >= 9 && (strncmp(buffer, "#define", 7) == 0 ||
+                strncmp(buffer, "#undef", 6) == 0 ||
+                strncmp(buffer, "#ifdef", 6) == 0 ||
+                strncmp(buffer, "#ifndef", 7) == 0)) {
             definition[0] = 0;
             ptr = buffer + 7;
             while (*ptr == ' ')
@@ -281,27 +577,79 @@ int resolve_includes(char *source, FILE *f_target, char *includefolder, char def
             }
         }
 
-        // Check for preprocessor commands
+        // check for preprocessor commands
         if (level_comment == 0 && strlen(buffer) >= 9 && strncmp(buffer, "#define", 7) == 0) {
             i = 0;
-            while (definitions[i] != NULL &&
-                    strcmp(definitions[i], definition) != 0 && i <= 512)
+            while (strlen(constants[i].name) != 0 &&
+                    strcmp(constants[i].name, definition) != 0 &&
+                    i <= MAXCONSTS)
                 i++;
 
-            if (i == 512) {
-                printf("Maximum number of 512 definitions exceeded in line %i of %s.\n", line, source);
+            if (i == MAXCONSTS) {
+                printf("Maximum number of %i definitions exceeded in line %i of %s.\n", MAXCONSTS, line, source);
                 return 3;
             }
 
-            strncpy(definitions[i], definition, 256);
-        } else if (level_comment == 0 && strlen(buffer) >= 10 &&
+            ptr = buffer + strlen(definition) + 8;
+            while (*ptr != ' ' && *ptr != '\t' && *ptr != '(' && *ptr != '\n')
+                ptr++;
+
+            // Get arguments and resolve macros in macro
+            constants[i].arguments[0][0] = 0;
+            if (*ptr == '(' && strchr(ptr, ')') != NULL) {
+                for (j = 0; j < MAXARGS; j++) {
+                    get_word(constants[i].arguments[j], ptr);
+                    if (strchr(ptr, ',') == NULL || strchr(ptr, ',') > strchr(ptr, ')')) {
+                        ptr = strchr(ptr, ')') + 1;
+                        break;
+                    }
+                    ptr = strchr(ptr, ',') + 1;
+                }
+                if (j + 1 < MAXARGS)
+                    constants[i].arguments[j + 1][0] = 0;
+            }
+
+            while (*ptr == ' ' || *ptr == '\t')
+                ptr++;
+
+            if (*ptr != '\n') {
+                strncpy(constants[i].value, ptr, 4096);
+                constants[i].value[strlen(constants[i].value) - 1] = 0;
+
+                success = resolve_macros(constants[i].value, constants);
+                if (success) {
+                    printf("Failed to resolve macros in line %i of %s.\n", line, source);
+                    return success;
+                }
+            } else {
+                constants[i].value[0] = 0;
+            }
+
+            strncpy(constants[i].name, definition, 256);
+        } else if (level_comment == 0 && strlen(buffer) >= 6 && strncmp(buffer, "#undef", 6) == 0) {
+            i = 0;
+            while (strlen(constants[i].name) != 0 &&
+                    strcmp(constants[i].name, definition) != 0 &&
+                    i <= MAXCONSTS)
+                i++;
+
+            if (i == MAXCONSTS) {
+                printf("Include %s not found in line %i of %s.\n", definition, line, source);
+                return 3;
+            }
+
+            constants[i].name[0] = 0;
+        } else if (level_comment == 0 && strlen(buffer) >= 8 &&
                 (strncmp(buffer, "#ifdef", 6) == 0 || strncmp(buffer, "#ifndef", 7) == 0)) {
             level++;
-            for (i = 0; i < 512; i++) {
-                if (strcmp(definition, definitions[i]) == 0 &&
-                        strncmp(buffer, "#ifndef", 7) == 0) {
-                    level_true++;
-                    continue;
+            if (strncmp(buffer, "#ifndef", 7) == 0)
+                level_true++;
+            for (i = 0; i < MAXCONSTS; i++) {
+                if (strcmp(definition, constants[i].name) == 0) {
+                    if (strncmp(buffer, "#ifdef", 6) == 0)
+                        level_true++;
+                    if (strncmp(buffer, "#ifndef", 7) == 0)
+                        level_true--;
                 }
             }
         } else if (level_comment == 0 && strlen(buffer) >= 5 && strncmp(buffer, "#else", 5) == 0) {
@@ -318,6 +666,10 @@ int resolve_includes(char *source, FILE *f_target, char *includefolder, char def
                 level_true--;
             level--;
         } else if (level_comment == 0 && strlen(buffer) >= 11 && strncmp(buffer, "#include", 8) == 0) {
+            for (i = 0; i < strlen(buffer) ; i++) {
+                if (buffer[i] == '<' || buffer[i] == '>')
+                    buffer[i] = '"';
+            }
             if (strchr(buffer, '"') == NULL) {
                 printf("Failed to parse #include in line %i in %s.\n", line, source);
                 return 5;
@@ -333,24 +685,21 @@ int resolve_includes(char *source, FILE *f_target, char *includefolder, char def
                 return 7;
             }
             free(buffer);
-            success = resolve_includes(actualpath, f_target, includefolder, definitions);
+            success = preprocess(actualpath, f_target, includefolder, constants);
             if (success)
                 return success;
             continue;
         }
 
-        // Check for comment delimiters
-        for (i = 0; i < strlen(buffer) - 1; i++) {
-            if (buffer[i] == '/' && buffer[i+1] == '*')
-                level_comment++;
-            else if (buffer[i] == '*' && buffer[i+1] == '/')
-                level_comment--;
-            if (level_comment < 0)
-                level_comment = 0;
+        if (buffer[0] != '#' && strlen(buffer) > 1) {
+            success = resolve_macros(buffer, constants);
+            if (success) {
+                printf("Failed to resolve macros in line %i of %s.\n", line, source);
+                return success;
+            }
+            printf("%s", buffer);
+            fputs(buffer, f_target);
         }
-
-        printf("%s", buffer);
-        fputs(buffer, f_target);
         free(buffer);
     }
 
@@ -370,15 +719,20 @@ int rapify_file(char *source, char *target, char *includefolder) {
 
     FILE *f_temp = tmpfile();
 
-    // Write original file to temp and resolve includes
-    char definitions[512][256] = {};
-    int success = resolve_includes(source, f_temp, includefolder, definitions);
+    // Write original file to temp and pre process
+    struct constant *constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
+    for (int i = 0; i < MAXCONSTS; i++) {
+        constants[i].name[0] = 0;
+        constants[i].arguments[0][0] = 0;
+        constants[i].value[0] = 0;
+    }
+
+    int success = preprocess(source, f_temp, includefolder, constants);
+    free(constants);
     if (success)
         return success;
 
-    // Process definitions
-
-    // Rapify file
+    // Rapify file @todo
 
     fclose(f_temp);
 

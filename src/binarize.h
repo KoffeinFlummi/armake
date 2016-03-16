@@ -19,8 +19,18 @@
 #ifndef __binarize_h
 #define __binarize_h
 
+#define MAXCONSTS 512
+#define MAXARGS 32
+
 
 #include "docopt.h"
+
+
+struct constant {
+    char name[256];
+    char arguments[MAXARGS][256];
+    char value[4096];
+};
 
 
 int binarize(DocoptArgs args);
