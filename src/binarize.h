@@ -21,6 +21,7 @@
 
 #define MAXCONSTS 512
 #define MAXARGS 32
+#define MAXCLASSES 512
 
 
 #include "docopt.h"
@@ -34,5 +35,7 @@ struct constant {
 
 
 int binarize(DocoptArgs args);
+
+int binarize_file(char *source, char *target, char *includefolder);
 
 #endif

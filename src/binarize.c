@@ -228,32 +228,40 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 }
 
 
-void replace_string(char *string, char *search, char *replace) {
+void replace_string(char *string, size_t buffsize, char *search, char *replace, int max) {
     /*
      * Replaces the search string with the given replacement in string.
-     * string has to be at least 4096 bytes in size.
+     * max is the maximum number of occurrences to be replaced. 0 means
+     * unlimited.
      */
 
     if (strstr(string, search) == NULL)
         return;
 
-    char tmp[4096];
+    char *tmp = malloc(buffsize);
     char *ptr;
-    strncpy(tmp, string, sizeof(tmp));
+    int i = 0;
+    strncpy(tmp, string, buffsize);
 
     for (ptr = string; *ptr != 0; ptr++) {
         if (strlen(ptr) < strlen(search))
             break;
 
         if (strncmp(ptr, search, strlen(search)) == 0) {
-            strncpy(ptr, replace, 4096 - (ptr - string));
+            i++;
+            strncpy(ptr, replace, buffsize - (ptr - string));
             ptr += strlen(replace);
             strncpy(ptr, tmp + (ptr - string) - (strlen(replace) - strlen(search)),
-                    4096 - (ptr - string));
+                    buffsize - (ptr - string));
 
-            strncpy(tmp, string, sizeof(tmp));
+            strncpy(tmp, string, buffsize);
         }
+
+        if (max != 0 && i >= max)
+            break;
     }
+
+    free(tmp);
 }
 
 
@@ -265,7 +273,7 @@ void quote(char *string) {
 }
 
 
-int resolve_macros(char *string, struct constant *constants) {
+int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
     int i;
     int j;
     int level;
@@ -409,30 +417,30 @@ int resolve_macros(char *string, struct constant *constants) {
                 // replace arguments with values
                 for (j = 0; j < MAXARGS && constants[i].arguments[j][0] != 0; j++) {
                     strncpy(argvalue, args[j], sizeof(argvalue));
-                    replace_string(argvalue, constants[i].arguments[j], "\%\%\%TOKENARG\%\%\%");
+                    replace_string(argvalue, sizeof(argvalue), constants[i].arguments[j], "\%\%\%TOKENARG\%\%\%", 0);
 
                     sprintf(argsearch, "##%s##", constants[i].arguments[j]);
-                    replace_string(replacement, argsearch, argvalue);
+                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
                     sprintf(argsearch, "%s##", constants[i].arguments[j]);
-                    replace_string(replacement, argsearch, argvalue);
+                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
                     sprintf(argsearch, "##%s", constants[i].arguments[j]);
-                    replace_string(replacement, argsearch, argvalue);
+                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
 
                     sprintf(argsearch, "#%s", constants[i].arguments[j]);
                     sprintf(argquote, "\"%s\"", argvalue);
-                    replace_string(replacement, argsearch, argquote);
+                    replace_string(replacement, sizeof(replacement), argsearch, argquote, 0);
 
-                    replace_string(replacement, constants[i].arguments[j], argvalue);
+                    replace_string(replacement, sizeof(replacement), constants[i].arguments[j], argvalue, 0);
 
-                    replace_string(replacement, "\%\%\%TOKENARG\%\%\%", constants[i].arguments[j]);
+                    replace_string(replacement, sizeof(replacement), "\%\%\%TOKENARG\%\%\%", constants[i].arguments[j], 0);
                 }
             }
 
-            success = resolve_macros(replacement, constants);
+            success = resolve_macros(replacement, sizeof(replacement), constants);
             if (success)
                 return success;
 
-            replace_string(string, constant, replacement);
+            replace_string(string, buffsize, constant, replacement, 1);
         }
     }
 
@@ -616,7 +624,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 strncpy(constants[i].value, ptr, 4096);
                 constants[i].value[strlen(constants[i].value) - 1] = 0;
 
-                success = resolve_macros(constants[i].value, constants);
+                success = resolve_macros(constants[i].value, sizeof(constants[i].value), constants);
                 if (success) {
                     printf("Failed to resolve macros in line %i of %s.\n", line, source);
                     return success;
@@ -692,18 +700,697 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
         }
 
         if (buffer[0] != '#' && strlen(buffer) > 1) {
-            success = resolve_macros(buffer, constants);
+            success = resolve_macros(buffer, 4096, constants);
             if (success) {
                 printf("Failed to resolve macros in line %i of %s.\n", line, source);
                 return success;
             }
-            printf("%s", buffer);
             fputs(buffer, f_target);
         }
         free(buffer);
     }
 
     fclose(f_source);
+
+    return 0;
+}
+
+
+char lookahead_c(FILE *f) {
+    /*
+     * Gets the next character for the given file pointer without changing
+     * the file pointer position.
+     *
+     * Returns a char on success, -1 on failure.
+     */
+
+    char result;
+    int fpos;
+
+    if (feof(f))
+        return -1;
+
+    fpos = ftell(f);
+    result = fgetc(f);
+    fseek(f, fpos, SEEK_SET);
+
+    return result;
+}
+
+
+int lookahead_word(FILE *f, char *buffer, size_t buffsize) {
+    /*
+     * Gets the next word for the given file pointer without changing the
+     * file pointer position.
+     *
+     * Returns 0 on success, a positive integer on failure.
+     */
+
+    int fpos;
+    int i;
+
+    if (feof(f))
+        return 1;
+
+    fpos = ftell(f);
+    if (fgets(buffer, buffsize, f) == NULL)
+        return 2;
+    fseek(f, fpos, SEEK_SET);
+
+    for (i = 0; i < buffsize; i++) {
+        if (buffer[i] == 0)
+            return 3;
+        if (buffer[i] == ' ' || buffer[i] == '\t' || buffer[i] == '\n' ||
+                buffer[i] == ',' || buffer[i] == ';' || buffer[i] == '{' ||
+                buffer[i] == '}' || buffer[i] == '(' || buffer[i] == ')' ||
+                buffer[i] == '=') {
+            buffer[i] = 0;
+            break;
+        }
+    }
+
+    if (i == buffsize)
+        return 4;
+
+    return 0;
+}
+
+
+int skip_whitespace(FILE *f) {
+    /*
+     * Advances the pointer to the next non-whitespace character.
+     *
+     * Returns 0 on success and a positive integer on failure.
+     */
+
+    char current;
+
+    do {
+        if (feof(f))
+            return 1;
+        current = fgetc(f);
+    } while (current == ' ' || current == '\t' || current == '\n');
+
+    fseek(f, -1, SEEK_CUR);
+    return 0;
+}
+
+
+void unescape_string(char *buffer, size_t buffsize) {
+    char *tmp;
+    char *ptr;
+    char tmp_array[2];
+    char current;
+
+    tmp = malloc(buffsize);
+    tmp[0] = 0;
+    tmp_array[1] = 0;
+
+    buffer[strlen(buffer) - 1] = 0;
+    for (ptr = buffer + 1; *ptr != 0; ptr++) {
+        current = *ptr;
+
+        if (*ptr == '\\' && *(ptr + 1) == '\\') {
+            ptr++;
+        } else if (*ptr == '\\' && *(ptr + 1) == 'n') {
+            current = '\n';
+            ptr++;
+        } else if (*ptr == '\\' && *(ptr + 1) == 'r') {
+            current = '\r';
+            ptr++;
+        } else if (*ptr == '\\' && *(ptr + 1) == 't') {
+            current = '\t';
+            ptr++;
+        } else if (*ptr == '\\' && *(ptr + 1) == '"') {
+            current = '"';
+            ptr++;
+        } else if (*ptr == '\\' && *(ptr + 1) == '\'') {
+            current = '\'';
+            ptr++;
+        } else if (*ptr == '"' && *(ptr + 1) == '"') {
+            ptr++;
+        } else if (*ptr == '\'' && *(ptr + 1) == '\'') {
+            ptr++;
+        }
+
+        if (*ptr == 0)
+            break;
+
+        tmp_array[0] = current;
+        strcat(tmp, tmp_array);
+    }
+
+    strcpy(buffer, tmp);
+
+    free(tmp);
+}
+
+
+void write_compressed_int(uint32_t integer, FILE *f_target) {
+    uint64_t tmp;
+    char c;
+
+    tmp = (uint64_t)integer;
+
+    if (tmp == 0) {
+        fwrite(&tmp, 1, 1, f_target);
+    }
+
+    while (tmp > 0) {
+        if (tmp > 0x7f) {
+            // there are going to be more entries
+            c = 0x80 | (tmp & 0x7f);
+            fwrite(&c, 1, 1, f_target);
+            tmp = tmp >> 7;
+        } else {
+            // last entry
+            c = tmp;
+            fwrite(&c, 1, 1, f_target);
+            tmp = 0;
+        }
+    }
+}
+
+
+int rapify_token(FILE *f_source, FILE *f_target, char *name) {
+    int i;
+    uint32_t fp_tmp;
+    uint32_t value_long;
+    float value_float;
+    char last;
+    char current;
+    char in_string;
+    char buffer[4096];
+    char *endptr;
+
+    fp_tmp = ftell(f_source);
+
+    if (fgets(buffer, sizeof(buffer), f_source) == NULL)
+        return 1;
+
+    // find trailing semicolon (or comma or } for arrays)
+    in_string = 0;
+    current = 0;
+    for (i = 0; i < sizeof(buffer); i++) {
+        if (buffer[i] == 0)
+            return 2;
+
+        last = current;
+        current = buffer[i];
+
+        if (in_string != 0) {
+            if (current == in_string && last != '\\')
+                in_string = 0;
+            else
+                continue;
+        } else {
+            if ((current == '"' || current == '\'') && last != '\\')
+                in_string = current;
+        }
+
+        if ((name != NULL && current == ';') ||
+                (name == NULL && (current == ',' || current == '}'))) {
+            buffer[i] = 0;
+            break;
+        }
+    }
+
+    fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+
+    // empty string
+    if (strlen(buffer) == 0) {
+        fwrite("\0\0", 2, 1, f_target);
+        return 0;
+    }
+
+    // remove trailing whitespace
+    for (i = strlen(buffer) - 1; i < 0; i--) {
+        if (buffer[i] == ' ' || buffer[i] == '\t')
+            buffer[i] = 0;
+    }
+
+    // try the value as long int
+    value_long = strtol(buffer, &endptr, 0);
+    if (strlen(endptr) == 0) {
+        fputc(2, f_target);
+        if (name != NULL)
+            fwrite(name, strlen(name) + 1, 1, f_target);
+        fwrite(&value_long, 4, 1, f_target);
+        return 0;
+    }
+
+    // try the value as float
+    value_float = strtof(buffer, &endptr);
+    if (strlen(endptr) == 0) {
+        fputc(1, f_target);
+        if (name != NULL)
+            fwrite(name, strlen(name) + 1, 1, f_target);
+        fwrite(&value_float, 4, 1, f_target);
+        return 0;
+    }
+
+    // it's a string.
+    fputc(0, f_target);
+    if (name != NULL)
+        fwrite(name, strlen(name) + 1, 1, f_target);
+
+    // unescape only if it's written as a proper string
+    if (strlen(buffer) >= 2 && (buffer[i] == '"' || buffer[i] == '\'')) {
+        if (buffer[0] != buffer[strlen(buffer) - 1])
+            return 3;
+
+        unescape_string(buffer, sizeof(buffer));
+    }
+
+    fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+
+    return 0;
+}
+
+
+int rapify_array(FILE *f_source, FILE *f_target) {
+    int level;
+    int success;
+    char last;
+    char current;
+    char in_string;
+    uint32_t fp_tmp;
+    uint32_t num_entries;
+
+    fp_tmp = ftell(f_source);
+
+    num_entries = 0;
+    in_string = 0;
+    level = 0;
+    while (true) {
+        if (feof(f_source))
+            return 1;
+        if (skip_whitespace(f_source))
+            return 2;
+
+        last = 0;
+        current = fgetc(f_source);
+
+        if (current == ';')
+            break;
+
+        if (current != ',' && current != '{') {
+            num_entries++;
+
+            // go to next comma or end
+            in_string = 0;
+            level = 0;
+            while (true) {
+                if (feof(f_source))
+                    return 3;
+
+                if (in_string != 0) {
+                    if (current == in_string && last != '\\') {
+                        in_string = 0;
+                    } else {
+                        last = current;
+                        current = fgetc(f_source);
+                        continue;
+                    }
+                } else {
+                    if ((current == '"' || current == '\'') && last != '\\')
+                        in_string = current;
+                }
+
+                if (current == '{')
+                    level++;
+                else if (current == '}')
+                    level--;
+
+                if (level < 0)
+                    break;
+                if (level == 0 && current == ',')
+                    break;
+
+                last = current;
+                current = fgetc(f_source);
+            }
+        }
+    }
+
+    write_compressed_int(num_entries, f_target);
+
+    fseek(f_source, fp_tmp + 1, SEEK_SET);
+
+    while (true) {
+        if (feof(f_source))
+            return 4;
+        if (skip_whitespace(f_source))
+            return 5;
+
+        fp_tmp = ftell(f_source);
+        current = fgetc(f_source);
+        fseek(f_source, fp_tmp, SEEK_SET);
+
+        if (current == ';')
+            break;
+
+        if (current == '{') {
+            fputc(3, f_target);
+            success = rapify_array(f_source, f_target);
+            if (success)
+                return success;
+        } else {
+            success = rapify_token(f_source, f_target, NULL);
+            if (success)
+                return success;
+        }
+    }
+
+    return 0;
+}
+
+
+int rapify_class(FILE *f_source, FILE *f_target) {
+    bool is_root;
+    int i;
+    int success = 0;
+    int level = 0;
+    char in_string = 0;
+    char current = 0;
+    char last = 0;
+    char buffer[4096];
+    char tmp[4096];
+    char *ptr;
+    uint32_t fp_start;
+    uint32_t fp_tmp;
+    uint32_t fp_endaddress;
+    uint32_t classheaders[MAXCLASSES];
+    uint32_t num_entries = 0;
+
+    is_root = (ftell(f_target) <= 16);
+
+    for (i = 0; i < MAXCLASSES; i++)
+        classheaders[i] = 0;
+
+    // if this is the first entry, write file "class"
+    if (is_root) {
+        fputc(0, f_target); // inherited class
+    } else {
+        if (lookahead_word(f_source, buffer, sizeof(buffer)))
+            return 1;
+        if (strcmp(buffer, "class") != 0)
+            return 2;
+
+        fseek(f_source, 6, SEEK_CUR);
+        fp_tmp = ftell(f_source);
+        if (fgets(buffer, sizeof(buffer), f_source) == NULL)
+            return 3;
+
+        if (strchr(buffer, '{') == NULL)
+            return 4;
+
+        if (strchr(buffer, ':') == NULL || strchr(buffer, '{') < strchr(buffer, ':')) {
+            fputc(0, f_target);
+        } else {
+            if (strchr(buffer, ':') > strchr(buffer, '{'))
+                return 5;
+
+            ptr = strchr(buffer, ':') + 1;
+            while (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+                ptr++;
+            strcpy(tmp, ptr);
+
+            ptr = tmp;
+            while (*ptr != ' ' && *ptr != '\t' && *ptr != '\n' && *ptr != '{')
+                ptr++;
+            *ptr = 0;
+
+            fwrite(tmp, strlen(tmp) + 1, 1, f_target);
+        }
+
+        fseek(f_source, fp_tmp + (strchr(buffer, '{') - buffer) + 1, SEEK_SET);
+    }
+
+    fp_start = ftell(f_source);
+
+    // FIRST ITERATION: get number of entries
+    while (true) {
+        if (feof(f_source)) {
+            if (is_root)
+                break;
+            else
+                return 1;
+        }
+
+        last = current;
+        current = fgetc(f_source);
+
+        if (in_string != 0) {
+            if (current == in_string && last != '\\')
+                in_string = 0;
+            else
+                continue;
+        } else {
+            if ((current == '"' || current == '\'') && last != '\\')
+                in_string = current;
+        }
+
+        if (current == '{')
+            level++;
+        else if (current == '}')
+            level--;
+
+        if (level < 0) {
+            if (is_root)
+                return 1;
+            else
+                break;
+        }
+
+        if (level == 0 && current == ';')
+            num_entries++;
+    }
+
+    write_compressed_int(num_entries, f_target);
+
+    fseek(f_source, fp_start, SEEK_SET);
+
+    // SECOND ITERATION: write entries and class headers to file
+    while (true) {
+        if (skip_whitespace(f_source))
+            break;
+
+        if (lookahead_word(f_source, buffer, sizeof(buffer)))
+            return 1;
+
+        if (strlen(buffer) == 0)
+            break;
+
+        // class definitions
+        if (strcmp(buffer, "class") == 0) {
+            fseek(f_source, 5, SEEK_CUR);
+            if (skip_whitespace(f_source))
+                return 2;
+
+            fp_tmp = ftell(f_source);
+            if (fgets(buffer, sizeof(buffer), f_source) == NULL)
+                return 3;
+            fseek(f_source, fp_tmp, SEEK_SET);
+
+            if (strchr(buffer, ';') == NULL && strchr(buffer, '{') == NULL)
+                return 4;
+
+            if (strchr(buffer, '{') == NULL || (strchr(buffer, ';') != NULL &&
+                    strchr(buffer, ';') < strchr(buffer, '{'))) {
+                // extern class definition
+                fputc(3, f_target);
+
+                ptr = buffer;
+                while (*ptr != ' ' && *ptr != '\t' && *ptr != ';')
+                    ptr++;
+                *ptr = 0;
+                fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+
+                // wkip to trailing semicolon
+                while (true) {
+                    if (feof(f_source))
+                        return 5;
+                    if (fgetc(f_source) == ';')
+                        break;
+                }
+
+                continue;
+            } else if (strchr(buffer, ';') == NULL || (strchr(buffer, '{') != NULL &&
+                    strchr(buffer, ';') > strchr(buffer, '{'))) {
+                // class body definition
+                fputc(0, f_target);
+
+                ptr = buffer;
+                while (*ptr != ' ' && *ptr != '\t' && *ptr != '{' && *ptr != ':')
+                    ptr++;
+                *ptr = 0;
+                fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+
+                for (i = 0; i < MAXCLASSES && classheaders[i] != 0; i++);
+                classheaders[i] = ftell(f_target);
+                fwrite("\0\0\0\0", 4, 1, f_target);
+
+                // wkip to trailing semicolon
+                in_string = 0;
+                level = 0;
+                while (true) {
+                    if (feof(f_source))
+                        return 5;
+
+                    last = current;
+                    current = fgetc(f_source);
+
+                    if (in_string != 0) {
+                        if (current == in_string && last != '\\')
+                            in_string = 0;
+                        else
+                            continue;
+                    } else {
+                        if ((current == '"' || current == '\'') && last != '\\')
+                            in_string = current;
+                    }
+
+                    if (current == '{')
+                        level++;
+                    else if (current == '}')
+                        level--;
+
+                    if (level == 0 && current == ';')
+                        break;
+
+                    if (level < 0)
+                        return 6;
+                }
+
+                continue;
+            } else {
+                return 7;
+            }
+        }
+
+        // delete statement
+        if (strcmp(buffer, "delete") == 0) {
+            fputc(4, f_target);
+
+            if (lookahead_word(f_source, buffer, sizeof(buffer)))
+                return 2;
+
+            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+
+            // wkip to trailing semicolon
+            while (true) {
+                if (feof(f_source))
+                    return 3;
+                if (fgetc(f_source) == ';')
+                    break;
+            }
+
+            continue;
+        }
+
+        // on the root level, nothing but classes is allowed
+        if (is_root)
+            return 2;
+
+        // array
+        if (strcmp(buffer + strlen(buffer) - 2, "[]") == 0) {
+            fseek(f_source, strlen(buffer), SEEK_CUR);
+
+            fputc(2, f_target);
+            buffer[strlen(buffer) - 2] = 0;
+            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+
+            if (skip_whitespace(f_source))
+                return 3;
+            if (feof(f_source))
+                return 4;
+            if (fgetc(f_source) != '=')
+                return 5;
+            if (skip_whitespace(f_source))
+                return 6;
+
+            success = rapify_array(f_source, f_target);
+            if (success)
+                return success;
+
+            // find trailing semicolon
+            if (skip_whitespace(f_source))
+                return 7;
+            if (fgetc(f_source) != ';')
+                return 8;
+
+            continue;
+        }
+
+        // token
+        fseek(f_source, strlen(buffer), SEEK_CUR);
+        fputc(1, f_target);
+
+        if (skip_whitespace(f_source))
+            return 3;
+        if (feof(f_source))
+            return 4;
+        if (fgetc(f_source) != '=')
+            return 5;
+        if (skip_whitespace(f_source))
+            return 6;
+
+        if (rapify_token(f_source, f_target, buffer))
+            return 7;
+    }
+
+    fp_endaddress = ftell(f_target);
+    fwrite("\0\0\0\0", 4, 1, f_target);
+
+    fseek(f_source, fp_start, SEEK_SET);
+
+    // THIRD ITERACTION: write class bodies to file recursively
+    for (i = 0; i < MAXCLASSES && classheaders[i] != 0; i++) {
+        while (true) {
+            if (skip_whitespace(f_source))
+                return 7;
+            if (lookahead_word(f_source, buffer, sizeof(buffer)))
+                return 8;
+
+            if (strcmp(buffer, "class") == 0) {
+                fp_tmp = ftell(f_source);
+                if (fgets(buffer, sizeof(buffer), f_source) == NULL)
+                    return 9;
+                fseek(f_source, fp_tmp, SEEK_SET);
+
+                if (strchr(buffer, '{') == NULL && strchr(buffer, ';') == NULL)
+                    return 10;
+
+                if (strchr(buffer, ';') == NULL)
+                    break;
+                if (strchr(buffer, '}') != NULL && strchr(buffer, '{') < strchr(buffer, ';'))
+                    break;
+
+                strcpy(buffer, "class"); // reset buffer
+            }
+
+            if (strlen(buffer) == 0)
+                fseek(f_source, 1, SEEK_CUR);
+            else
+                fseek(f_source, strlen(buffer), SEEK_CUR);
+        }
+
+        fp_tmp = ftell(f_target);
+        fseek(f_target, classheaders[i], SEEK_SET);
+        fwrite(&fp_tmp, 4, 1, f_target);
+        fseek(f_target, 0, SEEK_END);
+
+        success = rapify_class(f_source, f_target);
+        if (success)
+            return success;
+    }
+
+    // write end address
+    fp_tmp = ftell(f_target);
+    fseek(f_target, fp_endaddress, SEEK_SET);
+    fwrite(&fp_tmp, 4, 1, f_target);
+    fseek(f_target, 0, SEEK_END);
 
     return 0;
 }
@@ -718,24 +1405,54 @@ int rapify_file(char *source, char *target, char *includefolder) {
      */
 
     FILE *f_temp = tmpfile();
+    FILE *f_target;
+    int i;
+    int success;
+    uint32_t enum_offset = 0;
+    struct constant *constants;
 
     // Write original file to temp and pre process
-    struct constant *constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
-    for (int i = 0; i < MAXCONSTS; i++) {
+    constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
+    for (i = 0; i < MAXCONSTS; i++) {
         constants[i].name[0] = 0;
         constants[i].arguments[0][0] = 0;
         constants[i].value[0] = 0;
     }
-
-    int success = preprocess(source, f_temp, includefolder, constants);
+    success = preprocess(source, f_temp, includefolder, constants);
     free(constants);
-    if (success)
+    if (success) {
+        printf("Failed to preprocess %s.\n", source);
+        fclose(f_temp);
         return success;
+    }
 
-    // Rapify file @todo
+    // Rapify file
+    fseek(f_temp, 0, SEEK_SET);
+    f_target = fopen(target, "w");
+    if (!f_target) {
+        printf("Failed to open %s.\n", target);
+        fclose(f_temp);
+        return 2;
+    }
+    fwrite("\0raP", 4, 1, f_target);
+    fwrite("\0\0\0\0\x08\0\0\0", 8, 1, f_target);
+    fwrite(&enum_offset, 4, 1, f_target); // this is replaced later
+
+    success = rapify_class(f_temp, f_target);
+    if (success) {
+        printf("Failed to rapify %s.\n", source);
+        fclose(f_temp);
+        fclose(f_target);
+        return success;
+    }
+
+    enum_offset = ftell(f_target);
+    fwrite("\0\0\0\0", 4, 1, f_target); // fuck enums
+    fseek(f_target, 12, SEEK_SET);
+    fwrite(&enum_offset, 4, 1, f_target);
 
     fclose(f_temp);
-
+    fclose(f_target);
     return 0;
 }
 
@@ -744,7 +1461,7 @@ int binarize_file(char *source, char *target, char *includefolder) {
     /*
      * Binarize the given file. If source and target are identical, the target
      * is overwritten. If the source is a P3D, it is converted to ODOL. If the
-     * source is a rapifiable type (cpp, rvmat, etc.), it is rapified.
+     * source is a rapifiable type (cpp, ext, etc.), it is rapified.
      *
      * If the file type is not recognized, -1 is returned. 0 is returned on
      * success and a positive integer on error.
@@ -753,12 +1470,14 @@ int binarize_file(char *source, char *target, char *includefolder) {
      * inclusions.
      */
 
-    // Get file type
     char fileext[64];
+
+    if (strchr(source, '.') == NULL)
+        return -1;
+
     strncpy(fileext, strrchr(source, '.'), 64);
 
     if (!strcmp(fileext, ".cpp") ||
-            !strcmp(fileext, ".rvmat") ||
             !strcmp(fileext, ".ext"))
         return rapify_file(source, target, includefolder);
     if (!strcmp(fileext, ".p3d"))

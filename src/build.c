@@ -25,8 +25,32 @@
 
 #include "sha1.h"
 #include "docopt.h"
+#include "binarize.h"
 #include "filesystem.h"
 #include "build.h"
+
+
+int binarize_file_callback(char *root, char *source, char *includefolder) {
+    int success;
+    char target[2048];
+
+    strncpy(target, source, sizeof(target));
+
+    if (strlen(target) > 10 &&
+            strcmp(target + strlen(target) - 10, "config.cpp") == 0) {
+        strcpy(target + strlen(target) - 3, "bin");
+    }
+
+    puts(source);
+    puts(target);
+
+    success = binarize_file(source, target, includefolder);
+
+    if (success > 0)
+        return success * -1;
+
+    return 0;
+}
 
 
 int write_header_to_pbo(char *root, char *source, char *target) {
@@ -158,6 +182,13 @@ int build(DocoptArgs args) {
     if (args.source[strlen(args.source) - 1] == PATHSEP)
         args.source[strlen(args.source) - 1] = 0;
 
+    char *includefolder = ".";
+    if (args.include)
+        includefolder = args.includefolder;
+
+    if (includefolder[strlen(includefolder) - 1] == PATHSEP)
+        includefolder[strlen(includefolder) - 1] = 0;
+
     // get addon prefix
     char prefixpath[1024];
     char addonprefix[512];
@@ -213,12 +244,33 @@ int build(DocoptArgs args) {
         return 3;
     }
 
-    // @todo: preprocess and binarize stuff if required
+    // preprocess and binarize stuff if required
+    if (!args.packonly) {
+        if (traverse_directory(tempfolder, binarize_file_callback, includefolder)) {
+            printf("Failed to preprocess some files.\n");
+            return 4;
+        }
+
+        char configpath[2048];
+        strcpy(configpath, tempfolder);
+        strcat(configpath, "?config.cpp");
+        configpath[strlen(tempfolder)] = PATHSEP;
+
+        if (access(configpath, F_OK) != -1) {
+#ifdef _WIN32
+            if (!DeleteFile(configpath))
+                return 5;
+#else
+            if (remove(configpath))
+                return 5;
+#endif
+        }
+    }
 
     // write headers to file
     if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {
         printf("Failed to write some file header(s) to PBO.\n");
-        return 4;
+        return 6;
     }
 
     // header boundary
@@ -226,7 +278,7 @@ int build(DocoptArgs args) {
     f_target = fopen(args.target, "a");
     if (!f_target) {
         printf("Failed to write header boundary to PBO.\n");
-        return 5;
+        return 7;
     }
     for (int i = 0; i < 21; i++)
         fputc(0, f_target);
@@ -235,7 +287,7 @@ int build(DocoptArgs args) {
     // write contents to file
     if (traverse_directory(tempfolder, write_data_to_pbo, args.target)) {
         printf("Failed to pack some file(s) into the PBO.\n");
-        return 6;
+        return 8;
     }
 
     // write checksum to file
@@ -246,7 +298,7 @@ int build(DocoptArgs args) {
     f_target = fopen(args.target, "a");
     if (!f_target) {
         printf("Failed to write checksum to file.\n");
-        return 7;
+        return 9;
     }
     fwrite(checksum, 21, 1, f_target);
     fclose(f_target);
@@ -255,7 +307,7 @@ int build(DocoptArgs args) {
     printf("\nRemoving temp folder ...\n");
     if (remove_temp_folder()) {
         printf("Failed to remove temp folder.\n");
-        return 8;
+        return 10;
     }
 
     return 0;
