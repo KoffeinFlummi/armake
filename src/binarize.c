@@ -977,6 +977,8 @@ int rapify_array(FILE *f_source, FILE *f_target) {
     uint32_t fp_tmp;
     uint32_t num_entries;
 
+    fseek(f_source, 1, SEEK_CUR);
+
     fp_tmp = ftell(f_source);
 
     num_entries = 0;
@@ -991,13 +993,13 @@ int rapify_array(FILE *f_source, FILE *f_target) {
         last = 0;
         current = fgetc(f_source);
 
-        if (current == ';')
+        if (current == '}' || current == ';')
             break;
 
-        if (current != ',' && current != '{') {
-            num_entries++;
+        num_entries++;
 
-            // go to next comma or end
+        // go to next comma or end
+        if (current == '{') {
             in_string = 0;
             level = 0;
             while (true) {
@@ -1030,12 +1032,42 @@ int rapify_array(FILE *f_source, FILE *f_target) {
                 last = current;
                 current = fgetc(f_source);
             }
+        } else {
+            in_string = 0;
+            while (true) {
+                if (feof(f_source))
+                    return 3;
+
+                if (in_string != 0) {
+                    if (current == in_string && last != '\\') {
+                        in_string = 0;
+                    } else {
+                        last = current;
+                        current = fgetc(f_source);
+                        continue;
+                    }
+                } else {
+                    if ((current == '"' || current == '\'') && last != '\\')
+                        in_string = current;
+                }
+
+                if (current == '}')
+                    break;
+                if (current == ',')
+                    break;
+
+                last = current;
+                current = fgetc(f_source);
+            }
         }
+
+        if (current == '}')
+            break;
     }
 
     write_compressed_int(num_entries, f_target);
 
-    fseek(f_source, fp_tmp + 1, SEEK_SET);
+    fseek(f_source, fp_tmp, SEEK_SET);
 
     while (true) {
         if (feof(f_source))
@@ -1046,6 +1078,11 @@ int rapify_array(FILE *f_source, FILE *f_target) {
         fp_tmp = ftell(f_source);
         current = fgetc(f_source);
         fseek(f_source, fp_tmp, SEEK_SET);
+
+        if (current == '}' || current == ',') {
+            fseek(f_source, 1, SEEK_CUR);
+            break;
+        }
 
         if (current == ';')
             break;
@@ -1181,6 +1218,8 @@ int rapify_class(FILE *f_source, FILE *f_target) {
 
         if (strlen(buffer) == 0)
             break;
+
+        puts(buffer);
 
         // class definitions
         if (strcmp(buffer, "class") == 0) {

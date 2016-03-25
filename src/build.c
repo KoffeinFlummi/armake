@@ -62,8 +62,6 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     FILE *f_target;
     char filename[1024];
 
-    printf("Writing header: %s\n", source + strlen(root) + 1);
-
     f_target = fopen(target, "a");
     if (!f_target)
         return -1;
@@ -114,8 +112,6 @@ int write_data_to_pbo(char *root, char *source, char *target) {
     char buffer[4096];
     int datasize;
     int i;
-
-    printf("Writing file: %s\n", source + strlen(root) + 1);
 
     f_source = fopen(source, "r");
     if (!f_source)
@@ -211,7 +207,6 @@ int build(DocoptArgs args) {
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
     // write header extension
-    printf("Writing header extension...\n");
     f_target = fopen(args.target, "w");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     fwrite(addonprefix, strlen(addonprefix), 1, f_target);
@@ -237,7 +232,6 @@ int build(DocoptArgs args) {
 #endif
 
     // create and prepare temp folder
-    printf("Creating temp folder ...\n\n");
     char tempfolder[1024];
     if (create_temp_folder(addonprefix, tempfolder, sizeof(tempfolder))) {
         printf("Failed to create temp folder.\n");
@@ -278,7 +272,6 @@ int build(DocoptArgs args) {
     }
 
     // header boundary
-    printf("Writing header boundary ...\n\n");
     f_target = fopen(args.target, "a");
     if (!f_target) {
         printf("Failed to write header boundary to PBO.\n");
@@ -295,7 +288,6 @@ int build(DocoptArgs args) {
     }
 
     // write checksum to file
-    printf("\nWriting checksum ...\n");
     unsigned char checksum[21];
     checksum[0] = 0;
     hash_file(args.target, checksum+1);
@@ -308,7 +300,6 @@ int build(DocoptArgs args) {
     fclose(f_target);
 
     // remove temp folder
-    printf("\nRemoving temp folder ...\n");
     if (remove_temp_folder()) {
         printf("Failed to remove temp folder.\n");
         return 10;
