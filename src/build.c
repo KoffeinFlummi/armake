@@ -23,6 +23,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include "sha1.h"
 #include "docopt.h"
 #include "binarize.h"
