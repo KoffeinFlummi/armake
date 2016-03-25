@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 #include "sha1.h"
