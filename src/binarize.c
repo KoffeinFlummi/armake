@@ -812,15 +812,6 @@ void unescape_string(char *buffer, size_t buffsize) {
 
         if (*ptr == '\\' && *(ptr + 1) == '\\') {
             ptr++;
-        } else if (*ptr == '\\' && *(ptr + 1) == 'n') {
-            current = '\n';
-            ptr++;
-        } else if (*ptr == '\\' && *(ptr + 1) == 'r') {
-            current = '\r';
-            ptr++;
-        } else if (*ptr == '\\' && *(ptr + 1) == 't') {
-            current = '\t';
-            ptr++;
         } else if (*ptr == '\\' && *(ptr + 1) == '"') {
             current = '"';
             ptr++;
