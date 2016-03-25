@@ -29,6 +29,10 @@
 #endif
 
 
+#ifdef _WIN32
+size_t getline(char **lineptr, size_t *n, FILE *stream) {
+#endif
+
 int create_folder(char *path);
 
 int create_folders(char *path);
