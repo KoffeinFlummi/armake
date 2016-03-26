@@ -196,10 +196,14 @@ int build(DocoptArgs args) {
     prefixpath[strlen(prefixpath)] = PATHSEP;
     strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "r");
-    if (!f_prefix)
-        strcat(addonprefix, "placeholder"); // @todo
-    else
+    if (!f_prefix) {
+        if (strrchr(args.source, '/') == NULL)
+            strncpy(addonprefix, args.source, sizeof(addonprefix));
+        else
+            strncpy(addonprefix, strrchr(args.source, '/') + 1, sizeof(addonprefix));
+    } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
+    }
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
