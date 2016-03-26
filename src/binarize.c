@@ -148,7 +148,7 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
         strncpy(target + 1, includepath, 2046 - (target - actualpath));
 
 #ifndef _WIN32
-        for (int i; i < strlen(actualpath); i++) {
+        for (int i = 0; i < strlen(actualpath); i++) {
             if (actualpath[i] == '\\')
                 actualpath[i] = '/';
         }
@@ -227,6 +227,20 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
     }
 
 #endif
+
+    // check for file without pboprefix
+    strncpy(filename, includefolder, sizeof(filename));
+    strncat(filename, includepath, sizeof(filename) - strlen(filename) - 1);
+#ifndef _WIN32
+    for (int i = 0; i < strlen(filename); i++) {
+        if (filename[i] == '\\')
+            filename[i] = '/';
+    }
+#endif
+    if (access(filename, F_OK) != -1) {
+        strcpy(actualpath, filename);
+        return 0;
+    }
 
     return 2;
 }
