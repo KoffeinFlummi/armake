@@ -45,9 +45,6 @@ int binarize_file_callback(char *root, char *source, char *includefolder) {
         strcpy(target + strlen(target) - 3, "bin");
     }
 
-    puts(source);
-    puts(target);
-
     success = binarize_file(source, target, includefolder);
 
     if (success > 0)
@@ -206,13 +203,6 @@ int build(DocoptArgs args) {
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
-    // write header extension
-    f_target = fopen(args.target, "w");
-    fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
-    fwrite(addonprefix, strlen(addonprefix), 1, f_target);
-    fwrite("\0\0", 2, 1, f_target);
-    fclose(f_target);
-
     // replace pathseps on linux
 #ifndef _WIN32
     char tmp[512];
@@ -264,6 +254,13 @@ int build(DocoptArgs args) {
 #endif
         }
     }
+
+    // write header extension
+    f_target = fopen(args.target, "w");
+    fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
+    fwrite(addonprefix, strlen(addonprefix), 1, f_target);
+    fwrite("\0\0", 2, 1, f_target);
+    fclose(f_target);
 
     // write headers to file
     if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {

@@ -4,7 +4,7 @@ SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -std=gnu99 -ggdb
+CFLAGS = -Wall -std=gnu99
 CLIBS = -I$(LIB) -lm
 
 $(BIN)/armake: \

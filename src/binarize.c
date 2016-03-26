@@ -56,17 +56,17 @@ void get_word(char *target, char *source) {
 }
 
 
-void trim_leading(char *string) {
+void trim_leading(char *string, size_t buffsize) {
     /*
      * Trims leading tabs and spaces on the string.
      */
 
-    char tmp[4096];
+    char tmp[buffsize];
     char *ptr = tmp;
-    strncpy(tmp, string, 4096);
+    strncpy(tmp, string, buffsize - 2);
     while (*ptr == ' ' || *ptr == '\t')
         ptr++;
-    strncpy(string, ptr, 4096 - (ptr - tmp));
+    strncpy(string, ptr, buffsize - (2 + ptr - tmp));
 }
 
 
@@ -173,9 +173,10 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
     WIN32_FIND_DATA file;
     HANDLE handle = NULL;
     char mask[2048];
-    int success;
 
-    GetFullPathName(includefolder, 2048, mask, NULL);
+    GetFullPathName(includefolder, 2048, includefolder, NULL);
+
+    GetFullPathName(cwd, 2048, mask, NULL);
     sprintf(mask, "%s\\*", mask);
 
     handle = FindFirstFile(mask, &file);
@@ -183,11 +184,14 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
         return 1;
 
     do {
-        sprintf(mask, "%s\\%s", cwd, file.cFileName);
+        if (strcmp(file.cFileName, ".") == 0 || strcmp(file.cFileName, "..") == 0)
+            continue;
+
+        GetFullPathName(cwd, 2048, mask, NULL);
+        sprintf(mask, "%s\\%s", mask, file.cFileName);
         if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            success = find_file(includepath, origin, includefolder, actualpath, mask);
-            if (success)
-                return success;
+            if (!find_file(includepath, origin, includefolder, actualpath, mask))
+                return 0;
         } else {
             if (strcmp(filename, file.cFileName) == 0 && matches_includepath(mask, includepath, includefolder)) {
                 strncpy(actualpath, mask, 2048);
@@ -469,9 +473,10 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     int level_true = 0;
     int level_comment = 0;
     int success;
-    size_t buffsize = 4096;
+    size_t buffsize;
     char *buffer;
     char *ptr;
+    char in_string = 0;
     char definition[256];
     char includepath[2048];
     char actualpath[2048];
@@ -491,7 +496,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     while (true) {
         // get line
         line++;
-        buffsize = 4096;
+        buffsize = 8192;
         buffer = (char *)malloc(buffsize + 1);
         if (getline(&buffer, &buffsize, f_source) == -1)
             break;
@@ -519,21 +524,24 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
             }
         }
 
-        // remove line comments
-        if (strstr(buffer, "//") != NULL) {
-            *(strstr(buffer, "//") + 1) = 0;
-            buffer[strlen(buffer) - 1] = '\n';
-        }
-
         // Check for block comment delimiters
         for (i = 0; i < strlen(buffer); i++) {
-            if (i == strlen(buffer) - 1) {
-                if (level_comment > 0)
-                    buffer[i] = ' ';
-                break;
+            if (in_string != 0) {
+                if (buffer[i] == in_string && buffer[i-1] != '\\')
+                    in_string = 0;
+                else
+                    continue;
+            } else {
+                if (level_comment == 0 &&
+                        (buffer[i] == '"' || buffer[i] == '\'') &&
+                        (i == 0 || buffer[i-1] != '\\'))
+                    in_string = buffer[i];
             }
 
-            if (buffer[i] == '/' && buffer[i+1] == '*') {
+            if (buffer[i] == '/' && buffer[i+1] == '/') {
+                buffer[i+1] = 0;
+                buffer[i] = '\n';
+            } else if (buffer[i] == '/' && buffer[i+1] == '*') {
                 level_comment++;
                 buffer[i] = ' ';
                 buffer[i+1] = ' ';
@@ -544,12 +552,15 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 buffer[i] = ' ';
                 buffer[i+1] = ' ';
             }
-            if (level_comment > 0)
+
+            if (level_comment > 0) {
                 buffer[i] = ' ';
+                continue;
+            }
         }
 
         // trim leading spaces
-        trim_leading(buffer);
+        trim_leading(buffer, 8192);
 
         // skip lines inside untrue ifs
         if (level > level_true) {
@@ -876,8 +887,11 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
 
     fp_tmp = ftell(f_source);
 
-    if (fgets(buffer, sizeof(buffer), f_source) == NULL)
-        return 1;
+    buffer[0] = 0;
+    while (strlen(buffer) < sizeof(buffer) - 1) {
+        if (fgets(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), f_source) == NULL)
+            break;
+    }
 
     // find trailing semicolon (or comma or } for arrays)
     in_string = 0;
@@ -908,16 +922,18 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
 
     fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
 
+    // remove trailing whitespace
+    for (i = strlen(buffer) - 1; i > 0; i--) {
+        if (buffer[i] == ' ' || buffer[i] == '\t' || buffer[i] == '\n')
+            buffer[i] = 0;
+        else
+            break;
+    }
+
     // empty string
     if (strlen(buffer) == 0) {
         fwrite("\0\0", 2, 1, f_target);
         return 0;
-    }
-
-    // remove trailing whitespace
-    for (i = strlen(buffer) - 1; i < 0; i--) {
-        if (buffer[i] == ' ' || buffer[i] == '\t')
-            buffer[i] = 0;
     }
 
     // try the value as long int
@@ -946,7 +962,7 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
         fwrite(name, strlen(name) + 1, 1, f_target);
 
     // unescape only if it's written as a proper string
-    if (strlen(buffer) >= 2 && (buffer[i] == '"' || buffer[i] == '\'')) {
+    if (strlen(buffer) >= 2 && (buffer[0] == '"' || buffer[0] == '\'')) {
         if (buffer[0] != buffer[strlen(buffer) - 1])
             return 3;
 
@@ -1072,7 +1088,7 @@ int rapify_array(FILE *f_source, FILE *f_target) {
 
         if (current == '}' || current == ',') {
             fseek(f_source, 1, SEEK_CUR);
-            break;
+            continue;
         }
 
         if (current == ';')
@@ -1130,8 +1146,12 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         if (fgets(buffer, sizeof(buffer), f_source) == NULL)
             return 3;
 
-        if (strchr(buffer, '{') == NULL)
-            return 4;
+        while (strchr(buffer, '{') == NULL &&
+                strlen(buffer) < sizeof(buffer) - 1) {
+            if (fgets(buffer + strlen(buffer),
+                    sizeof(buffer) - strlen(buffer), f_source) == NULL)
+                return 4;
+        }
 
         if (strchr(buffer, ':') == NULL || strchr(buffer, '{') < strchr(buffer, ':')) {
             fputc(0, f_target);
@@ -1210,8 +1230,6 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         if (strlen(buffer) == 0)
             break;
 
-        puts(buffer);
-
         // class definitions
         if (strcmp(buffer, "class") == 0) {
             fseek(f_source, 5, SEEK_CUR);
@@ -1221,10 +1239,15 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             fp_tmp = ftell(f_source);
             if (fgets(buffer, sizeof(buffer), f_source) == NULL)
                 return 3;
-            fseek(f_source, fp_tmp, SEEK_SET);
 
-            if (strchr(buffer, ';') == NULL && strchr(buffer, '{') == NULL)
-                return 4;
+            while (strchr(buffer, ';') == NULL &&
+                    strchr(buffer, '{') == NULL &&
+                    strlen(buffer) < sizeof(buffer) - 1) {
+                if (fgets(buffer + strlen(buffer),
+                        sizeof(buffer) - strlen(buffer), f_source) == NULL)
+                    return 4;
+            }
+            fseek(f_source, fp_tmp, SEEK_SET);
 
             if (strchr(buffer, '{') == NULL || (strchr(buffer, ';') != NULL &&
                     strchr(buffer, ';') < strchr(buffer, '{'))) {
@@ -1320,25 +1343,34 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         }
 
         // on the root level, nothing but classes is allowed
-        if (is_root)
-            return 2;
+        // @todo: ext, etc.?
+        //if (is_root)
+        //    return 2;
 
         // array
         if (strcmp(buffer + strlen(buffer) - 2, "[]") == 0) {
             fseek(f_source, strlen(buffer), SEEK_CUR);
 
-            fputc(2, f_target);
             buffer[strlen(buffer) - 2] = 0;
-            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
 
             if (skip_whitespace(f_source))
                 return 3;
             if (feof(f_source))
                 return 4;
-            if (fgetc(f_source) != '=')
+            current = fgetc(f_source);
+            if (current == '+') {
+                fwrite("\x05\x01\0\0\0", 5, 1, f_target);
+                if (fgetc(f_source) != '=')
+                    return 5;
+            } else if (current != '=') {
                 return 5;
+            } else {
+                fputc(2, f_target);
+            }
             if (skip_whitespace(f_source))
                 return 6;
+
+            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
 
             success = rapify_array(f_source, f_target);
             if (success)
@@ -1347,7 +1379,8 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             // find trailing semicolon
             if (skip_whitespace(f_source))
                 return 7;
-            if (fgetc(f_source) != ';')
+            current = fgetc(f_source);
+            if (current != ';')
                 return 8;
 
             continue;
@@ -1387,10 +1420,14 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                 fp_tmp = ftell(f_source);
                 if (fgets(buffer, sizeof(buffer), f_source) == NULL)
                     return 9;
+                while (strchr(buffer, ';') == NULL &&
+                        strchr(buffer, '{') == NULL &&
+                        strlen(buffer) < sizeof(buffer) - 1) {
+                    if (fgets(buffer + strlen(buffer),
+                            sizeof(buffer) - strlen(buffer), f_source) == NULL)
+                        return 10;
+                }
                 fseek(f_source, fp_tmp, SEEK_SET);
-
-                if (strchr(buffer, '{') == NULL && strchr(buffer, ';') == NULL)
-                    return 10;
 
                 if (strchr(buffer, ';') == NULL)
                     break;
@@ -1434,12 +1471,28 @@ int rapify_file(char *source, char *target, char *includefolder) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    FILE *f_temp = tmpfile();
+    FILE *f_temp;
     FILE *f_target;
     int i;
     int success;
     uint32_t enum_offset = 0;
     struct constant *constants;
+
+#ifdef _WIN32
+    char temp_name[2048];
+    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
+        printf("Failed to get temp file name.");
+        return 1;
+    }
+    f_temp = fopen(temp_name, "w+");
+#else
+    f_temp = tmpfile();
+#endif
+
+    if (!f_temp) {
+        printf("Failed to open temp file.");
+        return 1;
+    }
 
     // Write original file to temp and pre process
     constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
@@ -1471,8 +1524,14 @@ int rapify_file(char *source, char *target, char *includefolder) {
     success = rapify_class(f_temp, f_target);
     if (success) {
         printf("Failed to rapify %s.\n", source);
+
         fclose(f_temp);
         fclose(f_target);
+
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
+
         return success;
     }
 
@@ -1483,6 +1542,11 @@ int rapify_file(char *source, char *target, char *includefolder) {
 
     fclose(f_temp);
     fclose(f_target);
+
+#ifdef _WIN32
+    DeleteFile(temp_name);
+#endif
+
     return 0;
 }
 
