@@ -12,6 +12,17 @@ A C implementation of Arma modding tools (PAA conversion, binarization/rapificat
 - [Paul E. Jones's SHA-1 implementation](https://www.packetizer.com/security/sha1/)
 
 
+### ToDo List
+
+- [x] Config rapification
+- [x] PBO building
+- [ ] P3D conversion (MLOD -> ODOL)
+- [ ] RTM conversion
+- [ ] PAA conversion
+
+(some things might only be working on linux)
+
+
 ### Usage
 
 See `$ armake --help`.
