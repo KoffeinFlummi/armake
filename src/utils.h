@@ -16,15 +16,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __binarize_h
-#define __binarize_h
-
+#ifndef __utils_h
+#define __utils_h
 
 #include "docopt.h"
 
 
-int binarize(DocoptArgs args);
+void get_word(char *target, char *source);
 
-int binarize_file(char *source, char *target, char *includefolder);
+void trim_leading(char *string, size_t buffsize);
+
+void replace_string(char *string, size_t buffsize, char *search, char *replace, int max);
+
+void quote(char *string);
+
+char lookahead_c(FILE *f);
+
+int lookahead_word(FILE *f, char *buffer, size_t buffsize);
+
+int skip_whitespace(FILE *f);
+
+void unescape_string(char *buffer, size_t buffsize);
+
+void write_compressed_int(uint32_t integer, FILE *f_target);
 
 #endif

@@ -16,15 +16,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __binarize_h
-#define __binarize_h
+#ifndef __rapify_h
+#define __rapify_h
+
+#define MAXCLASSES 512
 
 
-#include "docopt.h"
+int rapify_token(FILE *f_source, FILE *f_target, char *name);
 
+int rapify_array(FILE *f_source, FILE *f_target);
 
-int binarize(DocoptArgs args);
+int rapify_class(FILE *f_source, FILE *f_target);
 
-int binarize_file(char *source, char *target, char *includefolder);
+int rapify_file(char *source, char *target, char *includefolder);
 
 #endif

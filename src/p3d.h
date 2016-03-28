@@ -16,15 +16,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __binarize_h
-#define __binarize_h
+#ifndef __p3d_h
+#define __p3d_h
 
 
-#include "docopt.h"
-
-
-int binarize(DocoptArgs args);
-
-int binarize_file(char *source, char *target, char *includefolder);
+int mlod2odol(char *source, char *target);
 
 #endif
