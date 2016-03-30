@@ -16,8 +16,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __rapify_h
-#define __rapify_h
+#pragma once
+
 
 #define MAXCLASSES 512
 
@@ -29,5 +29,3 @@ int rapify_array(FILE *f_source, FILE *f_target);
 int rapify_class(FILE *f_source, FILE *f_target);
 
 int rapify_file(char *source, char *target, char *includefolder);
-
-#endif

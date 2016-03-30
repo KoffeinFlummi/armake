@@ -16,8 +16,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __utils_h
-#define __utils_h
+#pragma once
+
 
 #include "docopt.h"
 
@@ -39,5 +39,3 @@ int skip_whitespace(FILE *f);
 void unescape_string(char *buffer, size_t buffsize);
 
 void write_compressed_int(uint32_t integer, FILE *f_target);
-
-#endif

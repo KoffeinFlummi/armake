@@ -16,10 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __p3d_h
-#define __p3d_h
+#pragma once
 
 
 int mlod2odol(char *source, char *target);
-
-#endif

@@ -16,8 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __binarize_h
-#define __binarize_h
+#pragma once
 
 
 #include "docopt.h"
@@ -26,5 +25,3 @@
 int binarize(DocoptArgs args);
 
 int binarize_file(char *source, char *target, char *includefolder);
-
-#endif

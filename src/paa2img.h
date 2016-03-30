@@ -16,8 +16,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __paa2img_h
-#define __paa2img_h
+#pragma once
+
 
 #define DXT1     0xFF01
 #define DXT3     0xFF03
@@ -46,5 +46,3 @@ int dxt32img(unsigned char *input, unsigned char *output, int width, int height)
 int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
 
 int paa2img(DocoptArgs args);
-
-#endif

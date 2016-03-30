@@ -16,8 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __filesystem_h
-#define __filesystem_h
+#pragma once
 
 
 #ifdef _WIN32
@@ -47,5 +46,3 @@ int traverse_directory(char *root, int (*callback)(char *, char *, char *),
     char *third_arg);
 
 int copy_directory(char *source, char *target);
-
-#endif

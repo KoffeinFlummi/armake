@@ -16,8 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __build_h
-#define __build_h
+#pragma once
 
 
 #include "docopt.h"
@@ -25,4 +24,3 @@
 
 int build(DocoptArgs args);
 
-#endif

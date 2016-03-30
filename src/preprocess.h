@@ -16,8 +16,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __preprocess_h
-#define __preprocess_h
+#pragma once
+
 
 #define MAXCONSTS 512
 #define MAXARGS 32
@@ -37,5 +37,3 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 int resolve_macros(char *string, size_t buffsize, struct constant *constants);
 
 int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants);
-
-#endif
