@@ -53,7 +53,7 @@ const char help_message[] =
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
 "    -z --compress   Compress final PAA where possible\n"
-"    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY\n"
+"    -t --type       PAA type. One of: DXT1, DXT3, DXT5, RGBA4444, RGBA5551, GRAY\n"
 "    -p --packonly   Don't binarize models, configs etc.\n"
 "    -i --include    Folder to search for includes, defaults to CWD\n"
 "    -h --help       Show usage information and exit\n"

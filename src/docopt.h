@@ -17,8 +17,7 @@
  */
 
 
-#ifndef __docopt_h
-#define __docopt_h
+#pragma once
 
 
 #ifdef __cplusplus
@@ -111,5 +110,3 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version);
 
-
-#endif

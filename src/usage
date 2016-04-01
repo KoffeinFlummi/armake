@@ -17,7 +17,7 @@ Commands:
 Options:
     -f --force      Overwrite the target file/folder if it already exists
     -z --compress   Compress final PAA where possible
-    -t --type       PAA type. One of: DXT1, DXT2, DXT3, RGBA4444, RGBA5551, GRAY
+    -t --type       PAA type. One of: DXT1, DXT3, DXT5, RGBA4444, RGBA5551, GRAY
     -p --packonly   Don't binarize models, configs etc.
     -i --include    Folder to search for includes, defaults to CWD
     -h --help       Show usage information and exit

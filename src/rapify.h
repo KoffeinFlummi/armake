@@ -19,30 +19,13 @@
 #pragma once
 
 
-#define DXT1     0xFF01
-#define DXT3     0xFF03
-#define DXT5     0xFF05
-#define RGBA4444 0x4444
-#define RGBA5551 0x1555
-#define GRAY     0x8080
-
-#define COMP_NONE 0
-#define COMP_LZSS 1
-#define COMP_LZO  2
+#define MAXCLASSES 512
 
 
-#include "docopt.h"
+int rapify_token(FILE *f_source, FILE *f_target, char *name);
 
+int rapify_array(FILE *f_source, FILE *f_target);
 
-typedef struct {
-    unsigned int i : 24;
-} uint24_t;
+int rapify_class(FILE *f_source, FILE *f_target);
 
-
-int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
-
-int dxt32img(unsigned char *input, unsigned char *output, int width, int height);
-
-int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
-
-int paa2img(DocoptArgs args);
+int rapify_file(char *source, char *target, char *includefolder);

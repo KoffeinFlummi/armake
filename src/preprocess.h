@@ -19,30 +19,21 @@
 #pragma once
 
 
-#define DXT1     0xFF01
-#define DXT3     0xFF03
-#define DXT5     0xFF05
-#define RGBA4444 0x4444
-#define RGBA5551 0x1555
-#define GRAY     0x8080
-
-#define COMP_NONE 0
-#define COMP_LZSS 1
-#define COMP_LZO  2
+#define MAXCONSTS 512
+#define MAXARGS 32
 
 
-#include "docopt.h"
+struct constant {
+    char name[256];
+    char arguments[MAXARGS][256];
+    char value[4096];
+};
 
 
-typedef struct {
-    unsigned int i : 24;
-} uint24_t;
+bool matches_includepath(char *path, char *includepath, char *includefolder);
 
+int find_file(char *includepath, char *origin, char *includefolder, char *actualpath, char *cwd);
 
-int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
+int resolve_macros(char *string, size_t buffsize, struct constant *constants);
 
-int dxt32img(unsigned char *input, unsigned char *output, int width, int height);
-
-int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
-
-int paa2img(DocoptArgs args);
+int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants);

@@ -16,8 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __filesystem_h
-#define __filesystem_h
+#pragma once
 
 
 #ifdef _WIN32
@@ -28,6 +27,10 @@
 #define TEMPPATH "/tmp/armake/"
 #endif
 
+
+#ifdef _WIN32
+size_t getline(char **lineptr, size_t *n, FILE *stream);
+#endif
 
 int create_folder(char *path);
 
@@ -43,5 +46,3 @@ int traverse_directory(char *root, int (*callback)(char *, char *, char *),
     char *third_arg);
 
 int copy_directory(char *source, char *target);
-
-#endif

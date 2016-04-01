@@ -19,30 +19,23 @@
 #pragma once
 
 
-#define DXT1     0xFF01
-#define DXT3     0xFF03
-#define DXT5     0xFF05
-#define RGBA4444 0x4444
-#define RGBA5551 0x1555
-#define GRAY     0x8080
-
-#define COMP_NONE 0
-#define COMP_LZSS 1
-#define COMP_LZO  2
-
-
 #include "docopt.h"
 
 
-typedef struct {
-    unsigned int i : 24;
-} uint24_t;
+void get_word(char *target, char *source);
 
+void trim_leading(char *string, size_t buffsize);
 
-int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
+void replace_string(char *string, size_t buffsize, char *search, char *replace, int max);
 
-int dxt32img(unsigned char *input, unsigned char *output, int width, int height);
+void quote(char *string);
 
-int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
+char lookahead_c(FILE *f);
 
-int paa2img(DocoptArgs args);
+int lookahead_word(FILE *f, char *buffer, size_t buffsize);
+
+int skip_whitespace(FILE *f);
+
+void unescape_string(char *buffer, size_t buffsize);
+
+void write_compressed_int(uint32_t integer, FILE *f_target);

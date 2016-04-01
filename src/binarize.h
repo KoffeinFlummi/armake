@@ -16,23 +16,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __binarize_h
-#define __binarize_h
-
-#define MAXCONSTS 512
-#define MAXARGS 32
+#pragma once
 
 
 #include "docopt.h"
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][256];
-    char value[4096];
-};
-
-
 int binarize(DocoptArgs args);
 
-#endif
+int binarize_file(char *source, char *target, char *includefolder);
