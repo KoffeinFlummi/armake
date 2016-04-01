@@ -206,7 +206,7 @@ void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods, struct trip
 }
 
 
-int build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
+void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
     int i;
     int j;
     struct triplet bbox_total_min;
@@ -225,8 +225,8 @@ int build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model
     model_info->point_flags[1] = 0; // @todo
     model_info->point_flags[2] = 0; // @todo
 
-    model_info->map_icon_color = 0; // @todo
-    model_info->map_selected_color = 0; // @todo
+    model_info->map_icon_color = 0xff9d8254;
+    model_info->map_selected_color = 0xff9d8254;
 
     model_info->view_density = -1;
 
@@ -276,14 +276,14 @@ int build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
     model_info->can_be_occluded = false; // @todo
-    model_info->allow_animation = false; // @todo
+    model_info->allow_animation = true; // @todo
 
     strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
     strncpy(model_info->thermal_profile,
         "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
         sizeof(model_info->thermal_profile)); // @todo
 
-    model_info->unknown_long = 0;
+    model_info->unknown_long = 0xff000000;
 
     // @todo: skeleton
 
@@ -307,26 +307,57 @@ int build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model
 
     model_info->unknown_long_2 = num_lods;
     model_info->unknown_bool = false;
-    model_info->class_type[0] = 0;
-    model_info->destruct_type[0] = 0;
+    model_info->class_type = 0;
+    model_info->destruct_type = 0;
     model_info->unknown_bool_2 = false;
     model_info->always_0 = 0;
-
-    return 0;
 }
 
 
-int write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *model_info) {
+void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *model_info) {
     int i;
 
-    fwrite(model_info->lod_resolutions, sizeof(float) * num_lods, 1, f_target);
-
-    fwrite(model_info + sizeof(model_info->lod_resolutions), sizeof(model_info) - sizeof(model_info->lod_resolutions), 1, f_target);
+    fwrite( model_info->lod_resolutions,     sizeof(float) * num_lods, 1, f_target);
+    fwrite(&model_info->index,               sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->mem_lod_sphere,      sizeof(float), 1, f_target);
+    fwrite(&model_info->geo_lod_sphere,      sizeof(float), 1, f_target);
+    fwrite( model_info->point_flags,         sizeof(uint32_t) * 3, 1, f_target);
+    fwrite(&model_info->offset1,             sizeof(struct triplet), 1, f_target);
+    fwrite(&model_info->map_icon_color,      sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->map_selected_color,  sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->view_density,        sizeof(float), 1, f_target);
+    fwrite(&model_info->bbox_min,            sizeof(struct triplet), 1, f_target);
+    fwrite(&model_info->bbox_max,            sizeof(struct triplet), 1, f_target);
+    fwrite(&model_info->centre_of_gravity,   sizeof(struct triplet), 1, f_target);
+    fwrite(&model_info->offset2,             sizeof(struct triplet), 1, f_target);
+    fwrite(&model_info->cog_offset,          sizeof(struct triplet), 1, f_target);
+    fwrite( model_info->model_mass_vectors,  sizeof(struct triplet) * 3, 1, f_target);
+    fwrite( model_info->thermal_profile2,    sizeof(char) * 24, 1, f_target);
+    fwrite(&model_info->autocenter,          sizeof(bool), 1, f_target);
+    fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
+    fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
+    fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
+    fwrite(&model_info->allow_animation,     sizeof(bool), 1, f_target);
+    fwrite( model_info->unknown_flags,       sizeof(char) * 6, 1, f_target);
+    fwrite( model_info->thermal_profile,     sizeof(char) * 24, 1, f_target);
+    fwrite(&model_info->unknown_long,        sizeof(uint32_t), 1, f_target);
+    fwrite("\x53", 1, 1, f_target); // @todo: skeleton
+    fwrite(&model_info->unknown_byte,        sizeof(char), 1, f_target);
+    fwrite(&model_info->n_floats,            sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->mass,                sizeof(float), 1, f_target);
+    fwrite(&model_info->mass_reciprocal,     sizeof(float), 1, f_target);
+    fwrite(&model_info->alt_mass,            sizeof(float), 1, f_target);
+    fwrite(&model_info->alt_mass_reciprocal, sizeof(float), 1, f_target);
+    fwrite( model_info->unknown_indices,     sizeof(char) * 14, 1, f_target);
+    fwrite(&model_info->unknown_long_2,      sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->unknown_bool,        sizeof(bool), 1, f_target);
+    fwrite(&model_info->class_type,          sizeof(char), 1, f_target);
+    fwrite(&model_info->destruct_type,       sizeof(char), 1, f_target);
+    fwrite(&model_info->unknown_bool_2,      sizeof(bool), 1, f_target);
+    fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target);
 
     for (i = 0; i < num_lods; i++)
         fwrite("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 12, 1, f_target);
-
-    return 0;
 }
 
 
@@ -392,20 +423,23 @@ int mlod2odol(char *source, char *target) {
     //        mlod_lods[i].num_faces);
     //}
 
-    //fclose(f_source);
+    fclose(f_source);
 
     // Write header
     fwrite("ODOL", 4, 1, f_temp);
+#ifdef VERSION70
     fwrite("\x46\0\0\0", 4, 1, f_temp); // version 70
+#else
+    fwrite("\x44\0\0\0", 4, 1, f_temp); // version 68
+#endif
     fwrite("\0", 1, 1, f_temp); // prefix
+    // there seem to be another 4 bytes here, no idea what for
+    fwrite("\0\0\0\0", 4, 1, f_temp);
     fwrite(&num_lods, 4, 1, f_temp);
 
     // Write model info
-    if (build_model_info(mlod_lods, num_lods, &model_info)) {
-        printf("Failed to construct model info.\n");
-        return 5;
-    }
-    return 0;
+    build_model_info(mlod_lods, num_lods, &model_info);
+    write_model_info(f_temp, num_lods, &model_info);
 
     // Write animations (@todo)
     fwrite("\0", 1, 1, f_temp); // nope

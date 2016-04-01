@@ -112,8 +112,8 @@ struct model_info {
     char unknown_indices[14];
     uint32_t unknown_long_2;
     bool unknown_bool;
-    char class_type[1];
-    char destruct_type[1];
+    char class_type;
+    char destruct_type;
     bool unknown_bool_2;
     uint32_t always_0;
 };

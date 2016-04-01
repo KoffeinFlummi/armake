@@ -37,6 +37,8 @@ test/*
 *.png
 *.paa
 *.pbo
+*.p3d
+*.bin
 
 # Tmp
 tmp/*

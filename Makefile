@@ -56,3 +56,4 @@ docopt:
 	cat tmp/license > src/docopt.c
 	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
+	rm -rf tmp
