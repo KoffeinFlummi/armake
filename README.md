@@ -25,4 +25,4 @@ A C implementation of Arma modding tools (PAA conversion, binarization/rapificat
 
 ### Usage
 
-See `$ armake --help`.
+See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blob/master/src/usage).
