@@ -19,10 +19,40 @@
 #pragma once
 
 
-#define MAXPOINTS 
-#define VERSION70
+//#define VERSION70
 
-#define GEOMETRY 10000000000000.0f
+#define MAXTEXTURES 128
+
+#define LOD_GRAPHICAL                                  999.9f
+#define LOD_VIEW_GUNNER                               1000.0f
+#define LOD_VIEW_PILOT                                1100.0f
+#define LOD_VIEW_CARGO                                1200.0f
+#define LOD_SHADOW_STENCIL                           10000.0f
+#define LOD_SHADOW_STENCIL_2                         10010.0f
+#define LOD_SHADOW_VOLUME                            11000.0f
+#define LOD_SHADOW_VOLUME_2                          11010.0f
+#define LOD_GEOMETRY                        10000000000000.0f
+#define LOD_MEMORY                        1000000000000000.0f
+#define LOD_LAND_CONTACT                  2000000000000000.0f
+#define LOD_ROADWAY                       3000000000000000.0f
+#define LOD_PATHS                         4000000000000000.0f
+#define LOD_HITPOINTS                     5000000000000000.0f
+#define LOD_VIEW_GEOMETRY                 6000000000000000.0f
+#define LOD_FIRE_GEOMETRY                 7000000000000000.0f
+#define LOD_VIEW_CARGO_GEOMETRY           8000000000000000.0f
+#define LOD_VIEW_CARGO_FIRE_GEOMETRY      9000000000000000.0f
+#define LOD_VIEW_COMMANDER               10000000000000000.0f
+#define LOD_VIEW_COMMANDER_GEOMETRY      11000000000000000.0f
+#define LOD_VIEW_COMMANDER_FIRE_GEOMETRY 12000000000000000.0f
+#define LOD_VIEW_PILOT_GEOMETRY          13000000000000000.0f
+#define LOD_VIEW_PILOT_FIRE_GEOMETRY     14000000000000000.0f
+#define LOD_VIEW_GUNNER_GEOMETRY         15000000000000000.0f
+#define LOD_VIEW_GUNNER_FIRE_GEOMETRY    16000000000000000.0f
+#define LOD_SUB_PARTS                    17000000000000000.0f
+#define LOD_SHADOW_VOLUME_VIEW_CARGO     18000000000000000.0f
+#define LOD_SHADOW_VOLUME_VIEW_PILOT     19000000000000000.0f
+#define LOD_SHADOW_VOLUME_VIEW_GUNNER    20000000000000000.0f
+#define LOD_WRECK                        21000000000000000.0f
 
 
 struct point {
@@ -53,13 +83,9 @@ struct mlod_face {
     char material_name[512];
 };
 
-struct odol_lod {
-    uint8_t face_type;
-#ifdef VERSION70
-    uint32_t table[4];
-#else
-    uint16_t table[4];
-#endif
+struct mlod_selection {
+    uint8_t *points;
+    uint8_t *faces;
 };
     
 struct mlod_lod {
@@ -71,6 +97,112 @@ struct mlod_lod {
     struct mlod_face *faces;
     float *mass;
     float resolution;
+    struct mlod_selection *selections;
+};
+
+struct odol_face {
+    uint8_t face_type;
+#ifdef VERSION70
+    uint32_t table[4];
+#else
+    uint16_t table[4];
+#endif
+};
+
+struct odol_proxy {
+};
+
+struct odol_bonelink {
+};
+
+struct odol_material {
+};
+
+struct odol_section {
+};
+
+struct odol_selection {
+    char *name;
+    uint32_t num_faces;
+#ifdef VERSION70
+    uint32_t *face_indices;
+#else
+    uint16_t *face_indices;
+#endif
+    uint32_t always_0;
+    bool is_sectional;
+    uint32_t num_sections;
+    uint32_t *section_indices;
+    uint32_t num_vertices;
+#ifdef VERSION70
+    uint32_t *vertex_indices;
+#else
+    uint16_t *vertex_indices;
+#endif
+    uint32_t num_vertex_weights;
+    uint8_t *vertex_weights;
+};
+
+struct odol_property {
+};
+
+struct odol_frame {
+};
+
+struct odol_pointflag {
+};
+
+struct odol_vertextable {
+};
+
+struct odol_lod {
+    uint32_t num_proxies;
+    struct odol_proxy *proxies;
+    uint32_t num_items;
+    uint32_t *items;
+    uint32_t num_bonelinks;
+    struct odol_bonelink *bonelinks;
+    uint32_t num_points;
+    uint32_t num_points_mlod;
+    float unknown_v52_float;
+    float unknown_float_1;
+    float unknown_float_2;
+    struct triplet min_pos;
+    struct triplet max_pos;
+    struct triplet autocenter_pos;
+    float sphere;
+    uint32_t num_textures;
+    char *textures;
+    uint32_t num_materials;
+    struct odol_material *materials;
+#ifdef VERSION70
+    uint32_t *point_to_vertex;
+    uint32_t *vertex_to_point;
+#else
+    uint16_t *point_to_vertex;
+    uint16_t *vertex_to_point;
+#endif
+    struct odol_edge *edges;
+    uint32_t num_faces;
+    uint32_t offset_sections;
+    uint16_t always_0;
+    struct odol_face *faces;
+    uint32_t num_sections;
+    struct odol_section *sections;
+    uint32_t num_selections;
+    struct odol_selection *selections;
+    uint32_t num_properties;
+    struct odol_property *properties;
+    uint32_t num_frames;
+    struct odol_frame *frames;
+    uint32_t icon_color;
+    uint32_t selected_color;
+    uint32_t unknown_residue;
+    char unknown_byte;
+    uint32_t table_size;
+    float uv_scale[4];
+    struct triplet *points;
+    struct triplet *normals;
 };
 
 struct skeleton {
