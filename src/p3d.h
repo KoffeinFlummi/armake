@@ -169,13 +169,6 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct odol_material *materials;
-#ifdef VERSION70
-    uint32_t *point_to_vertex;
-    uint32_t *vertex_to_point;
-#else
-    uint16_t *point_to_vertex;
-    uint16_t *vertex_to_point;
-#endif
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;

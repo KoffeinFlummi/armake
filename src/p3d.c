@@ -258,10 +258,10 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     for (i = 0; i < num_lods; i++)
         model_info->lod_resolutions[i] = mlod_lods[i].resolution;
 
-    model_info->index = 512; // @todo
+    model_info->index = 0;
 
-    model_info->mem_lod_sphere = 0;
-    model_info->geo_lod_sphere = 0;
+    model_info->mem_lod_sphere = 0.0f;
+    model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
         if (float_equal(mlod_lods[i].resolution, LOD_MEMORY))
             model_info->mem_lod_sphere = get_sphere(&mlod_lods[i]);
@@ -269,9 +269,9 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
             model_info->geo_lod_sphere = get_sphere(&mlod_lods[i]);
     }
 
-    model_info->point_flags[0] = 0; // @todo
-    model_info->point_flags[1] = 0; // @todo
-    model_info->point_flags[2] = 0; // @todo
+    model_info->point_flags[0] = 0;
+    model_info->point_flags[1] = 0;
+    model_info->point_flags[2] = 0;
 
     model_info->map_icon_color = 0xff9d8254;
     model_info->map_selected_color = 0xff9d8254;
@@ -306,7 +306,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     memcpy(&model_info->centre_of_gravity, &model_info->offset1, sizeof(struct triplet));
     memcpy(&model_info->centre_of_gravity, &model_info->offset2, sizeof(struct triplet));
 
-    model_info->model_mass_vectors[0].x = 0; // @todo
+    model_info->model_mass_vectors[0].x = 0;
     model_info->model_mass_vectors[0].y = 0;
     model_info->model_mass_vectors[0].z = 0;
     model_info->model_mass_vectors[1].x = 0;
@@ -428,6 +428,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             break;
         }
 
+        if (textures[j][0] != 0)
+            continue;
+
         strcpy(textures[j], mlod_lod->faces[i].texture_name);
         odol_lod->num_textures++;
         size += strlen(textures[j]) + 1;
@@ -458,13 +461,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points);
     odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points);
-#ifdef VERSION70
-    odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_points);
-    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points);
-#else
-    odol_lod->point_to_vertex = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_points);
-    odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points);
-#endif
 
     points_index = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
@@ -490,9 +486,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             memcpy(&odol_lod->normals[points_index], &normal, sizeof(struct triplet));
 
             odol_lod->faces[i].table[j] = points_index;
-
-            odol_lod->point_to_vertex[mlod_lod->faces[i].table[j].points_index] = points_index;
-            odol_lod->vertex_to_point[points_index] = mlod_lod->faces[i].table[j].points_index;
         
             points_index++;
         }
@@ -616,39 +609,15 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->num_materials,     sizeof(uint32_t), 1, f_target);
     // @todo materials
 
-#ifdef VERSION70
-    temp = sizeof(uint32_t) * odol_lod->num_points_mlod + sizeof(uint32_t);
-#else
-    temp = sizeof(uint16_t) * odol_lod->num_points_mlod + sizeof(uint32_t);
-#endif
-    fwrite(&temp,                        sizeof(uint32_t), 1, f_target);
-    fputc(0, f_target);
-    fwrite(&odol_lod->num_points_mlod,   sizeof(uint32_t), 1, f_target);
-#ifdef VERSION70
-    fwrite( odol_lod->point_to_vertex,   sizeof(uint32_t) * odol_lod->num_points_mlod, 1, f_target);
-#else
-    fwrite( odol_lod->point_to_vertex,   sizeof(uint16_t) * odol_lod->num_points_mlod, 1, f_target);
-#endif
-#ifdef VERSION70
-    temp = sizeof(uint32_t) * odol_lod->num_points + sizeof(uint32_t);
-#else
-    temp = sizeof(uint16_t) * odol_lod->num_points + sizeof(uint32_t);
-#endif
-    fwrite(&temp,                        sizeof(uint32_t), 1, f_target);
-    fputc(0, f_target);
-    fwrite(&odol_lod->num_points,        sizeof(uint32_t), 1, f_target);
-#ifdef VERSION70
-    fwrite( odol_lod->vertex_to_point,   sizeof(uint32_t) * odol_lod->num_points, 1, f_target);
-#else
-    fwrite( odol_lod->vertex_to_point,   sizeof(uint16_t) * odol_lod->num_points, 1, f_target);
-#endif
+    // the point-to-vertex and vertex-to-point arrays are just left out
+    fwrite("\0\0\0\0\0\0\0\0",           sizeof(uint32_t) * 2, 1, f_target);
 
     fwrite(&odol_lod->num_faces,         sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->offset_sections,   sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->always_0,          sizeof(uint16_t), 1, f_target);
 
     for (i = 0; i < odol_lod->num_faces; i++) {
-        fwrite(&odol_lod->faces[i].face_type, sizeof(uint32_t), 1, f_target);
+        fwrite(&odol_lod->faces[i].face_type, sizeof(uint8_t), 1, f_target);
 #ifdef VERSION70
         fwrite( odol_lod->faces[i].table, sizeof(uint32_t) * odol_lod->faces[i].face_type, 1, f_target);
 #else
@@ -814,8 +783,6 @@ int mlod2odol(char *source, char *target) {
         // Clean up
         free(odol_lod.textures);
         free(odol_lod.faces);
-        free(odol_lod.point_to_vertex);
-        free(odol_lod.vertex_to_point);
         free(odol_lod.points);
         free(odol_lod.normals);
 
