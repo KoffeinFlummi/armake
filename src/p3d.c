@@ -362,7 +362,8 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 }
 
 
-void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod) {
+void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
+        struct model_info *model_info) {
     long points_index;
     long i;
     int j;
@@ -476,6 +477,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod) {
             normal.x = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].x;
             normal.y = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].y;
             normal.z = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].z;
+
+            point.x -= model_info->centre_of_gravity.x;
+            point.y -= model_info->centre_of_gravity.y;
+            point.z -= model_info->centre_of_gravity.z;
 
             printf("Point: (%f, %f, %f)\t  Normal: (%f, %f, %f)\n",
                 point.x, point.y, point.z,
@@ -765,13 +770,6 @@ int mlod2odol(char *source, char *target) {
         return 4;
     }
 
-    //for (i = 0; i < num_lods; i++) {
-    //    printf("LOD %i: %f %i %i %i\n", i, mlod_lods[i].resolution,
-    //        mlod_lods[i].num_points,
-    //        mlod_lods[i].num_facenormals,
-    //        mlod_lods[i].num_faces);
-    //}
-
     fclose(f_source);
 
     // Write header
@@ -808,7 +806,7 @@ int mlod2odol(char *source, char *target) {
         fseek(f_temp, 0, SEEK_END);
 
         // Convert to ODOL
-        convert_lod(&mlod_lods[i], &odol_lod);
+        convert_lod(&mlod_lods[i], &odol_lod, &model_info);
 
         // Write to file
         write_odol_lod(f_temp, &odol_lod);
@@ -816,6 +814,10 @@ int mlod2odol(char *source, char *target) {
         // Clean up
         free(odol_lod.textures);
         free(odol_lod.faces);
+        free(odol_lod.point_to_vertex);
+        free(odol_lod.vertex_to_point);
+        free(odol_lod.points);
+        free(odol_lod.normals);
 
         // Write end address
         fp_temp = ftell(f_temp);

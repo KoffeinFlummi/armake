@@ -149,12 +149,6 @@ struct odol_property {
 struct odol_frame {
 };
 
-struct odol_pointflag {
-};
-
-struct odol_vertextable {
-};
-
 struct odol_lod {
     uint32_t num_proxies;
     struct odol_proxy *proxies;
@@ -182,7 +176,6 @@ struct odol_lod {
     uint16_t *point_to_vertex;
     uint16_t *vertex_to_point;
 #endif
-    struct odol_edge *edges;
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;
