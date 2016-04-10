@@ -33,7 +33,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
-#include <fts.h>
+#include <dirent.h>
 #include <unistd.h>
 #endif
 
@@ -299,9 +299,50 @@ int copy_file(char *source, char *target) {
 }
 
 
-#ifdef _WIN32
+#ifndef _WIN32
+int alphasort_ci(const struct dirent **a, const struct dirent **b) {
+    /*
+     * A case insensitive version of alphasort.
+     */
+
+    int i;
+    int result;
+    struct dirent *a_temp;
+    struct dirent *b_temp;
+
+    a_temp = (struct dirent *)malloc(sizeof(struct dirent));
+    b_temp = (struct dirent *)malloc(sizeof(struct dirent));
+
+    memcpy(a_temp, *a, sizeof(struct dirent));
+    memcpy(b_temp, *b, sizeof(struct dirent));
+
+    for (i = 0; i < strlen(a_temp->d_name); i++) {
+        if (a_temp->d_name[i] >= 'A' && a_temp->d_name[i] <= 'Z')
+            a_temp->d_name[i] = a_temp->d_name[i] - ('A' - 'a');
+    }
+
+    for (i = 0; i < strlen(b_temp->d_name); i++) {
+        if (b_temp->d_name[i] >= 'A' && b_temp->d_name[i] <= 'Z')
+            b_temp->d_name[i] = b_temp->d_name[i] - ('A' - 'a');
+    }
+
+    result = alphasort((const struct dirent **)&a_temp, (const struct dirent **)&b_temp);
+
+    free(a_temp);
+    free(b_temp);
+
+    return result;
+}
+#endif
+
 
 int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, char *, char *), char *third_arg) {
+    /*
+     * Recursive helper function for directory traversal.
+     */
+
+#ifdef _WIN32
+
     WIN32_FIND_DATA file;
     HANDLE handle = NULL;
     char mask[2048];
@@ -333,10 +374,52 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
 
     FindClose(handle);
 
-    return 0;
-}
+#else
+
+    struct dirent **namelist;
+    char next[2048];
+    int i;
+    int n;
+    int success;
+    
+    n = scandir(cwd, &namelist, NULL, alphasort_ci);
+    if (n < 0)
+        return 1;
+
+    for (i = 0; i < n; i++) {
+        if (strcmp(namelist[i]->d_name, "..") == 0 ||
+                strcmp(namelist[i]->d_name, ".") == 0) {
+            free(namelist[i]);
+            continue;
+        }
+
+        strcpy(next, cwd);
+        strcat(next, "/");
+        strcat(next, namelist[i]->d_name);
+
+        switch (namelist[i]->d_type) {
+            case DT_DIR:
+                success = traverse_directory_recursive(root, next, callback, third_arg);
+                if (success)
+                    return success;
+                break;
+
+            case DT_REG:
+                success = callback(root, next, third_arg);
+                if (success)
+                    return success;
+                break;
+        }
+
+        free(namelist[i]);
+    }
+
+    free(namelist);
 
 #endif
+    
+     return 0;
+}
 
 
 int traverse_directory(char *root, int (*callback)(char *, char *, char *), char *third_arg) {
@@ -352,45 +435,7 @@ int traverse_directory(char *root, int (*callback)(char *, char *, char *), char
      * error and the last callback return value should the callback fail.
      */
 
-#ifdef _WIN32
-
     return traverse_directory_recursive(root, root, callback, third_arg);
-
-#else
-
-    FTS *tree;
-    FTSENT *f;
-    char *argv[] = { root, NULL };
-    int success;
-
-    tree = fts_open(argv, FTS_LOGICAL | FTS_NOSTAT, NULL);
-    if (tree == NULL)
-        return 1;
-
-    while ((f = fts_read(tree))) {
-        switch (f->fts_info) {
-            case FTS_DNR: return 2;
-            case FTS_ERR: return 3;
-            case FTS_NS: continue;
-            case FTS_DP: continue;
-            case FTS_D: continue;
-            case FTS_DC: continue;
-        }
-
-        success = callback(root, f->fts_path, third_arg);
-        if (success)
-            return success;
-    }
-
-    if (errno != 0)
-        return 2;
-
-    if (fts_close(tree) < 0)
-        return 3;
-
-    return 0;
-
-#endif
 }
 
 
