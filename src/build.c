@@ -54,6 +54,14 @@ int binarize_file_callback(char *root, char *source, char *includefolder) {
 }
 
 
+bool file_allowed(char *filename) {
+    if (strcmp(filename, "$PBOPREFIX$") == 0)
+        return false;
+
+    return true;
+}
+
+
 int write_header_to_pbo(char *root, char *source, char *target) {
     FILE *f_source;
     FILE *f_target;
@@ -62,6 +70,12 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     f_target = fopen(target, "a");
     if (!f_target)
         return -1;
+
+    filename[0] = 0;
+    strcat(filename, source + strlen(root) + 1);
+
+    if (!file_allowed(filename))
+        return 0;
 
     struct {
         uint32_t method;
@@ -81,9 +95,6 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     header.datasize = ftell(f_source);
     header.originalsize = header.datasize;
     fclose(f_source);
-
-    filename[0] = 0;
-    strcat(filename, source + strlen(root) + 1);
 
     // replace pathseps on linux
 #ifndef _WIN32
@@ -107,8 +118,15 @@ int write_data_to_pbo(char *root, char *source, char *target) {
     FILE *f_source;
     FILE *f_target;
     char buffer[4096];
+    char filename[1024];
     int datasize;
     int i;
+
+    filename[0] = 0;
+    strcat(filename, source + strlen(root) + 1);
+
+    if (!file_allowed(filename))
+        return 0;
 
     f_source = fopen(source, "r");
     if (!f_source)
