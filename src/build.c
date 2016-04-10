@@ -157,6 +157,7 @@ int hash_file(char *path, unsigned char *hash) {
     SHA1Context sha;
     FILE *file;
     int filesize, i;
+    unsigned temp;
     char buffer[4096];
 
     SHA1Reset(&sha);
@@ -178,6 +179,12 @@ int hash_file(char *path, unsigned char *hash) {
 
     if (!SHA1Result(&sha))
         return -2;
+
+    for (i = 0; i < 5; i++) {
+        temp = sha.Message_Digest[i];
+        sha.Message_Digest[i] = ((temp>>24)&0xff) |
+            ((temp<<8)&0xff0000) | ((temp>>8)&0xff00) | ((temp<<24)&0xff000000);
+    }
 
     memcpy(hash, sha.Message_Digest, 20);
 
