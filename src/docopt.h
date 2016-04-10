@@ -36,20 +36,15 @@ typedef struct {
     /* commands */
     int binarize;
     int build;
-    int img2paa;
-    int paa2img;
     /* arguments */
     char *includefolder;
-    char *paatype;
     char *source;
     char *target;
     /* options without arguments */
-    int compress;
     int force;
     int help;
     int include;
     int packonly;
-    int type;
     int version;
     /* special */
     const char *usage_pattern;

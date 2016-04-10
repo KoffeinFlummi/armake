@@ -37,23 +37,17 @@ const char help_message[] =
 "armake\n"
 "\n"
 "Usage:\n"
-"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
-"    armake paa2img [-f] <source> <target>\n"
 "    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
 "Commands:\n"
-"    img2paa      Convert image to PAA\n"
-"    paa2img      Convert PAA to image\n"
 "    binarize     Binarize a file\n"
 "    build        Pack a folder into a PBO\n"
 "\n"
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
-"    -z --compress   Compress final PAA where possible\n"
-"    -t --type       PAA type. One of: DXT1, DXT3, DXT5, RGBA4444, RGBA5551, GRAY\n"
 "    -p --packonly   Don't binarize models, configs etc.\n"
 "    -i --include    Folder to search for includes, defaults to CWD\n"
 "    -h --help       Show usage information and exit\n"
@@ -62,8 +56,6 @@ const char help_message[] =
 
 const char usage_pattern[] =
 "Usage:\n"
-"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
-"    armake paa2img [-f] <source> <target>\n"
 "    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
 "    armake (-h | --help)\n"
@@ -252,8 +244,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
                    !strcmp(option->olong, "--version")) {
             printf("%s\n", version);
             return 1;
-        } else if (!strcmp(option->olong, "--compress")) {
-            args->compress = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
@@ -262,8 +252,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->include = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
             args->packonly = option->value;
-        } else if (!strcmp(option->olong, "--type")) {
-            args->type = option->value;
         } else if (!strcmp(option->olong, "--version")) {
             args->version = option->value;
         }
@@ -275,10 +263,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->binarize = command->value;
         } else if (!strcmp(command->name, "build")) {
             args->build = command->value;
-        } else if (!strcmp(command->name, "img2paa")) {
-            args->img2paa = command->value;
-        } else if (!strcmp(command->name, "paa2img")) {
-            args->paa2img = command->value;
         }
     }
     /* arguments */
@@ -286,8 +270,6 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
         argument = &elements->arguments[i];
         if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
-        } else if (!strcmp(argument->name, "<paatype>")) {
-            args->paatype = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
@@ -304,32 +286,27 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, NULL, NULL, NULL, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
     Command commands[] = {
         {"binarize", 0},
-        {"build", 0},
-        {"img2paa", 0},
-        {"paa2img", 0}
+        {"build", 0}
     };
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
-        {"<paatype>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL}
     };
     Option options[] = {
-        {"-z", "--compress", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
-        {"-t", "--type", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL}
     };
-    Elements elements = {4, 4, 7, commands, arguments, options};
+    Elements elements = {2, 3, 5, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
