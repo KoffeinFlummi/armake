@@ -289,8 +289,14 @@ int build(DocoptArgs args) {
     // write header extension
     f_target = fopen(args.target, "w");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
-    fwrite(addonprefix, strlen(addonprefix), 1, f_target);
-    fwrite("\0\0", 2, 1, f_target);
+    // write addonprefix with windows pathseps
+    for (i = 0; i <= strlen(addonprefix); i++) {
+        if (addonprefix[i] == PATHSEP)
+            fputc('\\', f_target);
+        else
+            fputc(addonprefix[i], f_target);
+    }
+    fputc(0, f_target);
     fclose(f_target);
 
     // write headers to file
