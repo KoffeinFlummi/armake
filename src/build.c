@@ -193,6 +193,8 @@ int hash_file(char *path, unsigned char *hash) {
 
 
 int build(DocoptArgs args) {
+    int i;
+
     // check if target already exists
     FILE *f_target;
     if (access(args.target, F_OK) != -1 && !args.force) {
@@ -303,7 +305,7 @@ int build(DocoptArgs args) {
         printf("Failed to write header boundary to PBO.\n");
         return 7;
     }
-    for (int i = 0; i < 21; i++)
+    for (i = 0; i < 21; i++)
         fputc(0, f_target);
     fclose(f_target);
 
@@ -314,15 +316,15 @@ int build(DocoptArgs args) {
     }
 
     // write checksum to file
-    unsigned char checksum[21];
-    checksum[0] = 0;
-    hash_file(args.target, checksum+1);
+    unsigned char checksum[20];
+    hash_file(args.target, checksum);
     f_target = fopen(args.target, "a");
     if (!f_target) {
         printf("Failed to write checksum to file.\n");
         return 9;
     }
-    fwrite(checksum, 21, 1, f_target);
+    fputc(0, f_target);
+    fwrite(checksum, 20, 1, f_target);
     fclose(f_target);
 
     // remove temp folder
