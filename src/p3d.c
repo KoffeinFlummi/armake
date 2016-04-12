@@ -578,10 +578,21 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             uv_coords.v = mlod_lod->faces[i].table[j].v;
 
             if (sharp_edge) {
-                // change normal
+                // change normal @todo
             }
 
-            odol_lod->faces[i].table[j] = add_point(odol_lod, mlod_lod,
+            // Change vertex order for ODOL
+            // Tris:  0 1 2   -> 1 0 2
+            // Quads: 0 1 2 3 -> 1 0 3 2
+
+            if (j <= 1)
+                k = 1 - j;
+            else if (odol_lod->faces[i].face_type == 3)
+                k = j;
+            else
+                k = 2 + (1 - (j - 2));
+
+            odol_lod->faces[i].table[k] = add_point(odol_lod, mlod_lod,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
         face_end += 2 + 2 * odol_lod->faces[i].face_type;
