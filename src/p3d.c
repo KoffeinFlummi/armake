@@ -70,10 +70,6 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
         fread(&mlod_lods[i].num_faces, 4, 1, f_source);
         fseek(f_source, 4, SEEK_CUR);
 
-        //printf("Num Points: %u\n", mlod_lods[i].num_points);
-        //printf("Num FaceNormals: %u\n", mlod_lods[i].num_facenormals);
-        //printf("Num Faces: %u\n", mlod_lods[i].num_faces);
-
         mlod_lods[i].points = (struct point *)malloc(sizeof(struct point) * mlod_lods[i].num_points);
         for (j = 0; j < mlod_lods[i].num_points; j++)
             fread(&mlod_lods[i].points[j], sizeof(struct point), 1, f_source);
@@ -106,6 +102,11 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
         mlod_lods[i].mass = 0;
         mlod_lods[i].sharp_edges = 0;
 
+        for (j = 0; j < MAXPROPERTIES; j++) {
+            mlod_lods[i].properties[j].name[0] = 0;
+            mlod_lods[i].properties[j].value[0] = 0;
+        }
+
         while (true) {
             fseek(f_source, 1, SEEK_CUR);
 
@@ -125,6 +126,18 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
                 mlod_lods[i].num_sharp_edges = tagg_len / (2 * sizeof(uint32_t));
                 mlod_lods[i].sharp_edges = (uint32_t *)malloc(tagg_len);
                 fread(mlod_lods[i].sharp_edges, tagg_len, 1, f_source);
+            }
+
+            if (strcmp(buffer, "#Property#") == 0) {
+                for (j = 0; j < MAXPROPERTIES; j++) {
+                    if (mlod_lods[i].properties[j].name[0] == 0)
+                        break;
+                }
+                if (j == MAXPROPERTIES)
+                    return 3;
+
+                fread(mlod_lods[i].properties[j].name, 64, 1, f_source);
+                fread(mlod_lods[i].properties[j].value, 64, 1, f_source);
             }
 
             // @todo TAGGs: property, mass, animation, uvset
@@ -624,8 +637,12 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->num_selections = 0; // @todo
     odol_lod->selections = 0;
 
-    odol_lod->num_properties = 0; // @todo
-    odol_lod->properties = 0;
+    odol_lod->num_properties = 0;
+    for (i = 0; i < MAXPROPERTIES; i++) {
+        if (mlod_lod->properties[i].name[0] != 0)
+            odol_lod->num_properties++;
+    }
+    memcpy(odol_lod->properties, mlod_lod->properties, MAXPROPERTIES * sizeof(struct property));
 
     odol_lod->num_frames = 0; // @todo
     odol_lod->frames = 0;
@@ -774,10 +791,16 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         fputc(0, f_target);
         // @todo selections
     }
+
     fwrite(&odol_lod->num_properties, sizeof(uint32_t), 1, f_target);
-    // @todo properties
+    for (i = 0; i < odol_lod->num_properties; i++) {
+        fwrite(odol_lod->properties[i].name, strlen(odol_lod->properties[i].name) + 1, 1, f_target);
+        fwrite(odol_lod->properties[i].value, strlen(odol_lod->properties[i].value) + 1, 1, f_target);
+    }
+
     fwrite(&odol_lod->num_frames, sizeof(uint32_t), 1, f_target);
     // @todo frames
+
     fwrite(&odol_lod->icon_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->selected_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->unknown_residue, sizeof(uint32_t), 1, f_target);
@@ -949,11 +972,6 @@ int mlod2odol(char *source, char *target) {
     }
 
     // Write PhysX (@todo)
-    //fwrite("\0\0\0\0", 4, 1, f_temp);
-    //fwrite("\x00\x04\x02\x03", 4, 1, f_temp);
-    //fwrite("\0\0\0\0", 4, 1, f_temp);
-    //fwrite("\x00\x04\x02\x03", 4, 1, f_temp);
-    //fwrite("\0\0\0\0", 4, 1, f_temp);
     fwrite("\x00\x03\x03\x03\x00\x00\x00\x00", 8, 1, f_temp);
     fwrite("\x00\x03\x03\x03\x00\x00\x00\x00", 8, 1, f_temp);
     fwrite("\x00\x00\x00\x00\x00\x03\x03\x03", 8, 1, f_temp);

@@ -22,6 +22,7 @@
 //#define VERSION70
 
 #define MAXTEXTURES 128
+#define MAXPROPERTIES 128
 
 #define LOD_GRAPHICAL                                  999.9f
 #define LOD_VIEW_GUNNER                               1000.0f
@@ -73,6 +74,11 @@ struct uv_compressed {
     int16_t v;
 };
 
+struct property {
+    char name[64];
+    char value[64];
+};
+
 struct pseudovertextable {
     uint32_t points_index;
     uint32_t normals_index;
@@ -92,7 +98,7 @@ struct mlod_selection {
     uint8_t *points;
     uint8_t *faces;
 };
-    
+
 struct mlod_lod {
     uint32_t num_points;
     uint32_t num_facenormals;
@@ -103,6 +109,7 @@ struct mlod_lod {
     struct mlod_face *faces;
     float *mass;
     uint32_t *sharp_edges;
+    struct property properties[MAXPROPERTIES];
     float resolution;
     struct mlod_selection *selections;
 };
@@ -162,9 +169,6 @@ struct odol_selection {
     uint8_t *vertex_weights;
 };
 
-struct odol_property {
-};
-
 struct odol_frame {
 };
 
@@ -204,7 +208,7 @@ struct odol_lod {
     uint32_t num_selections;
     struct odol_selection *selections;
     uint32_t num_properties;
-    struct odol_property *properties;
+    struct property properties[MAXPROPERTIES];
     uint32_t num_frames;
     struct odol_frame *frames;
     uint32_t icon_color;
