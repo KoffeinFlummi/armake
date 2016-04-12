@@ -69,9 +69,9 @@ struct triplet {
     float z;
 };
 
-struct uv_compressed {
-    int16_t u;
-    int16_t v;
+struct uv_pair {
+    float u;
+    float v;
 };
 
 struct property {
@@ -216,7 +216,7 @@ struct odol_lod {
     uint32_t unknown_residue;
     char unknown_byte;
     float uv_scale[4];
-    struct uv_compressed *uv_coords;
+    struct uv_pair *uv_coords;
     struct triplet *points;
     struct triplet *normals;
 };

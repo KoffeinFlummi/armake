@@ -34,7 +34,7 @@
 #include "p3d.h"
 
 
-bool float_equal(float f1, float f2) {
+bool float_equal(float f1, float f2, float precision) {
     /*
      * Performs a fuzzy float comparison.
      */
@@ -173,7 +173,7 @@ void get_centre_of_gravity(struct mlod_lod *mlod_lods, uint32_t num_lods, struct
     centre_of_gravity->z = 0;
 
     for (i = 0; i < num_lods; i++) {
-        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY))
+        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             break;
     }
 
@@ -289,9 +289,9 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->mem_lod_sphere = 0.065728f;
     model_info->geo_lod_sphere = 0.065728f;
     for (i = 0; i < num_lods; i++) {
-        if (float_equal(mlod_lods[i].resolution, LOD_MEMORY))
+        if (float_equal(mlod_lods[i].resolution, LOD_MEMORY, 0.01))
             model_info->mem_lod_sphere = get_sphere(&mlod_lods[i]);
-        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY))
+        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             model_info->geo_lod_sphere = get_sphere(&mlod_lods[i]);
     }
 
@@ -366,7 +366,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->mass = 0;
     for (i = 0; i < num_lods; i++) {
-        if (!float_equal(mlod_lods[i].resolution, LOD_GEOMETRY))
+        if (!float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             continue;
         for (j = 0; j < mlod_lods[i].num_points; j++)
             model_info->mass += mlod_lods[i].mass[j];
@@ -388,21 +388,55 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 }
 
 
+uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
+    uint32_t point_index_mlod, struct triplet *normal, struct uv_pair *uv_coords) {
+    uint32_t i;
+
+    // Check if there already is a vertex that satisfies the requirements
+    for (i = 0; i < odol_lod->num_points; i++) {
+        if (odol_lod->vertex_to_point[i] != point_index_mlod)
+            continue;
+
+        if (!float_equal(odol_lod->normals[i].x, normal->x, 0.001) ||
+                !float_equal(odol_lod->normals[i].y, normal->y, 0.001) ||
+                !float_equal(odol_lod->normals[i].z, normal->z, 0.001))
+            continue;
+
+        if (!float_equal(odol_lod->uv_coords[i].u, uv_coords->u, 0.001) ||
+                !float_equal(odol_lod->uv_coords[i].v, uv_coords->v, 0.001))
+            continue;
+
+        return i;
+    }
+
+    // Add vertex
+    memcpy(&odol_lod->points[odol_lod->num_points], &mlod_lod->points[point_index_mlod], sizeof(struct triplet));
+    memcpy(&odol_lod->normals[odol_lod->num_points], normal, sizeof(struct triplet));
+    memcpy(&odol_lod->uv_coords[odol_lod->num_points], uv_coords, sizeof(struct uv_pair));
+
+    odol_lod->vertex_to_point[odol_lod->num_points] = point_index_mlod;
+    odol_lod->point_to_vertex[point_index_mlod] = odol_lod->num_points;
+
+    odol_lod->num_points++;
+
+    return (odol_lod->num_points - 1);
+}
+
+
 void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         struct model_info *model_info) {
-    long points_index;
-    long i;
-    long j;
-    long k;
-    long l;
-    long face_end;
+    unsigned long i;
+    unsigned long j;
+    unsigned long k;
+    unsigned long l;
+    unsigned long face_end;
     bool first;
-    bool seperate;
+    bool sharp_edge;
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
-    struct triplet point;
     struct triplet normal;
+    struct uv_pair uv_coords;
 
     odol_lod->num_proxies = 0; // @todo
     odol_lod->num_items = 0; // @todo
@@ -485,82 +519,44 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->faces = (struct odol_face *)malloc(sizeof(struct odol_face) * odol_lod->num_faces);
 
-    odol_lod->num_points = odol_lod->num_points_mlod;
-    for (i = 0; i < mlod_lod->num_faces; i++) {
-        if (mlod_lod->sharp_edges == 0)
-            break;
-        for (j = 0; j < mlod_lod->faces[i].face_type; j++) {
-            for (k = 0; k < mlod_lod->num_sharp_edges; k++) {
-                if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[l].points_index) {
-                            odol_lod->num_points++;
-                        }
-                    }
-                }
-                if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[l].points_index) {
-                            odol_lod->num_points++;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    if (odol_lod->num_points_mlod >= UINT32_MAX / 4)
+        printf("WARNING: Too many points to allocate memory for conversion.\n");
 
-    //printf("Num ODOL Points: %u\n", odol_lod->num_points);
+    odol_lod->num_points = 0;
 
 #ifdef VERSION70
     odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points);
+    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod * 4);
 #else
     odol_lod->point_to_vertex = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points);
+    odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points_mlod * 4);
 #endif
 
-    odol_lod->uv_coords = (struct uv_compressed *)malloc(sizeof(struct uv_compressed) * odol_lod->num_points);
-    odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points);
-    odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points);
+    for (i = 0; i < odol_lod->num_points_mlod; i++)
+#ifdef VERSION70
+        odol_lod->point_to_vertex[i] = UINT32_MAX;
+#else
+        odol_lod->point_to_vertex[i] = UINT16_MAX;
+#endif
 
-    // Write every point at least once
-    for (points_index = 0; points_index < odol_lod->num_points_mlod; points_index++) {
-        odol_lod->point_to_vertex[points_index] = points_index;
-        odol_lod->vertex_to_point[points_index] = points_index;
+    odol_lod->uv_coords = (struct uv_pair *)malloc(sizeof(struct uv_pair) * odol_lod->num_points_mlod * 4);
+    odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points_mlod * 4);
+    odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * odol_lod->num_points_mlod * 4);
 
-        point.x = mlod_lod->points[points_index].x;
-        point.y = mlod_lod->points[points_index].y;
-        point.z = mlod_lod->points[points_index].z;
-        normal.x = mlod_lod->facenormals[points_index].x;
-        normal.y = mlod_lod->facenormals[points_index].y;
-        normal.z = mlod_lod->facenormals[points_index].z;
-
-        point.x -= model_info->centre_of_gravity.x;
-        point.y -= model_info->centre_of_gravity.y;
-        point.z -= model_info->centre_of_gravity.z;
-
-        memcpy(&odol_lod->points[points_index], &point, sizeof(struct triplet));
-        memcpy(&odol_lod->normals[points_index], &normal, sizeof(struct triplet));
-
-        odol_lod->uv_coords[points_index].u = (int16_t)(mlod_lod->faces[i].table[j].u * 0xffff);
-        odol_lod->uv_coords[points_index].v = (int16_t)(mlod_lod->faces[i].table[j].v * 0xffff);
-    }
-
-    // Write further vertices that might be required for sharp edges
+    // Write face vertices
     face_end = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
         odol_lod->faces[i].face_type = mlod_lod->faces[i].face_type; 
         for (j = 0; j < odol_lod->faces[i].face_type; j++) {
-
             // i'm really sorry for this
-            seperate = false;
+            sharp_edge = false;
             for (k = 0; k < mlod_lod->num_sharp_edges; k++) {
                 if (mlod_lod->sharp_edges == 0)
                     break;
                 if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[j].points_index) {
                     for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
                         if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[l].points_index) {
-                            seperate = true;
+                            sharp_edge = true;
                             break;
                         }
                     }
@@ -568,50 +564,50 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[j].points_index) {
                     for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
                         if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[l].points_index) {
-                            seperate = true;
+                            sharp_edge = true;
                             break;
                         }
                     }
                 }
-                if (seperate)
+                if (sharp_edge)
                     break;
             }
 
-            if (!seperate) {
-                odol_lod->faces[i].table[j] = mlod_lod->faces[i].table[j].points_index;
-                continue;
+            memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index], sizeof(struct triplet));
+            uv_coords.u = mlod_lod->faces[i].table[j].u;
+            uv_coords.v = mlod_lod->faces[i].table[j].v;
+
+            if (sharp_edge) {
+                // change normal
             }
 
-            odol_lod->faces[i].table[j] = points_index;
-            odol_lod->vertex_to_point[points_index] = mlod_lod->faces[i].table[j].points_index;
-
-            point.x = mlod_lod->points[mlod_lod->faces[i].table[j].points_index].x;
-            point.y = mlod_lod->points[mlod_lod->faces[i].table[j].points_index].y;
-            point.z = mlod_lod->points[mlod_lod->faces[i].table[j].points_index].z;
-            normal.x = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].x;
-            normal.y = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].y;
-            normal.z = mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index].z;
-
-            point.x -= model_info->centre_of_gravity.x;
-            point.y -= model_info->centre_of_gravity.y;
-            point.z -= model_info->centre_of_gravity.z;
-
-            //printf("Point: (%f, %f, %f)\t  Normal: (%f, %f, %f)\n",
-            //    point.x, point.y, point.z,
-            //    normal.x, normal.y, normal.z);
-
-            memcpy(&odol_lod->points[points_index], &point, sizeof(struct triplet));
-            memcpy(&odol_lod->normals[points_index], &normal, sizeof(struct triplet));
-
-            odol_lod->uv_coords[points_index].u = (int16_t)(mlod_lod->faces[i].table[j].u * 0xffff);
-            odol_lod->uv_coords[points_index].v = (int16_t)(mlod_lod->faces[i].table[j].v * 0xffff);
-        
-            points_index++;
+            odol_lod->faces[i].table[j] = add_point(odol_lod, mlod_lod,
+                mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
         face_end += 2 + 2 * odol_lod->faces[i].face_type;
     }
 
     odol_lod->offset_sections = face_end;
+
+    // Write remaining vertices
+    for (i = 0; i < odol_lod->num_points_mlod; i++) {
+#ifdef VERSION70
+        if (odol_lod->point_to_vertex[i] < UINT32_MAX)
+#else
+        if (odol_lod->point_to_vertex[i] < UINT16_MAX)
+#endif
+            continue;
+
+        normal.x = 0.0f;
+        normal.y = 0.0f;
+        normal.z = 0.0f;
+
+        uv_coords.u = 0.0f;
+        uv_coords.v = 0.0f;
+
+        odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
+            i, &normal, &uv_coords);
+    }
 
     if (odol_lod->num_faces > 0) {
         odol_lod->num_sections = 1; // @todo
@@ -733,6 +729,7 @@ void write_odol_section(FILE *f_target, struct odol_section *odol_section) {
 
 
 void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
+    short u, v;
     int x, y, z;
     long i;
     long fp_vertextable_size;
@@ -818,7 +815,14 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
     fputc(0, f_target);
     fputc(0, f_target);
-    fwrite( odol_lod->uv_coords, sizeof(float) * odol_lod->num_points, 1, f_target);
+    for (i = 0; i < odol_lod->num_points; i++) {
+        // write compressed pair
+        u = (short)(odol_lod->uv_coords[i].u * 0xffff);
+        v = (short)(odol_lod->uv_coords[i].v * 0xffff);
+
+        fwrite(&u, sizeof(int16_t), 1, f_target);
+        fwrite(&v, sizeof(int16_t), 1, f_target);
+    }
     fwrite("\x01\0\0\0", 4, 1, f_target);
 
     // points
