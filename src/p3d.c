@@ -519,7 +519,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->faces = (struct odol_face *)malloc(sizeof(struct odol_face) * odol_lod->num_faces);
 
-    if (odol_lod->num_points_mlod >= UINT32_MAX / 4)
+    if (odol_lod->num_points_mlod >= UINT32_MAX / 4) // this is slightly over 1 billion points, fuck em
         printf("WARNING: Too many points to allocate memory for conversion.\n");
 
     odol_lod->num_points = 0;
@@ -828,8 +828,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fputc(0, f_target);
     for (i = 0; i < odol_lod->num_points; i++) {
         // write compressed pair
-        u = (short)(odol_lod->uv_coords[i].u * 0xffff);
-        v = (short)(odol_lod->uv_coords[i].v * 0xffff);
+        u = (short)(odol_lod->uv_coords[i].u * 2 * INT16_MAX - INT16_MAX);
+        v = (short)(odol_lod->uv_coords[i].v * 2 * INT16_MAX - INT16_MAX);
 
         fwrite(&u, sizeof(int16_t), 1, f_target);
         fwrite(&v, sizeof(int16_t), 1, f_target);
