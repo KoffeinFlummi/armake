@@ -68,6 +68,11 @@ struct triplet {
     float z;
 };
 
+struct uv_compressed {
+    int16_t u;
+    int16_t v;
+};
+
 struct pseudovertextable {
     uint32_t points_index;
     uint32_t normals_index;
@@ -92,10 +97,12 @@ struct mlod_lod {
     uint32_t num_points;
     uint32_t num_facenormals;
     uint32_t num_faces;
+    uint32_t num_sharp_edges;
     struct point *points;
     struct triplet *facenormals;
     struct mlod_face *faces;
     float *mass;
+    uint32_t *sharp_edges;
     float resolution;
     struct mlod_selection *selections;
 };
@@ -119,6 +126,18 @@ struct odol_material {
 };
 
 struct odol_section {
+    uint32_t face_index_start;
+    uint32_t face_index_end;
+    uint32_t material_index_start;
+    uint32_t material_index_end;
+    uint32_t common_point_flags;
+    uint16_t common_texture_index;
+    uint32_t common_face_flags;
+    int32_t material_index;
+    uint32_t unknown_long_1;
+    float unknown_resolution_1;
+    float unknown_resolution_2;
+    uint32_t unknown_long_2;
 };
 
 struct odol_selection {
@@ -169,6 +188,13 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct odol_material *materials;
+#ifdef VERSION70
+    uint32_t *point_to_vertex;
+    uint32_t *vertex_to_point;
+#else
+    uint16_t *point_to_vertex;
+    uint16_t *vertex_to_point;
+#endif
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;
@@ -185,8 +211,8 @@ struct odol_lod {
     uint32_t selected_color;
     uint32_t unknown_residue;
     char unknown_byte;
-    uint32_t table_size;
     float uv_scale[4];
+    struct uv_compressed *uv_coords;
     struct triplet *points;
     struct triplet *normals;
 };
