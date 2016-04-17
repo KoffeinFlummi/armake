@@ -95,6 +95,7 @@ struct mlod_face {
 };
 
 struct mlod_selection {
+    char name[512];
     uint8_t *points;
     uint8_t *faces;
 };
@@ -111,6 +112,7 @@ struct mlod_lod {
     uint32_t *sharp_edges;
     struct property properties[MAXPROPERTIES];
     float resolution;
+    uint32_t num_selections;
     struct mlod_selection *selections;
 };
 
@@ -148,22 +150,22 @@ struct odol_section {
 };
 
 struct odol_selection {
-    char *name;
+    char name[512];
     uint32_t num_faces;
 #ifdef VERSION70
-    uint32_t *face_indices;
+    uint32_t *faces;
 #else
-    uint16_t *face_indices;
+    uint16_t *faces;
 #endif
     uint32_t always_0;
     bool is_sectional;
     uint32_t num_sections;
-    uint32_t *section_indices;
+    uint32_t *sections;
     uint32_t num_vertices;
 #ifdef VERSION70
-    uint32_t *vertex_indices;
+    uint32_t *vertices;
 #else
-    uint16_t *vertex_indices;
+    uint16_t *vertices;
 #endif
     uint32_t num_vertex_weights;
     uint8_t *vertex_weights;
@@ -231,16 +233,18 @@ struct model_info {
     float mem_lod_sphere;
     float geo_lod_sphere;
     uint32_t point_flags[3];
-    struct triplet offset1;
+    struct triplet aiming_center;
     uint32_t map_icon_color;
     uint32_t map_selected_color;
     float view_density;
     struct triplet bbox_min;
     struct triplet bbox_max;
-    struct triplet centre_of_gravity;
-    struct triplet offset2;
-    struct triplet cog_offset;
-    struct triplet model_mass_vectors[3];
+    struct triplet bbox_visual_min;
+    struct triplet bbox_visual_max;
+    struct triplet bounding_center;
+    struct triplet geometry_center;
+    struct triplet centre_of_mass;
+    struct triplet inv_inertia;
     char thermal_profile2[24];
     bool autocenter;
     bool lock_autocenter;
