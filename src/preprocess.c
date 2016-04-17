@@ -115,7 +115,8 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
         strncpy(target + 1, includepath, 2046 - (target - actualpath));
 
 #ifndef _WIN32
-        for (int i = 0; i < strlen(actualpath); i++) {
+        int i;
+        for (i = 0; i < strlen(actualpath); i++) {
             if (actualpath[i] == '\\')
                 actualpath[i] = '/';
         }
@@ -199,7 +200,8 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
     strncpy(filename, includefolder, sizeof(filename));
     strncat(filename, includepath, sizeof(filename) - strlen(filename) - 1);
 #ifndef _WIN32
-    for (int i = 0; i < strlen(filename); i++) {
+    int i;
+    for (i = 0; i < strlen(filename); i++) {
         if (filename[i] == '\\')
             filename[i] = '/';
     }

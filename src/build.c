@@ -98,7 +98,8 @@ int write_header_to_pbo(char *root, char *source, char *target) {
 
     // replace pathseps on linux
 #ifndef _WIN32
-    for (int i = 0; i < strlen(filename); i++) {
+    int i;
+    for (i = 0; i < strlen(filename); i++) {
         if (filename[i] == '/')
             filename[i] = '\\';
     }

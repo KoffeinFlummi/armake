@@ -237,7 +237,8 @@ int copy_file(char *source, char *target) {
     // Create the containing folder
     char containing[strlen(target)];
     int lastsep = 0;
-    for (int i = 0; i < strlen(target); i++) {
+    int i;
+    for (i = 0; i < strlen(target); i++) {
         if (target[i] == PATHSEP)
             lastsep = i;
     }
