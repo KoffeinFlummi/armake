@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
 
     // @todo
-    for (int i; i < argc; i++) {
+    for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "-i") == 0) {
             if (i + 1 < argc)
                 args.includefolder = argv[i+1];
