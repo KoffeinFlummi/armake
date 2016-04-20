@@ -67,15 +67,15 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     FILE *f_target;
     char filename[1024];
 
-    f_target = fopen(target, "a");
-    if (!f_target)
-        return -1;
-
     filename[0] = 0;
     strcat(filename, source + strlen(root) + 1);
 
     if (!file_allowed(filename))
         return 0;
+
+    f_target = fopen(target, "a");
+    if (!f_target)
+        return -1;
 
     struct {
         uint32_t method;
@@ -89,8 +89,11 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     header.timestamp = 0;
 
     f_source = fopen(source, "r");
-    if (!f_source)
+    if (!f_source) {
+        fclose(f_target);
         return -2;
+    }
+
     fseek(f_source, 0, SEEK_END);
     header.datasize = ftell(f_source);
     header.originalsize = header.datasize;
@@ -178,6 +181,8 @@ int hash_file(char *path, unsigned char *hash) {
     fread(buffer, filesize - i, 1, file);
     SHA1Input(&sha, (const unsigned char *)buffer, filesize - i);
 
+    fclose(file);
+
     if (!SHA1Result(&sha))
         return -2;
 
@@ -232,14 +237,14 @@ int build(DocoptArgs args) {
     } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
     }
+    fclose(f_prefix);
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
     // replace pathseps on linux
 #ifndef _WIN32
-    char tmp[512];
+    char tmp[512] = "";
     char *p = NULL;
-    tmp[0] = 0;
     for (p = addonprefix; *p; p++) {
         if (*p == '\\' && tmp[strlen(tmp) - 1] == '/')
             continue;

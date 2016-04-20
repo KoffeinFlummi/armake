@@ -63,4 +63,5 @@ int main(int argc, char *argv[]) {
 
 
     docopt(2, halp, 1, VERSION);
+    return 1;
 }

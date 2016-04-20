@@ -307,32 +307,23 @@ int alphasort_ci(const struct dirent **a, const struct dirent **b) {
      */
 
     int i;
-    int result;
-    struct dirent *a_temp;
-    struct dirent *b_temp;
+    char a_name[512];
+    char b_name[512];
 
-    a_temp = (struct dirent *)malloc(sizeof(struct dirent));
-    b_temp = (struct dirent *)malloc(sizeof(struct dirent));
+    strncpy(a_name, (*a)->d_name, sizeof(a_name));
+    strncpy(b_name, (*b)->d_name, sizeof(b_name));
 
-    memcpy(a_temp, *a, sizeof(struct dirent));
-    memcpy(b_temp, *b, sizeof(struct dirent));
-
-    for (i = 0; i < strlen(a_temp->d_name); i++) {
-        if (a_temp->d_name[i] >= 'A' && a_temp->d_name[i] <= 'Z')
-            a_temp->d_name[i] = a_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(a_name); i++) {
+        if (a_name[i] >= 'A' && a_name[i] <= 'Z')
+            a_name[i] = a_name[i] - ('A' - 'a');
     }
 
-    for (i = 0; i < strlen(b_temp->d_name); i++) {
-        if (b_temp->d_name[i] >= 'A' && b_temp->d_name[i] <= 'Z')
-            b_temp->d_name[i] = b_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(b_name); i++) {
+        if (b_name[i] >= 'A' && b_name[i] <= 'Z')
+            b_name[i] = b_name[i] - ('A' - 'a');
     }
 
-    result = alphasort((const struct dirent **)&a_temp, (const struct dirent **)&b_temp);
-
-    free(a_temp);
-    free(b_temp);
-
-    return result;
+    return strcoll(a_name, b_name);
 }
 #endif
 

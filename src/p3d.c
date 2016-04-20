@@ -39,7 +39,7 @@ bool float_equal(float f1, float f2, float precision) {
      * Performs a fuzzy float comparison.
      */
 
-    return fabs(1.0 - (f1 / f2)) < 0.01;
+    return fabs(1.0 - (f1 / f2)) < precision;
 }
 
 
@@ -1240,6 +1240,7 @@ int mlod2odol(char *source, char *target) {
         free(mlod_lods[i].facenormals);
         free(mlod_lods[i].faces);
         free(mlod_lods[i].mass);
+        free(mlod_lods[i].sharp_edges);
 
         for (j = 0; j < mlod_lods[i].num_selections; j++) {
             free(mlod_lods[i].selections[j].points);

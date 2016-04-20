@@ -70,6 +70,8 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
             continue;
 
         fgets(prefixedpath, sizeof(prefixedpath), f_prefix);
+        fclose(f_prefix);
+
         if (prefixedpath[strlen(prefixedpath) - 1] == '\n')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
         if (prefixedpath[strlen(prefixedpath) - 1] == '\\')
@@ -180,8 +182,10 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 
     while ((f = fts_read(tree))) {
         switch (f->fts_info) {
-            case FTS_DNR: return 2;
-            case FTS_ERR: return 3;
+            case FTS_DNR:
+            case FTS_ERR:
+                fts_close(tree);
+                return 2;
             case FTS_NS: continue;
             case FTS_DP: continue;
             case FTS_D: continue;
@@ -190,10 +194,12 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 
         if (strcmp(filename, f->fts_name) == 0 && matches_includepath(f->fts_path, includepath, includefolder)) {
             strncpy(actualpath, f->fts_path, 2048);
+            fts_close(tree);
             return 0;
         }
     }
 
+    fts_close(tree);
 #endif
 
     // check for file without pboprefix
@@ -436,8 +442,10 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
         line++;
         buffsize = 8192;
         buffer = (char *)malloc(buffsize + 1);
-        if (getline(&buffer, &buffsize, f_source) == -1)
+        if (getline(&buffer, &buffsize, f_source) == -1) {
+            free(buffer);
             break;
+        }
 
         // fix Windows line endings
         if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {
