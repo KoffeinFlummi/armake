@@ -613,55 +613,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     for (i = 0; i < mlod_lod->num_faces; i++) {
         odol_lod->faces[i].face_type = mlod_lod->faces[i].face_type; 
         for (j = 0; j < odol_lod->faces[i].face_type; j++) {
-            // i'm really sorry for this
-            sharp_edge = false;
-            for (k = 0; k < mlod_lod->num_sharp_edges; k++) {
-                if (mlod_lod->sharp_edges == 0)
-                    break;
-                if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[l].points_index) {
-                            sharp_edge = true;
-                            break;
-                        }
-                    }
-                }
-                if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[l].points_index) {
-                            sharp_edge = true;
-                            break;
-                        }
-                    }
-                }
-                if (sharp_edge)
-                    break;
-            }
-
             memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index], sizeof(struct triplet));
             uv_coords.u = mlod_lod->faces[i].table[j].u;
             uv_coords.v = mlod_lod->faces[i].table[j].v;
-
-            // change normal if the vertex is part of a sharp edge @todo
-            if (sharp_edge && false) {
-                // get vectors to two other points in face
-                memcpy(&v1, &mlod_lod->points[mlod_lod->faces[i].table[(j + 1) % odol_lod->faces[i].face_type].points_index],
-                    sizeof(struct triplet));
-                memcpy(&v2, &mlod_lod->points[mlod_lod->faces[i].table[(j + 2) % odol_lod->faces[i].face_type].points_index],
-                    sizeof(struct triplet));
-
-                v1.x -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].x;
-                v1.y -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].y;
-                v1.z -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].z;
-                v2.x -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].x;
-                v2.y -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].y;
-                v2.z -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].z;
-
-                // Get the cross product
-                normal.x = (v1.y * v2.z) - (v1.z * v2.y);
-                normal.y = (v1.z * v2.x) - (v1.x * v2.z);
-                normal.z = (v1.x * v2.y) - (v1.y * v2.x);
-            }
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
