@@ -56,18 +56,9 @@
 #define LOD_WRECK                        21000000000000000.0f
 
 
-struct point {
-    float x;
-    float y;
-    float z;
-    uint32_t point_flags;
-};
+#include "utils.h"
+#include "model_config.h"
 
-struct triplet {
-    float x;
-    float y;
-    float z;
-};
 
 struct uv_pair {
     float u;
@@ -221,10 +212,6 @@ struct odol_lod {
     struct uv_pair *uv_coords;
     struct triplet *points;
     struct triplet *normals;
-};
-
-struct skeleton {
-
 };
 
 struct model_info {

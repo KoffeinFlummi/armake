@@ -26,6 +26,24 @@
 #include "docopt.h"
 
 
+struct point {
+    float x;
+    float y;
+    float z;
+    uint32_t point_flags;
+};
+
+struct triplet {
+    float x;
+    float y;
+    float z;
+};
+
+
+bool float_equal(float f1, float f2, float precision);
+
+void lower_case(char *string);
+
 void get_word(char *target, char *source);
 
 void trim_leading(char *string, size_t buffsize);
@@ -42,4 +60,6 @@ int skip_whitespace(FILE *f);
 
 void unescape_string(char *buffer, size_t buffsize);
 
-void write_compressed_int(uint32_t integer, FILE *f_target);
+void write_compressed_int(uint32_t integer, FILE *f);
+
+uint32_t read_compressed_int(FILE *f);

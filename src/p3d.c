@@ -31,16 +31,8 @@
 #include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
+#include "model_config.h"
 #include "p3d.h"
-
-
-bool float_equal(float f1, float f2, float precision) {
-    /*
-     * Performs a fuzzy float comparison.
-     */
-
-    return fabs(1.0 - (f1 / f2)) < precision;
-}
 
 
 int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
@@ -422,8 +414,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->unknown_long = 0xff000000;
 
-    // @todo: skeleton
-
     model_info->unknown_byte = 0;
     model_info->n_floats = 0;
 
@@ -682,11 +672,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     for (i = 0; i < odol_lod->num_selections; i++) {
         strcpy(odol_lod->selections[i].name, mlod_lod->selections[i].name);
-        for (j = 0; j < strlen(odol_lod->selections[i].name); j++) {
-            if (odol_lod->selections[i].name[j] >= 'A' &&
-                    odol_lod->selections[i].name[j] <= 'Z')
-                odol_lod->selections[i].name[j] -= 'A' - 'a';
-        }
+        lower_case(odol_lod->selections[i].name);
 
         odol_lod->selections[i].num_faces = 0;
         for (j = 0; j < odol_lod->num_faces; j++) {
@@ -1042,6 +1028,7 @@ int mlod2odol(char *source, char *target) {
     int datasize;
     int i;
     int j;
+    int success;
     long fp_lods;
     long fp_temp;
     uint32_t num_lods;
@@ -1102,6 +1089,10 @@ int mlod2odol(char *source, char *target) {
 
     // Write model info
     build_model_info(mlod_lods, num_lods, &model_info);
+    success = read_model_config(source, &model_info.skeleton);
+    if (success > 0)
+        return success;
+
     write_model_info(f_temp, num_lods, &model_info);
 
     // Write animations (@todo)

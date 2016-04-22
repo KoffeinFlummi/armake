@@ -189,6 +189,23 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
 }
 
 
+int remove_file(char *path) {
+    /*
+     * Remove a file. Returns 0 on success and 1 on failure.
+     */
+
+#ifdef _WIN32
+    if (!DeleteFile(path))
+        return 1;
+#else
+    if (remove(path))
+        return 1;
+#endif
+
+    return 0;
+}
+
+
 int remove_folder(char *folder) {
     /*
      * Recursively removes a folder tree. Returns a negative integer on

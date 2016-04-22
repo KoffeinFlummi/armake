@@ -38,6 +38,10 @@ int create_folders(char *path);
 
 int create_temp_folder(char *addon, char *temp_folder, size_t bufsize);
 
+int remove_file(char *path);
+
+int remove_folder(char *folder);
+
 int remove_temp_folder();
 
 int copy_file(char *source, char *target);
