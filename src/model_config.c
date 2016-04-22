@@ -411,8 +411,11 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return success;
     }
 
+    if (strlen(skeleton->name) == 0)
+        strcpy(skeleton->name, model_name);
+
     // Read bones
-    sprintf(config_path, "CfgSkeletons >> %s >> skeletonInherit", model_name);
+    sprintf(config_path, "CfgSkeletons >> %s >> skeletonInherit", skeleton->name);
     success = read_string(f, config_path, buffer, sizeof(buffer));
     if (success) {
         printf("Failed to read bones.\n");
@@ -433,7 +436,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         }
     }
 
-    sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", model_name);
+    sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", skeleton->name);
     success = read_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
     if (success) {
         printf("Failed to read bones.\n");
