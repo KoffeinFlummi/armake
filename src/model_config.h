@@ -76,6 +76,12 @@ struct skeleton {
     char sections[MAXSECTIONS][512];
     uint32_t num_animations;
     struct animation animations[MAXANIMS];
+    int32_t ht_min;
+    int32_t ht_max;
+    int32_t af_max;
+    int32_t mf_max;
+    int32_t mf_act;
+    int32_t t_body;
 };
 
 

@@ -158,11 +158,10 @@ int seek_config_path(FILE *f, char *config_path) {
 }
 
 
-int seek_parent(FILE *f) {
+int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize) {
     /*
-     * Assumes the file pointer f points at the start of a rapified
-     * class body. This function then moves the pointer to the parent
-     * of the current class.
+     * Takes a config path and returns the parent class of that class.
+     * Assumes the given config path points to an existing class.
      *
      * Returns -1 if the class doesn't have a parent class, -2 if that
      * class cannot be found, 0 on success and a positive integer
@@ -171,7 +170,70 @@ int seek_parent(FILE *f) {
      * If -1 or -2 are returned, the file pointer is not moved.
      */
 
-    return 0;
+    int i;
+    int success;
+    bool is_root;
+    char containing[2048];
+    char name[2048];
+    char parent[2048];
+    char temp[2048];
+
+    // Loop up class
+    fseek(f, 16, SEEK_SET);
+    if (seek_config_path(f, config_path))
+        return 1;
+
+    // Get parent class name
+    if (fgets(parent, sizeof(parent), f) == NULL)
+        return 2;
+    lower_case(parent);
+
+    if (strlen(parent) == 0)
+        return -1;
+
+    // Extract class name and the name of the containing class
+    is_root = strchr(config_path, '>') == NULL;
+    if (is_root) {
+        strncpy(name, config_path, sizeof(name));
+
+        containing[0] = 0;
+    } else {
+        strncpy(name, strrchr(config_path, '>') + 1, sizeof(name));
+        trim_leading(name, sizeof(name));
+
+        strncpy(containing, config_path, sizeof(containing));
+        *(strrchr(containing, '>') - 1) = 0;
+        for (i = strlen(containing) - 1; i >= 0 && containing[i] == ' '; i--)
+            containing[i] = 0;
+    }
+    lower_case(name);
+
+    // Check parent class inside same containing class
+    if (strcmp(name, parent) != 0) {
+        sprintf(temp, "%s >> %s", containing, parent);
+
+        fseek(f, 16, SEEK_SET);
+        success = seek_config_path(f, temp);
+        if (success == 0)
+            strncpy(buffer, temp, buffsize);
+        if (success >= 0)
+            return success;
+    }
+
+    // If this is a root class, we can't do anything at this point
+    if (is_root)
+        return -2;
+
+    // Try to find the class parent in the parent of the containing class
+    success = find_parent(f, containing, temp, sizeof(temp));
+    if (success > 0)
+        return success;
+    if (success < 0)
+        return -2;
+
+    strcat(temp, " >> ");
+    strcat(temp, parent);
+    return find_parent(f, temp, buffer, buffsize);
 }
 
 
@@ -185,16 +247,43 @@ int seek_definition(FILE *f, char *config_path) {
 
     int success;
 
-    fseek(f, 16, SEEK_SET);
-
     // Try the direct way first
+    fseek(f, 16, SEEK_SET);
     success = seek_config_path(f, config_path);
     if (success >= 0)
         return success;
 
-    // Try to find the definition @todo
+    // Try to find the definition
+    int i;
+    char containing[2048];
+    char parent[2048];
+    char value[2048];
 
-    return 0;
+    strncpy(containing, config_path, sizeof(containing));
+    *(strrchr(containing, '>') - 1) = 0;
+    for (i = strlen(containing) - 1; i >= 0 && containing[i] == ' '; i--)
+        containing[i] = 0;
+
+    fseek(f, 16, SEEK_SET);
+    success = seek_config_path(f, containing);
+
+    // Containing class doesn't even exist
+    if (success < 0)
+        return success;
+
+    // Find parent of the containing class
+    success = find_parent(f, containing, parent, sizeof(parent));
+    if (success) {
+        return success;
+    }
+
+    strncpy(value, strrchr(config_path, '>') + 1, sizeof(value));
+    trim_leading(value, sizeof(value));
+
+    strcat(parent, " >> ");
+    strcat(parent, value);
+
+    return seek_definition(f, parent);
 }
 
 
@@ -202,7 +291,8 @@ int read_string(FILE *f, char *config_path, char *buffer, size_t buffsize) {
     /*
      * Reads the given config string into the given buffer.
      *
-     * Returns 0 on success and a positive integer on failure.
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
      */
 
     int success;
@@ -210,7 +300,7 @@ int read_string(FILE *f, char *config_path, char *buffer, size_t buffsize) {
     uint8_t temp;
 
     success = seek_definition(f, config_path);
-    if (success > 0)
+    if (success != 0)
         return success;
 
     temp = fgetc(f);
@@ -234,18 +324,19 @@ int read_string(FILE *f, char *config_path, char *buffer, size_t buffsize) {
 }
 
 
-int read_int(FILE *f, char *config_path, uint32_t *result) {
+int read_int(FILE *f, char *config_path, int32_t *result) {
     /*
      * Reads the given integer from config.
      *
-     * Returns 0 on success and a positive integer on failure.
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
      */
 
     int success;
     uint8_t temp;
 
     success = seek_definition(f, config_path);
-    if (success > 0)
+    if (success != 0)
         return success;
 
     temp = fgetc(f);
@@ -268,14 +359,15 @@ int read_float(FILE *f, char *config_path, float *result) {
     /*
      * Reads the given float from config.
      *
-     * Returns 0 on success and a positive integer on failure.
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
      */
 
     int success;
     uint8_t temp;
 
     success = seek_definition(f, config_path);
-    if (success > 0)
+    if (success != 0)
         return success;
 
     temp = fgetc(f);
@@ -301,7 +393,8 @@ int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsi
      *
      * At the moment, only one-dimensional string arrays are supported.
      *
-     * Returns 0 on success and a positive integer on failure.
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
      */
 
     int i;
@@ -311,7 +404,7 @@ int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsi
     uint32_t num_entries;
 
     success = seek_definition(f, config_path);
-    if (success > 0)
+    if (success != 0)
         return success;
 
     temp = fgetc(f);
@@ -406,7 +499,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     // Read name
     sprintf(config_path, "CfgModels >> %s >> skeletonName", model_name);
     success = read_string(f, config_path, skeleton->name, sizeof(skeleton->name));
-    if (success) {
+    if (success > 0) {
         printf("Failed to read skeleton name.\n");
         return success;
     }
@@ -486,6 +579,19 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         skeleton->num_sections++;
     }
 
+    // Read thermal stuff
+    sprintf(config_path, "CfgModels >> %s >> htMin", model_name);
+    read_int(f, config_path, &skeleton->ht_min);
+    sprintf(config_path, "CfgModels >> %s >> htMax", model_name);
+    read_int(f, config_path, &skeleton->ht_max);
+    sprintf(config_path, "CfgModels >> %s >> afMax", model_name);
+    read_int(f, config_path, &skeleton->af_max);
+    sprintf(config_path, "CfgModels >> %s >> mfMax", model_name);
+    read_int(f, config_path, &skeleton->mf_max);
+    sprintf(config_path, "CfgModels >> %s >> mfAct", model_name);
+    read_int(f, config_path, &skeleton->mf_act);
+    sprintf(config_path, "CfgModels >> %s >> tBody", model_name);
+    read_int(f, config_path, &skeleton->t_body);
 
     // Clean up @debug
     fclose(f);
