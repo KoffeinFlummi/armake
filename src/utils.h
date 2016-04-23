@@ -40,6 +40,10 @@ struct triplet {
 };
 
 
+#ifndef _WIN32
+int stricmp(char *a, char *b);
+#endif
+
 bool float_equal(float f1, float f2, float precision);
 
 void lower_case(char *string);

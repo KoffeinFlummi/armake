@@ -104,6 +104,7 @@ int seek_config_path(FILE *f, char *config_path) {
 
             lower_case(buffer);
             fseek(f, fp + strlen(buffer) + 2, SEEK_SET);
+
             fread(&fp, 4, 1, f);
 
             if (strcmp(buffer, target))
@@ -166,8 +167,6 @@ int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize) {
      * Returns -1 if the class doesn't have a parent class, -2 if that
      * class cannot be found, 0 on success and a positive integer
      * on failure.
-     *
-     * If -1 or -2 are returned, the file pointer is not moved.
      */
 
     int i;
@@ -375,12 +374,19 @@ int read_float(FILE *f, char *config_path, float *result) {
         return 1;
 
     temp = fgetc(f);
-    if (temp != 1)
+    if (temp != 1 && temp != 2)
         return 2;
 
     while (fgetc(f) != 0);
 
-    fread(result, 4, 1, f);
+    // Convert integer to float
+    if (temp == 2) {
+        int32_t int_value;
+        fread(&int_value, 4, 1, f);
+        *result = (float)int_value;
+    } else {
+        fread(result, 4, 1, f);
+    }
 
     return 0;
 }
@@ -436,7 +442,277 @@ int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsi
 }
 
 
-int read_classes(FILE *f, char *config_path, char *buffer, int size, size_t buffsize) {
+int read_classes(FILE *f, char *config_path, char *array, int size, size_t buffsize) {
+    /*
+     * Reads all subclass names for the given config path into the given
+     * array.
+     *
+     * Returns a positive integer on failure, a 0 on success and -1
+     * if the given path doesn't exist.
+     */
+
+    int i;
+    int j;
+    int success;
+    uint8_t type;
+    uint32_t num_entries;
+    uint32_t fp;
+    char target[512];
+    char buffer[512];
+
+    fseek(f, 16, SEEK_SET);
+    success = seek_config_path(f, config_path);
+    if (success)
+        return success;
+
+    // Inherited classname
+    while (fgetc(f) != 0);
+
+    num_entries = read_compressed_int(f);
+
+    for (i = 0; i < num_entries; i++) {
+        fp = ftell(f);
+        type = fgetc(f);
+
+        if (type == 0) { // class
+            if (fgets(buffer, sizeof(buffer), f) == NULL)
+                return 1;
+
+            for (j = 0; j < size; j++) {
+                if (*(array + j * buffsize) == 0)
+                    break;
+            }
+            if (j == size)
+                return 2;
+
+            strncpy(array + j * buffsize, buffer, buffsize);
+
+            fseek(f, fp + strlen(buffer) + 6, SEEK_SET);
+        } else if (type == 1) { // value
+            type = fgetc(f);
+
+            if (fgets(buffer, sizeof(buffer), f) == NULL)
+                return 1;
+
+            lower_case(buffer);
+
+            if (strcmp(buffer, target) == 0) {
+                fseek(f, fp, SEEK_SET);
+                return 0;
+            }
+
+            fseek(f, fp + strlen(buffer) + 3, SEEK_SET);
+
+            if (type == 0 || type == 4)
+                while (fgetc(f) != 0);
+            else
+                fseek(f, 4, SEEK_CUR);
+        } else if (type == 2) { // array
+            if (fgets(buffer, sizeof(buffer), f) == NULL)
+                return 1;
+
+            lower_case(buffer);
+
+            if (strcmp(buffer, target) == 0) {
+                fseek(f, fp, SEEK_SET);
+                return 0;
+            }
+
+            fseek(f, fp + strlen(buffer) + 2, SEEK_SET);
+
+            skip_array(f);
+        } else { // extern & delete statements
+            while (fgetc(f) != 0);
+        }
+    }
+
+    return 0;
+}
+
+
+int read_animations(FILE *f, char *config_path, struct animation *animations) {
+    /*
+     * Reads the animation subclasses of the given config path into the struct
+     * array.
+     *
+     * Returns 0 on success, and a positive integer on failure.
+     */
+
+    int i;
+    int j;
+    int success;
+    char parent[2048];
+    char value_path[2048];
+    char value[2048];
+
+    // Run the function for the parent class first
+    success = find_parent(f, config_path, parent, sizeof(parent));
+    if (success > 0 || success == -2) {
+        return success;
+    } else if (success == 0) {
+        success = read_animations(f, parent, animations);
+        if (success > 0)
+            return success;
+    }
+
+    // Now go through all the animations
+    char anim_names[MAXANIMS][512];
+
+    success = read_classes(f, config_path, (char *)anim_names, MAXANIMS, 512);
+    if (success)
+        return success;
+
+    for (i = 0; i < MAXANIMS; i++) {
+        if (strlen(anim_names[i]) == 0)
+            break;
+
+        for (j = 0; j < MAXANIMS; j++) {
+            if (strlen(animations[j].name) == 0)
+                break;
+            if (strcmp(animations[j].name, anim_names[i]) == 0)
+                break;
+        }
+        if (j == MAXANIMS)
+            return 1;
+
+        strcpy(animations[j].name, anim_names[i]);
+
+        // Read anim type
+        sprintf(value_path, "%s >> %s >> type", config_path, anim_names[i]);
+        if (read_string(f, value_path, value, sizeof(value))) {
+            printf("Animation type for %s could not be found.\n", anim_names[i]);
+            continue;
+        }
+
+        lower_case(value);
+
+        if (strcmp(value, "rotation") == 0) {
+            animations[j].type = TYPE_ROTATION;
+        } else if (strcmp(value, "rotationx") == 0) {
+            animations[j].type = TYPE_ROTATION_X;
+        } else if (strcmp(value, "rotationy") == 0) {
+            animations[j].type = TYPE_ROTATION_Y;
+        } else if (strcmp(value, "rotationz") == 0) {
+            animations[j].type = TYPE_ROTATION_Z;
+        } else if (strcmp(value, "translation") == 0) {
+            animations[j].type = TYPE_TRANSLATION;
+        } else if (strcmp(value, "translationx") == 0) {
+            animations[j].type = TYPE_TRANSLATION_X;
+        } else if (strcmp(value, "translationy") == 0) {
+            animations[j].type = TYPE_TRANSLATION_Y;
+        } else if (strcmp(value, "translationz") == 0) {
+            animations[j].type = TYPE_TRANSLATION_Z;
+        } else if (strcmp(value, "direct") == 0) {
+            animations[j].type = TYPE_DIRECT;
+            printf("Direct animations aren't supported yet.\n");
+            continue;
+        } else if (strcmp(value, "hide") == 0) {
+            animations[j].type = TYPE_HIDE;
+        } else {
+            printf("Unknown animation type: %s\n", value);
+            continue;
+        }
+
+        // Read optional values
+        animations[j].source[0] = 0;
+        animations[j].selection[0] = 0;
+        animations[j].axis[0] = 0;
+        animations[j].begin[0] = 0;
+        animations[j].end[0] = 0;
+        animations[j].min_value = 0.0f;
+        animations[j].max_value = 1.0f;
+        animations[j].min_phase = 0.0f;
+        animations[j].max_phase = 1.0f;
+        animations[j].junk = 953267991;
+        animations[j].always_0 = 0;
+        animations[j].source_address = 0;
+        animations[j].angle0 = 0.0f;
+        animations[j].angle1 = 0.0f;
+        animations[j].offset0 = 0.0f;
+        animations[j].offset1 = 1.0f;
+        animations[j].hide_value = 0.0f;
+        animations[j].unhide_value = -1.0f;
+
+#define ERROR_READING(key) printf("Error reading %s for %s.\n", key, anim_names[i]);
+
+        sprintf(value_path, "%s >> %s >> source", config_path, anim_names[i]);
+        if (read_string(f, value_path, animations[i].source, sizeof(animations[i].source)) > 0)
+            ERROR_READING("source")
+
+        sprintf(value_path, "%s >> %s >> selection", config_path, anim_names[i]);
+        if (read_string(f, value_path, animations[i].selection, sizeof(animations[i].selection)) > 0)
+            ERROR_READING("selection")
+
+        sprintf(value_path, "%s >> %s >> axis", config_path, anim_names[i]);
+        if (read_string(f, value_path, animations[i].axis, sizeof(animations[i].axis)) > 0)
+            ERROR_READING("axis")
+
+        sprintf(value_path, "%s >> %s >> begin", config_path, anim_names[i]);
+        if (read_string(f, value_path, animations[i].begin, sizeof(animations[i].begin)) > 0)
+            ERROR_READING("begin")
+
+        sprintf(value_path, "%s >> %s >> end", config_path, anim_names[i]);
+        if (read_string(f, value_path, animations[i].end, sizeof(animations[i].end)) > 0)
+            ERROR_READING("end")
+
+        sprintf(value_path, "%s >> %s >> minValue", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].min_value) > 0)
+            ERROR_READING("minValue")
+
+        sprintf(value_path, "%s >> %s >> maxValue", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].max_value) > 0)
+            ERROR_READING("maxValue")
+
+        sprintf(value_path, "%s >> %s >> minPhase", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].min_phase) > 0)
+            ERROR_READING("minPhase")
+
+        sprintf(value_path, "%s >> %s >> maxPhase", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].max_phase) > 0)
+            ERROR_READING("maxPhase")
+
+        sprintf(value_path, "%s >> %s >> angle0", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].angle0) > 0)
+            ERROR_READING("angle0")
+
+        sprintf(value_path, "%s >> %s >> angle1", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].angle1) > 0)
+            ERROR_READING("angle1")
+
+        sprintf(value_path, "%s >> %s >> offset0", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].offset0) > 0)
+            ERROR_READING("offset0")
+
+        sprintf(value_path, "%s >> %s >> offset1", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].offset1) > 0)
+            ERROR_READING("offset1")
+
+        sprintf(value_path, "%s >> %s >> unHideValue", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].unhide_value) > 0)
+            ERROR_READING("unHideValue")
+
+        sprintf(value_path, "%s >> %s >> hideValue", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].hide_value) > 0)
+            ERROR_READING("hideValue")
+
+        sprintf(value_path, "%s >> %s >> sourceAddress", config_path, anim_names[i]);
+        if (read_string(f, value_path, value, sizeof(value)) > 0)
+            ERROR_READING("source Address")
+
+        lower_case(value);
+
+        if (strcmp(value, "clamp") == 0) {
+            animations[j].source_address = SOURCE_CLAMP;
+        } else if (strcmp(value, "mirror") == 0) {
+            animations[j].source_address = SOURCE_MIRROR;
+        } else if (strcmp(value, "loop") == 0) {
+            animations[j].source_address = SOURCE_LOOP;
+        } else {
+            printf("Unknown source address: %s.\n", value);
+            continue;
+        }
+    }
+
     return 0;
 }
 
@@ -455,7 +731,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     char rapified_path[2048];
     char config_path[2048];
     char model_name[512];
-    char bones[MAXBONES * 2][512];
+    char bones[MAXBONES * 2][512] = {};
     char buffer[512];
 
     // Extract model.cfg path
@@ -573,11 +849,19 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return success;
     }
 
-    for (i = 0; i < MAXSECTIONS; i++) {
-        if (skeleton->sections[i][0] == 0)
-            break;
+    for (i = 0; i < MAXSECTIONS && skeleton->sections[i][0] != 0; i++)
         skeleton->num_sections++;
+
+    // Read animations
+    sprintf(config_path, "CfgModels >> %s >> Animations", model_name);
+    success = read_animations(f, config_path, skeleton->animations);
+    if (success) {
+        printf("Failed to read animations.\n");
+        return success;
     }
+
+    for (i = 0; i < MAXANIMS && skeleton->animations[i].name[0] != 0; i++)
+        skeleton->num_animations++;
 
     // Read thermal stuff
     sprintf(config_path, "CfgModels >> %s >> htMin", model_name);

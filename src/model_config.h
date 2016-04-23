@@ -50,7 +50,11 @@ struct bone {
 struct animation {
     uint32_t type;
     char name[512];
+    char selection[512];
     char source[512];
+    char axis[512];
+    char begin[512];
+    char end[512];
     float min_value;
     float max_value;
     float min_phase;
@@ -64,8 +68,10 @@ struct animation {
     float offset1;
     struct triplet axis_pos;
     struct triplet axis_dir;
+    float angle;
     float axis_offset;
     float hide_value;
+    float unhide_value;
 };
 
 struct skeleton {

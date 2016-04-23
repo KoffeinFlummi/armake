@@ -241,7 +241,7 @@ struct model_info {
     char unknown_flags[6];
     char thermal_profile[24];
     uint32_t unknown_long;
-    struct skeleton skeleton;
+    struct skeleton *skeleton;
     char unknown_byte;
     uint32_t n_floats;
     float mass;

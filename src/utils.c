@@ -29,6 +29,30 @@
 #include "utils.h"
 
 
+#ifndef _WIN32
+int stricmp(char *a, char *b) {
+    int d;
+    char a_lower;
+    char b_lower;
+
+    for (;; a++, b++) {
+        a_lower = *a;
+        b_lower = *b;
+
+        if (a_lower >= 'A' && a_lower <= 'Z')
+            a_lower -= 'A' - 'a';
+
+        if (b_lower >= 'A' && b_lower <= 'Z')
+            b_lower -= 'A' - 'a';
+
+        d = a_lower - b_lower;
+        if (d != 0 || !*a)
+            return d;
+    }
+}
+#endif
+
+
 bool float_equal(float f1, float f2, float precision) {
     /*
      * Performs a fuzzy float comparison.
