@@ -30,7 +30,8 @@
 
 
 int main(int argc, char *argv[]) {
-    DocoptArgs args = docopt(argc, argv, 1, VERSION);
+    extern DocoptArgs args;
+    args = docopt(argc, argv, 1, VERSION);
     char *halp[] = {argv[0], "-h"};
 
     // Docopt doesn't yet support positional arguments
@@ -57,9 +58,9 @@ int main(int argc, char *argv[]) {
 
 
     if (args.binarize)
-        return binarize(args);
+        return binarize();
     if (args.build)
-        return build(args);
+        return build();
 
 
     docopt(2, halp, 1, VERSION);

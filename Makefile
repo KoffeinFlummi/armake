@@ -51,6 +51,7 @@ docopt:
 	echo -e "#pragma once\n\n" >> src/docopt.h
 	grep -A 2 "#" tmp/docopt >> src/docopt.h
 	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n" tmp/docopt >> src/docopt.h
+	echo -e "\nDocoptArgs args;\n\n" >> src/docopt.h
 	grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
 	sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
 	cat tmp/license > src/docopt.c

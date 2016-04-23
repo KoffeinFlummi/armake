@@ -86,6 +86,10 @@ typedef struct Tokens {
     char *current;
 } Tokens;
 
+
+DocoptArgs args;
+
+
 Tokens tokens_new(int argc, char **argv);
 
 Tokens* tokens_move(Tokens *ts);

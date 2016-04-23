@@ -198,7 +198,8 @@ int hash_file(char *path, unsigned char *hash) {
 }
 
 
-int build(DocoptArgs args) {
+int build() {
+    extern DocoptArgs args;
     int i;
 
     // check if target already exists

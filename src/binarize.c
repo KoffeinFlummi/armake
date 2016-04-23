@@ -69,7 +69,9 @@ int binarize_file(char *source, char *target, char *includefolder) {
 }
 
 
-int binarize(DocoptArgs args) {
+int binarize() {
+    extern DocoptArgs args;
+
     // check if target already exists
     if (access(args.target, F_OK) != -1 && !args.force) {
         printf("File %s already exists and --force was not set.\n", args.target);
