@@ -22,6 +22,14 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
+#define COLOR_RED "\e[1;31m"
+#define COLOR_GREEN "\e[1;32m"
+#define COLOR_YELLOW "\e[1;33m"
+#define COLOR_BLUE "\e[1;34m"
+#define COLOR_MAGENTA "\e[1;35m"
+#define COLOR_CYAN "\e[1;36m"
+#define COLOR_RESET "\e[0m"
+
 
 #include "docopt.h"
 
@@ -39,6 +47,10 @@ struct triplet {
     float z;
 };
 
+
+void warningf(char *format, ...);
+
+void errorf(char *format, ...);
 
 #ifndef _WIN32
 int stricmp(char *a, char *b);

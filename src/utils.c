@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -27,6 +28,30 @@
 #include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
+
+
+void warningf(char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "%swarning:%s %s", COLOR_YELLOW, COLOR_RESET, buffer);
+}
+
+
+void errorf(char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "%serror:%s %s", COLOR_RED, COLOR_RESET, buffer);
+}
 
 
 #ifndef _WIN32

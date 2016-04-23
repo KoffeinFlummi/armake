@@ -580,7 +580,7 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
         // Read anim type
         sprintf(value_path, "%s >> %s >> type", config_path, anim_names[i]);
         if (read_string(f, value_path, value, sizeof(value))) {
-            printf("Animation type for %s could not be found.\n", anim_names[i]);
+            warningf("Animation type for %s could not be found.\n", anim_names[i]);
             continue;
         }
 
@@ -604,12 +604,12 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
             animations[j].type = TYPE_TRANSLATION_Z;
         } else if (strcmp(value, "direct") == 0) {
             animations[j].type = TYPE_DIRECT;
-            printf("Direct animations aren't supported yet.\n");
+            warningf("Direct animations aren't supported yet.\n");
             continue;
         } else if (strcmp(value, "hide") == 0) {
             animations[j].type = TYPE_HIDE;
         } else {
-            printf("Unknown animation type: %s\n", value);
+            warningf("Unknown animation type: %s\n", value);
             continue;
         }
 
@@ -633,7 +633,7 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
         animations[j].hide_value = 0.0f;
         animations[j].unhide_value = -1.0f;
 
-#define ERROR_READING(key) printf("Error reading %s for %s.\n", key, anim_names[i]);
+#define ERROR_READING(key) warningf("Error reading %s for %s.\n", key, anim_names[i]);
 
         sprintf(value_path, "%s >> %s >> source", config_path, anim_names[i]);
         if (read_string(f, value_path, animations[i].source, sizeof(animations[i].source)) > 0)
@@ -687,13 +687,13 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
         if (read_float(f, value_path, &animations[j].offset1) > 0)
             ERROR_READING("offset1")
 
-        sprintf(value_path, "%s >> %s >> unHideValue", config_path, anim_names[i]);
-        if (read_float(f, value_path, &animations[j].unhide_value) > 0)
-            ERROR_READING("unHideValue")
-
         sprintf(value_path, "%s >> %s >> hideValue", config_path, anim_names[i]);
         if (read_float(f, value_path, &animations[j].hide_value) > 0)
             ERROR_READING("hideValue")
+
+        sprintf(value_path, "%s >> %s >> unHideValue", config_path, anim_names[i]);
+        if (read_float(f, value_path, &animations[j].unhide_value) > 0)
+            ERROR_READING("unHideValue")
 
         sprintf(value_path, "%s >> %s >> sourceAddress", config_path, anim_names[i]);
         if (read_string(f, value_path, value, sizeof(value)) > 0)
@@ -708,7 +708,7 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
         } else if (strcmp(value, "loop") == 0) {
             animations[j].source_address = SOURCE_LOOP;
         } else {
-            printf("Unknown source address: %s.\n", value);
+            warningf("Unknown source address: %s.\n", value);
             continue;
         }
     }
@@ -752,7 +752,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     // Rapify file
     success = rapify_file(model_config_path, rapified_path, ".");
     if (success) {
-        printf("Failed to rapify model config.\n");
+        errorf("Failed to rapify model config.\n");
         return 1;
     }
 
@@ -768,7 +768,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     // Open rapified file
     f = fopen(rapified_path, "r");
     if (!f) {
-        printf("Failed to open model config.\n");
+        errorf("Failed to open model config.\n");
         return 2;
     }
 
@@ -776,7 +776,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgModels >> %s >> skeletonName", model_name);
     success = read_string(f, config_path, skeleton->name, sizeof(skeleton->name));
     if (success > 0) {
-        printf("Failed to read skeleton name.\n");
+        errorf("Failed to read skeleton name.\n");
         return success;
     }
 
@@ -787,7 +787,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgSkeletons >> %s >> skeletonInherit", skeleton->name);
     success = read_string(f, config_path, buffer, sizeof(buffer));
     if (success) {
-        printf("Failed to read bones.\n");
+        errorf("Failed to read bones.\n");
         return success;
     }
 
@@ -796,7 +796,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", buffer);
         success = read_array(f, config_path, (char *)bones, MAXBONES * 2, 512);
         if (success) {
-            printf("Failed to read bones.\n");
+            errorf("Failed to read bones.\n");
             return success;
         }
         for (i = 0; i < MAXBONES * 2; i += 2) {
@@ -808,7 +808,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", skeleton->name);
     success = read_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
     if (success) {
-        printf("Failed to read bones.\n");
+        errorf("Failed to read bones.\n");
         return success;
     }
 
@@ -824,7 +824,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgModels >> %s >> sectionsInherit", model_name);
     success = read_string(f, config_path, buffer, sizeof(buffer));
     if (success) {
-        printf("Failed to read sections.\n");
+        errorf("Failed to read sections.\n");
         return success;
     }
 
@@ -833,7 +833,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         sprintf(config_path, "CfgModels >> %s >> sections", buffer);
         success = read_array(f, config_path, (char *)skeleton->sections, MAXSECTIONS, 512);
         if (success) {
-            printf("Failed to read sections.\n");
+            errorf("Failed to read sections.\n");
             return success;
         }
         for (i = 0; i < MAXSECTIONS; i++) {
@@ -845,7 +845,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgModels >> %s >> sections", model_name);
     success = read_array(f, config_path, (char *)skeleton->sections + i * 512, MAXSECTIONS - i, 512);
     if (success) {
-        printf("Failed to read sections.\n");
+        errorf("Failed to read sections.\n");
         return success;
     }
 
@@ -856,7 +856,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgModels >> %s >> Animations", model_name);
     success = read_animations(f, config_path, skeleton->animations);
     if (success) {
-        printf("Failed to read animations.\n");
+        errorf("Failed to read animations.\n");
         return success;
     }
 

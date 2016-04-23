@@ -563,7 +563,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         if (j >= MAXTEXTURES) {
-            printf("WARNING: Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
+            warningf("Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
             break;
         }
 
@@ -1204,8 +1204,10 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
             }
 
             if (index == -1) {
-                printf("Failed to find bone \"%s\" for animation \"%s\".\n",
-                        model_info->skeleton->bones[k].name, anim->name);
+                if (i == 0) {
+                    warningf("Failed to find bone \"%s\" for animation \"%s\".\n",
+                            model_info->skeleton->bones[k].name, anim->name);
+                }
             } else {
                 if (anim->type >= 8)
                     continue;
@@ -1250,7 +1252,7 @@ int mlod2odol(char *source, char *target) {
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        printf("Failed to get temp file name.\n");
+        errorf("Failed to get temp file name.\n");
         return 1;
     }
     f_temp = fopen(temp_name, "w+");
@@ -1259,20 +1261,20 @@ int mlod2odol(char *source, char *target) {
 #endif
 
     if (!f_temp) {
-        printf("Failed to open temp file.\n");
+        errorf("Failed to open temp file.\n");
         return 1;
     }
 
     // Open source and read LODs
     f_source = fopen(source, "r");
     if (!f_source) {
-        printf("Failed to open source file.\n");
+        errorf("Failed to open source file.\n");
         return 2;
     }
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "MLOD", 4) != 0) {
-        printf("Source file is not MLOD.\n");
+        errorf("Source file is not MLOD.\n");
         return -3;
     }
 
@@ -1280,7 +1282,7 @@ int mlod2odol(char *source, char *target) {
     fread(&num_lods, 4, 1, f_source);
     mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
     if (read_lods(f_source, mlod_lods, num_lods)) {
-        printf("Failed to read LODs.\n");
+        errorf("Failed to read LODs.\n");
         return 4;
     }
 
@@ -1376,7 +1378,7 @@ int mlod2odol(char *source, char *target) {
 
     f_target = fopen(target, "w");
     if (!f_target) {
-        printf("Failed to open target file.\n");
+        errorf("Failed to open target file.\n");
         return 5;
     }
 

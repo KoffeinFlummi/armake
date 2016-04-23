@@ -642,7 +642,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        printf("Failed to get temp file name.\n");
+        errorf("Failed to get temp file name.\n");
         return 1;
     }
     f_temp = fopen(temp_name, "w+");
@@ -651,7 +651,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 #endif
 
     if (!f_temp) {
-        printf("Failed to open temp file.\n");
+        errorf("Failed to open temp file.\n");
         return 1;
     }
 
@@ -665,7 +665,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
     success = preprocess(source, f_temp, includefolder, constants);
     free(constants);
     if (success) {
-        printf("Failed to preprocess %s.\n", source);
+        errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);
         return success;
     }
@@ -674,7 +674,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
     fseek(f_temp, 0, SEEK_SET);
     f_target = fopen(target, "w");
     if (!f_target) {
-        printf("Failed to open %s.\n", target);
+        errorf("Failed to open %s.\n", target);
         fclose(f_temp);
         return 2;
     }
@@ -684,7 +684,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 
     success = rapify_class(f_temp, f_target);
     if (success) {
-        printf("Failed to rapify %s.\n", source);
+        errorf("Failed to rapify %s.\n", source);
 
         fclose(f_temp);
         fclose(f_target);

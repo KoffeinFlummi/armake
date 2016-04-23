@@ -428,7 +428,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
 
     f_source = fopen(source, "r");
     if (!f_source) {
-        printf("Failed to open %s.\n", source);
+        errorf("Failed to open %s.\n", source);
         return 1;
     }
 

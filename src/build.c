@@ -31,6 +31,7 @@
 #include "docopt.h"
 #include "binarize.h"
 #include "filesystem.h"
+#include "utils.h"
 #include "build.h"
 
 
@@ -205,7 +206,7 @@ int build() {
     // check if target already exists
     FILE *f_target;
     if (access(args.target, F_OK) != -1 && !args.force) {
-        printf("File %s already exists and --force was not set.\n", args.target);
+        errorf("File %s already exists and --force was not set.\n", args.target);
         return 1;
     }
 
@@ -262,18 +263,18 @@ int build() {
     // create and prepare temp folder
     char tempfolder[1024];
     if (create_temp_folder(addonprefix, tempfolder, sizeof(tempfolder))) {
-        printf("Failed to create temp folder.\n");
+        errorf("Failed to create temp folder.\n");
         return 2;
     }
     if (copy_directory(args.source, tempfolder)) {
-        printf("Failed to copy to temp folder.\n");
+        errorf("Failed to copy to temp folder.\n");
         return 3;
     }
 
     // preprocess and binarize stuff if required
     if (!args.packonly) {
         if (traverse_directory(tempfolder, binarize_file_callback, includefolder)) {
-            printf("Failed to preprocess some files.\n");
+            errorf("Failed to preprocess some files.\n");
             return 4;
         }
 
@@ -308,14 +309,14 @@ int build() {
 
     // write headers to file
     if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {
-        printf("Failed to write some file header(s) to PBO.\n");
+        errorf("Failed to write some file header(s) to PBO.\n");
         return 6;
     }
 
     // header boundary
     f_target = fopen(args.target, "a");
     if (!f_target) {
-        printf("Failed to write header boundary to PBO.\n");
+        errorf("Failed to write header boundary to PBO.\n");
         return 7;
     }
     for (i = 0; i < 21; i++)
@@ -324,7 +325,7 @@ int build() {
 
     // write contents to file
     if (traverse_directory(tempfolder, write_data_to_pbo, args.target)) {
-        printf("Failed to pack some file(s) into the PBO.\n");
+        errorf("Failed to pack some file(s) into the PBO.\n");
         return 8;
     }
 
@@ -333,7 +334,7 @@ int build() {
     hash_file(args.target, checksum);
     f_target = fopen(args.target, "a");
     if (!f_target) {
-        printf("Failed to write checksum to file.\n");
+        errorf("Failed to write checksum to file.\n");
         return 9;
     }
     fputc(0, f_target);
@@ -342,7 +343,7 @@ int build() {
 
     // remove temp folder
     if (remove_temp_folder()) {
-        printf("Failed to remove temp folder.\n");
+        errorf("Failed to remove temp folder.\n");
         return 10;
     }
 
