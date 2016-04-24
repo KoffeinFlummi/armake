@@ -53,6 +53,7 @@ int skip_array(FILE *f) {
     return 0;
 }
 
+
 int seek_config_path(FILE *f, char *config_path) {
     /*
      * Assumes the file pointer f points at the start of a rapified
@@ -374,16 +375,37 @@ int read_float(FILE *f, char *config_path, float *result) {
         return 1;
 
     temp = fgetc(f);
-    if (temp != 1 && temp != 2)
-        return 2;
 
     while (fgetc(f) != 0);
 
-    // Convert integer to float
     if (temp == 2) {
+        // Convert integer to float
         int32_t int_value;
+
         fread(&int_value, 4, 1, f);
         *result = (float)int_value;
+    } else if (temp == 0) {
+        // Try to parse "rad X" strings
+        char string_value[512];
+        char *endptr;
+        long fp;
+
+        fp = ftell(f);
+        if (fgets(string_value, sizeof(string_value), f) == NULL)
+            return 2;
+        fseek(f, fp + strlen(string_value) + 1, SEEK_SET);
+
+        trim_leading(string_value, sizeof(string_value));
+        lower_case(string_value);
+
+        if (strncmp(string_value, "rad ", 4) != 0)
+            return 3;
+
+        *result = strtof(string_value + 4, &endptr);
+        if (strlen(endptr) > 0)
+            return 4;
+
+        *result *= 0.0174533;
     } else {
         fread(result, 4, 1, f);
     }
@@ -696,20 +718,22 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
             ERROR_READING("unHideValue")
 
         sprintf(value_path, "%s >> %s >> sourceAddress", config_path, anim_names[i]);
-        if (read_string(f, value_path, value, sizeof(value)) > 0)
-            ERROR_READING("source Address")
+        success = read_string(f, value_path, value, sizeof(value));
+        if (success > 0) {
+            ERROR_READING("sourceAddress")
+        } else if (success == 0) {
+            lower_case(value);
 
-        lower_case(value);
-
-        if (strcmp(value, "clamp") == 0) {
-            animations[j].source_address = SOURCE_CLAMP;
-        } else if (strcmp(value, "mirror") == 0) {
-            animations[j].source_address = SOURCE_MIRROR;
-        } else if (strcmp(value, "loop") == 0) {
-            animations[j].source_address = SOURCE_LOOP;
-        } else {
-            warningf("Unknown source address: %s.\n", value);
-            continue;
+            if (strcmp(value, "clamp") == 0) {
+                animations[j].source_address = SOURCE_CLAMP;
+            } else if (strcmp(value, "mirror") == 0) {
+                animations[j].source_address = SOURCE_MIRROR;
+            } else if (strcmp(value, "loop") == 0) {
+                animations[j].source_address = SOURCE_LOOP;
+            } else {
+                warningf("Unknown source address \"%s\" in \"%s\".\n", value, animations[j].name);
+                continue;
+            }
         }
     }
 
