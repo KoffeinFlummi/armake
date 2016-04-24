@@ -33,13 +33,12 @@
 // Once derap is attempted, these should probably be moved there
 
 int skip_array(FILE *f) {
-    int i;
     uint8_t type;
     uint32_t num_entries;
 
     num_entries = read_compressed_int(f);
 
-    for (i = 0; i < num_entries; i++) {
+    for (num_entries = read_compressed_int(f); num_entries > 0; num_entries--) {
         type = fgetc(f);
 
         if (type == 0 || type == 4)
@@ -88,7 +87,6 @@ int seek_config_path(FILE *f, char *config_path) {
     }
     strncpy(target, path, i);
     target[i] = 0;
-    lower_case(target);
 
     // Inherited classname
     while (fgetc(f) != 0);
@@ -103,12 +101,10 @@ int seek_config_path(FILE *f, char *config_path) {
             if (fgets(buffer, sizeof(buffer), f) == NULL)
                 return 1;
 
-            lower_case(buffer);
             fseek(f, fp + strlen(buffer) + 2, SEEK_SET);
-
             fread(&fp, 4, 1, f);
 
-            if (strcmp(buffer, target))
+            if (stricmp(buffer, target))
                 continue;
 
             fseek(f, fp, SEEK_SET);
@@ -124,16 +120,14 @@ int seek_config_path(FILE *f, char *config_path) {
             if (fgets(buffer, sizeof(buffer), f) == NULL)
                 return 1;
 
-            lower_case(buffer);
-
-            if (strcmp(buffer, target) == 0) {
+            if (stricmp(buffer, target) == 0) {
                 fseek(f, fp, SEEK_SET);
                 return 0;
             }
 
             fseek(f, fp + strlen(buffer) + 3, SEEK_SET);
 
-            if (type == 0 || type == 4)
+            if (type == 0)
                 while (fgetc(f) != 0);
             else
                 fseek(f, 4, SEEK_CUR);
@@ -141,9 +135,7 @@ int seek_config_path(FILE *f, char *config_path) {
             if (fgets(buffer, sizeof(buffer), f) == NULL)
                 return 1;
 
-            lower_case(buffer);
-
-            if (strcmp(buffer, target) == 0) {
+            if (stricmp(buffer, target) == 0) {
                 fseek(f, fp, SEEK_SET);
                 return 0;
             }
@@ -796,6 +788,17 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return 2;
     }
 
+    // Check if model entry even exists
+    sprintf(config_path, "CfgModels >> %s", model_name);
+    fseek(f, 16, SEEK_SET);
+    success = seek_config_path(f, config_path);
+    if (success > 0) {
+        errorf("Failed to find model config entry.\n");
+        return success;
+    } else if (success < 0) {
+        goto clean_up;
+    }
+
     // Read name
     sprintf(config_path, "CfgModels >> %s >> skeletonName", model_name);
     success = read_string(f, config_path, skeleton->name, sizeof(skeleton->name));
@@ -804,71 +807,76 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return success;
     }
 
-    if (strlen(skeleton->name) == 0)
-        strcpy(skeleton->name, model_name);
-
     // Read bones
-    sprintf(config_path, "CfgSkeletons >> %s >> skeletonInherit", skeleton->name);
-    success = read_string(f, config_path, buffer, sizeof(buffer));
-    if (success) {
-        errorf("Failed to read bones.\n");
-        return success;
-    }
+    if (strlen(skeleton->name) > 0) {
+        sprintf(config_path, "CfgSkeletons >> %s >> skeletonInherit", skeleton->name);
+        success = read_string(f, config_path, buffer, sizeof(buffer));
+        if (success > 0) {
+            errorf("Failed to read bones.\n");
+            return success;
+        } else {
+            strcpy(buffer, "");
+        }
 
-    i = 0;
-    if (strlen(buffer) > 0) {
-        sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", buffer);
-        success = read_array(f, config_path, (char *)bones, MAXBONES * 2, 512);
-        if (success) {
+        i = 0;
+        if (strlen(buffer) > 0) {
+            sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", buffer);
+            success = read_array(f, config_path, (char *)bones, MAXBONES * 2, 512);
+            if (success > 0) {
+                errorf("Failed to read bones.\n");
+                return success;
+            } else if (success == 0) {
+                for (i = 0; i < MAXBONES * 2; i += 2) {
+                    if (bones[i][0] == 0)
+                        break;
+                }
+            }
+        }
+
+        sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", skeleton->name);
+        success = read_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
+        if (success > 0) {
             errorf("Failed to read bones.\n");
             return success;
         }
+
         for (i = 0; i < MAXBONES * 2; i += 2) {
             if (bones[i][0] == 0)
                 break;
+            strcpy(skeleton->bones[i / 2].name, bones[i]);
+            strcpy(skeleton->bones[i / 2].parent, bones[i + 1]);
+            skeleton->num_bones++;
         }
-    }
-
-    sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", skeleton->name);
-    success = read_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
-    if (success) {
-        errorf("Failed to read bones.\n");
-        return success;
-    }
-
-    for (i = 0; i < MAXBONES * 2; i += 2) {
-        if (bones[i][0] == 0)
-            break;
-        strcpy(skeleton->bones[i / 2].name, bones[i]);
-        strcpy(skeleton->bones[i / 2].parent, bones[i + 1]);
-        skeleton->num_bones++;
     }
 
     // Read sections
     sprintf(config_path, "CfgModels >> %s >> sectionsInherit", model_name);
     success = read_string(f, config_path, buffer, sizeof(buffer));
-    if (success) {
+    if (success > 0) {
         errorf("Failed to read sections.\n");
         return success;
+    } else {
+        strcpy(buffer, "");
     }
 
     i = 0;
     if (strlen(buffer) > 0) {
         sprintf(config_path, "CfgModels >> %s >> sections", buffer);
         success = read_array(f, config_path, (char *)skeleton->sections, MAXSECTIONS, 512);
-        if (success) {
+        if (success > 0) {
             errorf("Failed to read sections.\n");
             return success;
-        }
-        for (i = 0; i < MAXSECTIONS; i++) {
-            if (skeleton->sections[i][0] == 0)
-                break;
+        } else if (success == 0) {
+            for (i = 0; i < MAXSECTIONS; i++) {
+                if (skeleton->sections[i][0] == 0)
+                    break;
+            }
         }
     }
 
     sprintf(config_path, "CfgModels >> %s >> sections", model_name);
     success = read_array(f, config_path, (char *)skeleton->sections + i * 512, MAXSECTIONS - i, 512);
-    if (success) {
+    if (success > 0) {
         errorf("Failed to read sections.\n");
         return success;
     }
@@ -878,14 +886,21 @@ int read_model_config(char *path, struct skeleton *skeleton) {
 
     // Read animations
     sprintf(config_path, "CfgModels >> %s >> Animations", model_name);
-    success = read_animations(f, config_path, skeleton->animations);
-    if (success) {
-        errorf("Failed to read animations.\n");
+    fseek(f, 16, SEEK_SET);
+    success = seek_config_path(f, config_path);
+    if (success == 0) {
+        success = read_animations(f, config_path, skeleton->animations);
+        if (success > 0) {
+            errorf("Failed to read animations.\n");
+            return success;
+        }
+
+        for (i = 0; i < MAXANIMS && skeleton->animations[i].name[0] != 0; i++)
+            skeleton->num_animations++;
+    } else if (success > 0) {
+        errorf("Failed to read animations.\n", success);
         return success;
     }
-
-    for (i = 0; i < MAXANIMS && skeleton->animations[i].name[0] != 0; i++)
-        skeleton->num_animations++;
 
     // Read thermal stuff
     sprintf(config_path, "CfgModels >> %s >> htMin", model_name);
@@ -901,10 +916,11 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     sprintf(config_path, "CfgModels >> %s >> tBody", model_name);
     read_int(f, config_path, &skeleton->t_body);
 
-    // Clean up @debug
+clean_up:
+    // Clean up
     fclose(f);
     if (remove_file(rapified_path)) {
-        printf("Failed to remove temporary model config.\n");
+        errorf("Failed to remove temporary model config.\n");
         return 3;
     }
 

@@ -238,8 +238,8 @@ int build() {
             strncpy(addonprefix, strrchr(args.source, '/') + 1, sizeof(addonprefix));
     } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
+        fclose(f_prefix);
     }
-    fclose(f_prefix);
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
