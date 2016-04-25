@@ -201,7 +201,12 @@ int hash_file(char *path, unsigned char *hash) {
 
 int build() {
     extern DocoptArgs args;
+    extern int current_operation;
+    extern char current_target[2048];
     int i;
+
+    current_operation = OP_BUILD;
+    strcpy(current_target, args.source);
 
     // check if target already exists
     FILE *f_target;
@@ -274,6 +279,8 @@ int build() {
     // preprocess and binarize stuff if required
     if (!args.packonly) {
         if (traverse_directory(tempfolder, binarize_file_callback, includefolder)) {
+            current_operation = OP_BUILD;
+            strcpy(current_target, args.source);
             errorf("Failed to preprocess some files.\n");
             return 4;
         }
@@ -293,6 +300,9 @@ int build() {
 #endif
         }
     }
+
+    current_operation = OP_BUILD;
+    strcpy(current_target, args.source);
 
     // write header extension
     f_target = fopen(args.target, "w");

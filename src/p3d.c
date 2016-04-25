@@ -1230,6 +1230,8 @@ int mlod2odol(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern int current_operation;
+    extern char current_target[2048];
     FILE *f_source;
     FILE *f_temp;
     FILE *f_target;
@@ -1244,6 +1246,9 @@ int mlod2odol(char *source, char *target) {
     struct mlod_lod *mlod_lods;
     struct model_info model_info;
     struct odol_lod odol_lod;
+
+    current_operation = OP_P3D;
+    strcpy(current_target, source);
 
 #ifdef _WIN32
     char temp_name[2048];
@@ -1301,6 +1306,9 @@ int mlod2odol(char *source, char *target) {
     success = read_model_config(source, model_info.skeleton);
     if (success > 0)
         return success;
+
+    current_operation = OP_P3D;
+    strcpy(current_target, source);
 
     write_model_info(f_temp, num_lods, &model_info);
 

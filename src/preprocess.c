@@ -410,6 +410,8 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
      *     - nested ifs
      */
 
+    extern int current_operation;
+    extern char current_target[2048];
     int line = 0;
     int i = 0;
     int j = 0;
@@ -425,6 +427,9 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     char includepath[2048];
     char actualpath[2048];
     FILE *f_source;
+
+    current_operation = OP_PREPROCESS;
+    strcpy(current_target, source);
 
     f_source = fopen(source, "r");
     if (!f_source) {

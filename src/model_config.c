@@ -740,6 +740,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
      * and a positive integer on failure.
      */
 
+    extern int current_operation;
     FILE *f;
     int i;
     int success;
@@ -749,6 +750,9 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     char model_name[512];
     char bones[MAXBONES * 2][512] = {};
     char buffer[512];
+
+    current_operation = OP_MODELCONFIG;
+    strcpy(current_target, path);
 
     // Extract model.cfg path
     strncpy(model_config_path, path, sizeof(model_config_path));
@@ -771,6 +775,9 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         errorf("Failed to rapify model config.\n");
         return 1;
     }
+
+    current_operation = OP_MODELCONFIG;
+    strcpy(current_target, path);
 
     // Extract model name and convert to lower case
     if (strrchr(path, PATHSEP) != NULL)

@@ -639,6 +639,9 @@ int rapify_file(char *source, char *target, char *includefolder) {
     uint32_t enum_offset = 0;
     struct constant *constants;
 
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
+
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
@@ -663,6 +666,8 @@ int rapify_file(char *source, char *target, char *includefolder) {
         constants[i].value[0] = 0;
     }
     success = preprocess(source, f_temp, includefolder, constants);
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
     free(constants);
     if (success) {
         errorf("Failed to preprocess %s.\n", source);
