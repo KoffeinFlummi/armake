@@ -501,17 +501,13 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     unsigned long i;
     unsigned long j;
     unsigned long k;
-    unsigned long l;
     unsigned long face_end;
     bool first;
-    bool sharp_edge;
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
     struct triplet normal;
     struct uv_pair uv_coords;
-    struct triplet v1;
-    struct triplet v2;
 
     odol_lod->num_proxies = 0; // @todo
     odol_lod->num_items = 0; // @todo
