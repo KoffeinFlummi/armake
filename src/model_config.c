@@ -912,17 +912,17 @@ int read_model_config(char *path, struct skeleton *skeleton) {
 
     // Read thermal stuff
     sprintf(config_path, "CfgModels >> %s >> htMin", model_name);
-    read_int(f, config_path, &skeleton->ht_min);
+    read_float(f, config_path, &skeleton->ht_min);
     sprintf(config_path, "CfgModels >> %s >> htMax", model_name);
-    read_int(f, config_path, &skeleton->ht_max);
+    read_float(f, config_path, &skeleton->ht_max);
     sprintf(config_path, "CfgModels >> %s >> afMax", model_name);
-    read_int(f, config_path, &skeleton->af_max);
+    read_float(f, config_path, &skeleton->af_max);
     sprintf(config_path, "CfgModels >> %s >> mfMax", model_name);
-    read_int(f, config_path, &skeleton->mf_max);
+    read_float(f, config_path, &skeleton->mf_max);
     sprintf(config_path, "CfgModels >> %s >> mfAct", model_name);
-    read_int(f, config_path, &skeleton->mf_act);
+    read_float(f, config_path, &skeleton->mf_act);
     sprintf(config_path, "CfgModels >> %s >> tBody", model_name);
-    read_int(f, config_path, &skeleton->t_body);
+    read_float(f, config_path, &skeleton->t_body);
 
 clean_up:
     // Clean up

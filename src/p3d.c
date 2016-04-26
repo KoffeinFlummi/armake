@@ -397,10 +397,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->view_density = -100.0f; // @todo
 
-    strncpy(model_info->thermal_profile2,
-        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-        sizeof(model_info->thermal_profile2)); // @todo
-
     model_info->autocenter = true; // @todo
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
@@ -408,9 +404,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->allow_animation = false; // @todo
 
     strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
-    strncpy(model_info->thermal_profile,
-        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-        sizeof(model_info->thermal_profile)); // @todo
 
     model_info->unknown_long = 0xff000000;
 
@@ -820,15 +813,21 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->geometry_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->centre_of_mass,      sizeof(struct triplet), 1, f_target);
+    // @todo: replace these two with the proper inertia matrix
     fwrite(&model_info->inv_inertia,         sizeof(struct triplet), 1, f_target);
-    fwrite( model_info->thermal_profile2,    sizeof(char) * 24, 1, f_target);
+    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 24, 1, f_target);
     fwrite(&model_info->autocenter,          sizeof(bool), 1, f_target);
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
     fwrite(&model_info->allow_animation,     sizeof(bool), 1, f_target);
     fwrite( model_info->unknown_flags,       sizeof(char) * 6, 1, f_target);
-    fwrite( model_info->thermal_profile,     sizeof(char) * 24, 1, f_target);
+    fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->mf_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->mf_act,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->t_body,    sizeof(float), 1, f_target);
     fwrite(&model_info->unknown_long,        sizeof(uint32_t), 1, f_target);
     write_skeleton(f_target, model_info->skeleton);
     fwrite(&model_info->unknown_byte,        sizeof(char), 1, f_target);
