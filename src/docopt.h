@@ -32,6 +32,9 @@
 #endif
 
 
+#define MAXWARNINGS 32
+
+
 typedef struct {
     /* commands */
     int binarize;
@@ -40,12 +43,14 @@ typedef struct {
     char *includefolder;
     char *source;
     char *target;
+    char *wname;
     /* options without arguments */
     int force;
     int help;
     int include;
     int packonly;
     int version;
+    int warning;
     /* special */
     const char *usage_pattern;
     const char *help_message;
@@ -85,6 +90,11 @@ typedef struct Tokens {
     int i;
     char *current;
 } Tokens;
+
+
+DocoptArgs args;
+char muted_warnings[MAXWARNINGS][512];
+
 
 Tokens tokens_new(int argc, char **argv);
 

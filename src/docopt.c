@@ -37,8 +37,8 @@ const char help_message[] =
 "armake\n"
 "\n"
 "Usage:\n"
-"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
@@ -49,15 +49,23 @@ const char help_message[] =
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
 "    -p --packonly   Don't binarize models, configs etc.\n"
+"    -w --warning    Warning to disable\n"
 "    -i --include    Folder to search for includes, defaults to CWD\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
+"\n"
+"Warnings:\n"
+"    By default, armake prints all warnings. You can mute trivial warnings\n"
+"    using the name that is printed along with them.\n"
+"\n"
+"    Example: \"-w unquoted-string\" disables warnings about improperly quoted\n"
+"             strings.\n"
 "";
 
 const char usage_pattern[] =
 "Usage:\n"
-"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)";
 
@@ -254,6 +262,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->packonly = option->value;
         } else if (!strcmp(option->olong, "--version")) {
             args->version = option->value;
+        } else if (!strcmp(option->olong, "--warning")) {
+            args->warning = option->value;
         }
     }
     /* commands */
@@ -274,6 +284,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
             args->target = argument->value;
+        } else if (!strcmp(argument->name, "<wname>")) {
+            args->wname = argument->value;
         }
     }
     return 0;
@@ -286,7 +298,7 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, NULL, NULL, NULL, 0, 0, 0, 0, 0,
+        0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -297,16 +309,18 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
         {"<source>", NULL, NULL},
-        {"<target>", NULL, NULL}
+        {"<target>", NULL, NULL},
+        {"<wname>", NULL, NULL}
     };
     Option options[] = {
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
-        {"-v", "--version", 0, 0, NULL}
+        {"-v", "--version", 0, 0, NULL},
+        {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {2, 3, 5, commands, arguments, options};
+    Elements elements = {2, 4, 6, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

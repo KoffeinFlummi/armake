@@ -189,6 +189,23 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
 }
 
 
+int remove_file(char *path) {
+    /*
+     * Remove a file. Returns 0 on success and 1 on failure.
+     */
+
+#ifdef _WIN32
+    if (!DeleteFile(path))
+        return 1;
+#else
+    if (remove(path))
+        return 1;
+#endif
+
+    return 0;
+}
+
+
 int remove_folder(char *folder) {
     /*
      * Recursively removes a folder tree. Returns a negative integer on
@@ -237,7 +254,8 @@ int copy_file(char *source, char *target) {
     // Create the containing folder
     char containing[strlen(target)];
     int lastsep = 0;
-    for (int i = 0; i < strlen(target); i++) {
+    int i;
+    for (i = 0; i < strlen(target); i++) {
         if (target[i] == PATHSEP)
             lastsep = i;
     }
@@ -306,32 +324,23 @@ int alphasort_ci(const struct dirent **a, const struct dirent **b) {
      */
 
     int i;
-    int result;
-    struct dirent *a_temp;
-    struct dirent *b_temp;
+    char a_name[512];
+    char b_name[512];
 
-    a_temp = (struct dirent *)malloc(sizeof(struct dirent));
-    b_temp = (struct dirent *)malloc(sizeof(struct dirent));
+    strncpy(a_name, (*a)->d_name, sizeof(a_name));
+    strncpy(b_name, (*b)->d_name, sizeof(b_name));
 
-    memcpy(a_temp, *a, sizeof(struct dirent));
-    memcpy(b_temp, *b, sizeof(struct dirent));
-
-    for (i = 0; i < strlen(a_temp->d_name); i++) {
-        if (a_temp->d_name[i] >= 'A' && a_temp->d_name[i] <= 'Z')
-            a_temp->d_name[i] = a_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(a_name); i++) {
+        if (a_name[i] >= 'A' && a_name[i] <= 'Z')
+            a_name[i] = a_name[i] - ('A' - 'a');
     }
 
-    for (i = 0; i < strlen(b_temp->d_name); i++) {
-        if (b_temp->d_name[i] >= 'A' && b_temp->d_name[i] <= 'Z')
-            b_temp->d_name[i] = b_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(b_name); i++) {
+        if (b_name[i] >= 'A' && b_name[i] <= 'Z')
+            b_name[i] = b_name[i] - ('A' - 'a');
     }
 
-    result = alphasort((const struct dirent **)&a_temp, (const struct dirent **)&b_temp);
-
-    free(a_temp);
-    free(b_temp);
-
-    return result;
+    return strcoll(a_name, b_name);
 }
 #endif
 

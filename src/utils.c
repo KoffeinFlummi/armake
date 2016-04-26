@@ -20,12 +20,152 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
+
+
+void warningf(char *format, ...) {
+    extern int current_operation;
+    extern char current_target[2048];
+    char filename[2048];
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "%swarning:%s %s", COLOR_YELLOW, COLOR_RESET, buffer);
+
+    if (strchr(current_target, PATHSEP) == NULL)
+        strcpy(filename, current_target);
+    else
+        strcpy(filename, strrchr(current_target, PATHSEP) + 1);
+
+    if (current_operation == OP_BUILD)
+        fprintf(stderr, "    (encountered while building %s)\n", filename);
+    else if (current_operation == OP_PREPROCESS)
+        fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
+    else if (current_operation == OP_RAPIFY)
+        fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
+    else if (current_operation == OP_P3D)
+        fprintf(stderr, "    (encountered while converting %s)\n", filename);
+    else if (current_operation == OP_MODELCONFIG)
+        fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
+    else if (current_operation == OP_MATERIAL)
+        fprintf(stderr, "    (encountered while reading %s)\n", filename);
+}
+
+
+void nwarningf(char *name, char *format, ...) {
+    extern char muted_warnings[MAXWARNINGS][512];
+    int i;
+    char buffer[4096];
+    char temp[4096];
+    va_list argptr;
+
+    for (i = 0; i < MAXWARNINGS; i++) {
+        if (strcmp(muted_warnings[i], name) == 0)
+            return;
+    }
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    if (buffer[strlen(buffer) - 1] == '\n')
+        buffer[strlen(buffer) - 1] = 0;
+
+    sprintf(temp, "%s [%s]\n", buffer, name);
+
+    warningf(temp);
+}
+
+
+void errorf(char *format, ...) {
+    extern int current_operation;
+    extern char current_target[2048];
+    char filename[2048];
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "%serror:%s %s", COLOR_RED, COLOR_RESET, buffer);
+
+    if (strchr(current_target, PATHSEP) == NULL)
+        strcpy(filename, current_target);
+    else
+        strcpy(filename, strrchr(current_target, PATHSEP) + 1);
+
+    if (current_operation == OP_BUILD)
+        fprintf(stderr, "    (encountered while building %s)\n", filename);
+    else if (current_operation == OP_PREPROCESS)
+        fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
+    else if (current_operation == OP_RAPIFY)
+        fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
+    else if (current_operation == OP_P3D)
+        fprintf(stderr, "    (encountered while converting %s)\n", filename);
+    else if (current_operation == OP_MODELCONFIG)
+        fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
+    else if (current_operation == OP_MATERIAL)
+        fprintf(stderr, "    (encountered while reading %s)\n", filename);
+}
+
+
+#ifndef _WIN32
+int stricmp(char *a, char *b) {
+    int d;
+    char a_lower;
+    char b_lower;
+
+    for (;; a++, b++) {
+        a_lower = *a;
+        b_lower = *b;
+
+        if (a_lower >= 'A' && a_lower <= 'Z')
+            a_lower -= 'A' - 'a';
+
+        if (b_lower >= 'A' && b_lower <= 'Z')
+            b_lower -= 'A' - 'a';
+
+        d = a_lower - b_lower;
+        if (d != 0 || !*a)
+            return d;
+    }
+}
+#endif
+
+
+bool float_equal(float f1, float f2, float precision) {
+    /*
+     * Performs a fuzzy float comparison.
+     */
+
+    return fabs(1.0 - (f1 / f2)) < precision;
+}
+
+
+void lower_case(char *string) {
+    /*
+     * Converts a null-terminated string to lower case.
+     */
+
+    int i;
+
+    for (i = 0; i < strlen(string); i++) {
+        if (string[i] >= 'A' && string[i] <= 'Z')
+            string[i] -= 'A' - 'a';
+    }
+}
 
 
 void get_word(char *target, char *source) {
@@ -223,27 +363,46 @@ void unescape_string(char *buffer, size_t buffsize) {
 }
 
 
-void write_compressed_int(uint32_t integer, FILE *f_target) {
-    uint64_t tmp;
+void write_compressed_int(uint32_t integer, FILE *f) {
+    uint64_t temp;
     char c;
 
-    tmp = (uint64_t)integer;
+    temp = (uint64_t)integer;
 
-    if (tmp == 0) {
-        fwrite(&tmp, 1, 1, f_target);
+    if (temp == 0) {
+        fwrite(&temp, 1, 1, f);
     }
 
-    while (tmp > 0) {
-        if (tmp > 0x7f) {
+    while (temp > 0) {
+        if (temp > 0x7f) {
             // there are going to be more entries
-            c = 0x80 | (tmp & 0x7f);
-            fwrite(&c, 1, 1, f_target);
-            tmp = tmp >> 7;
+            c = 0x80 | (temp & 0x7f);
+            fwrite(&c, 1, 1, f);
+            temp = temp >> 7;
         } else {
             // last entry
-            c = tmp;
-            fwrite(&c, 1, 1, f_target);
-            tmp = 0;
+            c = temp;
+            fwrite(&c, 1, 1, f);
+            temp = 0;
         }
     }
+}
+
+
+uint32_t read_compressed_int(FILE *f) {
+    int i;
+    uint64_t result;
+    uint8_t temp;
+
+    result = 0;
+
+    for (i = 0; i <= 4; i++) {
+        temp = fgetc(f);
+        result = result | ((temp & 0x7f) << (i * 7));
+
+        if (temp < 0x80)
+            break;
+    }
+
+    return (uint32_t)result;
 }

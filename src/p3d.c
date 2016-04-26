@@ -31,16 +31,8 @@
 #include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
+#include "model_config.h"
 #include "p3d.h"
-
-
-bool float_equal(float f1, float f2, float precision) {
-    /*
-     * Performs a fuzzy float comparison.
-     */
-
-    return fabs(1.0 - (f1 / f2)) < 0.01;
-}
 
 
 int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
@@ -405,10 +397,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->view_density = -100.0f; // @todo
 
-    strncpy(model_info->thermal_profile2,
-        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-        sizeof(model_info->thermal_profile2)); // @todo
-
     model_info->autocenter = true; // @todo
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
@@ -416,13 +404,25 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->allow_animation = false; // @todo
 
     strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
-    strncpy(model_info->thermal_profile,
-        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-        sizeof(model_info->thermal_profile)); // @todo
 
     model_info->unknown_long = 0xff000000;
 
-    // @todo: skeleton
+    model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
+    model_info->skeleton->num_bones = 0;
+    model_info->skeleton->num_sections = 0;
+    model_info->skeleton->num_animations = 0;
+    model_info->skeleton->ht_min = 0;
+    model_info->skeleton->ht_max = 0;
+    model_info->skeleton->af_max = 0;
+    model_info->skeleton->mf_max = 0;
+    model_info->skeleton->mf_act = 0;
+    model_info->skeleton->t_body = 0;
+    for (i = 0; i < MAXBONES; i++)
+        model_info->skeleton->bones[i].name[0] = 0;
+    for (i = 0; i < MAXSECTIONS; i++)
+        model_info->skeleton->sections[i][0] = 0;
+    for (i = 0; i < MAXANIMS; i++)
+        model_info->skeleton->animations[i].name[0] = 0;
 
     model_info->unknown_byte = 0;
     model_info->n_floats = 0;
@@ -494,17 +494,13 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     unsigned long i;
     unsigned long j;
     unsigned long k;
-    unsigned long l;
     unsigned long face_end;
     bool first;
-    bool sharp_edge;
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
     struct triplet normal;
     struct uv_pair uv_coords;
-    struct triplet v1;
-    struct triplet v2;
 
     odol_lod->num_proxies = 0; // @todo
     odol_lod->num_items = 0; // @todo
@@ -556,7 +552,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         if (j >= MAXTEXTURES) {
-            printf("WARNING: Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
+            warningf("Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
             break;
         }
 
@@ -611,57 +607,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     // Write face vertices
     face_end = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
-        odol_lod->faces[i].face_type = mlod_lod->faces[i].face_type; 
+        odol_lod->faces[i].face_type = mlod_lod->faces[i].face_type;
         for (j = 0; j < odol_lod->faces[i].face_type; j++) {
-            // i'm really sorry for this
-            sharp_edge = false;
-            for (k = 0; k < mlod_lod->num_sharp_edges; k++) {
-                if (mlod_lod->sharp_edges == 0)
-                    break;
-                if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[l].points_index) {
-                            sharp_edge = true;
-                            break;
-                        }
-                    }
-                }
-                if (mlod_lod->sharp_edges[k*2 + 1] == mlod_lod->faces[i].table[j].points_index) {
-                    for (l = 0; l < mlod_lod->faces[i].face_type; l++) {
-                        if (mlod_lod->sharp_edges[k*2] == mlod_lod->faces[i].table[l].points_index) {
-                            sharp_edge = true;
-                            break;
-                        }
-                    }
-                }
-                if (sharp_edge)
-                    break;
-            }
-
             memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index], sizeof(struct triplet));
             uv_coords.u = mlod_lod->faces[i].table[j].u;
             uv_coords.v = mlod_lod->faces[i].table[j].v;
-
-            // change normal if the vertex is part of a sharp edge @todo
-            if (sharp_edge && false) {
-                // get vectors to two other points in face
-                memcpy(&v1, &mlod_lod->points[mlod_lod->faces[i].table[(j + 1) % odol_lod->faces[i].face_type].points_index],
-                    sizeof(struct triplet));
-                memcpy(&v2, &mlod_lod->points[mlod_lod->faces[i].table[(j + 2) % odol_lod->faces[i].face_type].points_index],
-                    sizeof(struct triplet));
-
-                v1.x -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].x;
-                v1.y -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].y;
-                v1.z -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].z;
-                v2.x -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].x;
-                v2.y -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].y;
-                v2.z -= mlod_lod->points[mlod_lod->faces[i].table[j].points_index].z;
-
-                // Get the cross product
-                normal.x = (v1.y * v2.z) - (v1.z * v2.y);
-                normal.y = (v1.z * v2.x) - (v1.x * v2.z);
-                normal.z = (v1.x * v2.y) - (v1.y * v2.x);
-            }
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
@@ -728,11 +678,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     for (i = 0; i < odol_lod->num_selections; i++) {
         strcpy(odol_lod->selections[i].name, mlod_lod->selections[i].name);
-        for (j = 0; j < strlen(odol_lod->selections[i].name); j++) {
-            if (odol_lod->selections[i].name[j] >= 'A' &&
-                    odol_lod->selections[i].name[j] <= 'Z')
-                odol_lod->selections[i].name[j] -= 'A' - 'a';
-        }
+        lower_case(odol_lod->selections[i].name);
 
         odol_lod->selections[i].num_faces = 0;
         for (j = 0; j < odol_lod->num_faces; j++) {
@@ -832,8 +778,19 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
 
 void write_skeleton(FILE *f_target, struct skeleton *skeleton) {
-    fwrite("\0", 1, 1, f_target);
-    // @todo
+    int i;
+
+    fwrite(skeleton->name, strlen(skeleton->name) + 1, 1, f_target);
+
+    if (strlen(skeleton->name) > 0) {
+        fputc(0, f_target); // is inherited @todo ?
+        fwrite(&skeleton->num_bones, sizeof(uint32_t), 1, f_target);
+        for (i = 0; i < skeleton->num_bones; i++) {
+            fwrite(skeleton->bones[i].name, strlen(skeleton->bones[i].name) + 1, 1, f_target);
+            fwrite(skeleton->bones[i].parent, strlen(skeleton->bones[i].parent) + 1, 1, f_target);
+        }
+        fputc(0, f_target);
+    }
 }
 
 
@@ -856,17 +813,23 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->geometry_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->centre_of_mass,      sizeof(struct triplet), 1, f_target);
+    // @todo: replace these two with the proper inertia matrix
     fwrite(&model_info->inv_inertia,         sizeof(struct triplet), 1, f_target);
-    fwrite( model_info->thermal_profile2,    sizeof(char) * 24, 1, f_target);
+    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 24, 1, f_target);
     fwrite(&model_info->autocenter,          sizeof(bool), 1, f_target);
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
     fwrite(&model_info->allow_animation,     sizeof(bool), 1, f_target);
     fwrite( model_info->unknown_flags,       sizeof(char) * 6, 1, f_target);
-    fwrite( model_info->thermal_profile,     sizeof(char) * 24, 1, f_target);
+    fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->mf_max,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->mf_act,    sizeof(float), 1, f_target);
+    fwrite(&model_info->skeleton->t_body,    sizeof(float), 1, f_target);
     fwrite(&model_info->unknown_long,        sizeof(uint32_t), 1, f_target);
-    write_skeleton(f_target, &model_info->skeleton);
+    write_skeleton(f_target, model_info->skeleton);
     fwrite(&model_info->unknown_byte,        sizeof(char), 1, f_target);
     fwrite(&model_info->n_floats,            sizeof(uint32_t), 1, f_target);
     //fwrite("\0\0\0\0\0", 4, 1, f_target); // compression header for empty array
@@ -1073,6 +1036,191 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 }
 
 
+void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *mlod_lods) {
+    /*
+     * Gets the absolute axis position and direction for the given rotation
+     * or translation animations.
+     *
+     * At the moment, all axis selections are expected to be in the memory LOD.
+     */
+
+    int i;
+    int j;
+    int k;
+
+    anim->axis_pos.x = 0;
+    anim->axis_pos.y = 0;
+    anim->axis_pos.z = 0;
+    anim->axis_dir.x = 0;
+    anim->axis_dir.y = 0;
+    anim->axis_dir.z = 0;
+
+    if (anim->axis[0] == 0 && anim->begin[0] == 0 && anim->end[0] == 0)
+        return;
+
+    for (i = 0; i < num_lods; i++) {
+        if (float_equal(mlod_lods[i].resolution, LOD_MEMORY, 0.01))
+            break;
+    }
+    if (i == num_lods)
+        return;
+
+    for (j = 0; j < mlod_lods[i].num_selections; j++) {
+        if (anim->axis[0] == 0) {
+            if (stricmp(mlod_lods[i].selections[j].name, anim->begin) == 0) {
+                for (k = 0; k < mlod_lods[i].num_points; k++) {
+                    if (mlod_lods[i].selections[j].points[k] > 0) {
+                        memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
+                        break;
+                    }
+                }
+            }
+            if (stricmp(mlod_lods[i].selections[j].name, anim->end) == 0) {
+                for (k = 0; k < mlod_lods[i].num_points; k++) {
+                    if (mlod_lods[i].selections[j].points[k] > 0) {
+                        memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
+                        break;
+                    }
+                }
+            }
+        } else {
+            if (stricmp(mlod_lods[i].selections[j].name, anim->axis) == 0) {
+                for (k = 0; k < mlod_lods[i].num_points; k++) {
+                    if (mlod_lods[i].selections[j].points[k] > 0) {
+                        memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
+                        break;
+                    }
+                }
+                for (k = k + 1; k < mlod_lods[i].num_points; k++) {
+                    if (mlod_lods[i].selections[j].points[k] > 0) {
+                        memcpy(&anim->axis_dir, &mlod_lods[i].points[k], sizeof(struct triplet));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    anim->axis_dir.x -= anim->axis_pos.x;
+    anim->axis_dir.y -= anim->axis_pos.y;
+    anim->axis_dir.z -= anim->axis_pos.z;
+}
+
+
+void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_lods,
+        struct model_info *model_info) {
+    int i;
+    int j;
+    int k;
+    uint32_t num;
+    int32_t index;
+    struct animation *anim;
+
+    // Write animation classes
+    fwrite(&model_info->skeleton->num_animations, sizeof(uint32_t), 1, f_target);
+    for (i = 0; i < model_info->skeleton->num_animations; i++) {
+        anim = &model_info->skeleton->animations[i];
+        fwrite(&anim->type, sizeof(uint32_t), 1, f_target);
+        fwrite( anim->name, strlen(anim->name) + 1, 1, f_target);
+        fwrite( anim->source, strlen(anim->source) + 1, 1, f_target);
+        fwrite(&anim->min_value, sizeof(float), 1, f_target);
+        fwrite(&anim->max_value, sizeof(float), 1, f_target);
+        fwrite(&anim->min_phase, sizeof(float), 1, f_target);
+        fwrite(&anim->max_phase, sizeof(float), 1, f_target);
+        fwrite(&anim->junk, sizeof(uint32_t), 1, f_target);
+        fwrite(&anim->always_0, sizeof(uint32_t), 1, f_target);
+        fwrite(&anim->source_address, sizeof(uint32_t), 1, f_target);
+
+        switch (anim->type) {
+            case TYPE_ROTATION:
+            case TYPE_ROTATION_X:
+            case TYPE_ROTATION_Y:
+            case TYPE_ROTATION_Z:
+                fwrite(&anim->angle0, sizeof(float), 1, f_target);
+                fwrite(&anim->angle1, sizeof(float), 1, f_target);
+                break;
+            case TYPE_TRANSLATION:
+            case TYPE_TRANSLATION_X:
+            case TYPE_TRANSLATION_Y:
+            case TYPE_TRANSLATION_Z:
+                fwrite(&anim->offset0, sizeof(float), 1, f_target);
+                fwrite(&anim->offset1, sizeof(float), 1, f_target);
+                break;
+            case TYPE_DIRECT:
+                fwrite(&anim->axis_pos, sizeof(struct triplet), 1, f_target);
+                fwrite(&anim->axis_dir, sizeof(struct triplet), 1, f_target);
+                fwrite(&anim->angle, sizeof(float), 1, f_target);
+                fwrite(&anim->axis_offset, sizeof(float), 1, f_target);
+                break;
+            case TYPE_HIDE:
+                fwrite(&anim->hide_value, sizeof(float), 1, f_target);
+                fwrite(&anim->unhide_value, sizeof(float), 1, f_target);
+                break;
+        }
+    }
+
+    // Write bone2anim and anim2bone lookup tables
+    fwrite(&num_lods, sizeof(uint32_t), 1, f_target);
+
+    // bone2anim
+    for (i = 0; i < num_lods; i++) {
+        fwrite(&model_info->skeleton->num_bones, sizeof(uint32_t), 1, f_target);
+        for (j = 0; j < model_info->skeleton->num_bones; j++) {
+            num = 0;
+            for (k = 0; k < model_info->skeleton->num_animations; k++) {
+                anim = &model_info->skeleton->animations[k];
+                if (strcmp(anim->selection, model_info->skeleton->bones[j].name) == 0)
+                    num++;
+            }
+
+            fwrite(&num, sizeof(uint32_t), 1, f_target);
+
+            for (k = 0; k < model_info->skeleton->num_animations; k++) {
+                anim = &model_info->skeleton->animations[k];
+                if (stricmp(anim->selection, model_info->skeleton->bones[j].name) == 0) {
+                    num = (uint32_t)k;
+                    fwrite(&num, sizeof(uint32_t), 1, f_target);
+                }
+            }
+        }
+    }
+
+    // anim2bone
+    for (i = 0; i < num_lods; i++) {
+        for (j = 0; j < model_info->skeleton->num_animations; j++) {
+            anim = &model_info->skeleton->animations[j];
+
+            index = -1;
+            for (k = 0; k < model_info->skeleton->num_bones; k++) {
+                if (stricmp(anim->selection, model_info->skeleton->bones[k].name) == 0) {
+                    index = (int32_t)k;
+                    break;
+                }
+            }
+
+            if (index == -1) {
+                if (i == 0) {
+                    nwarningf("unknown-bone", "Failed to find bone \"%s\" for animation \"%s\".\n",
+                            model_info->skeleton->bones[k].name, anim->name);
+                }
+            } else {
+                if (anim->type >= 8)
+                    continue;
+
+                calculate_axis(anim, num_lods, mlod_lods);
+
+                anim->axis_pos.x -= model_info->centre_of_mass.x;
+                anim->axis_pos.y -= model_info->centre_of_mass.y;
+                anim->axis_pos.z -= model_info->centre_of_mass.z;
+
+                fwrite(&anim->axis_pos, sizeof(struct triplet), 1, f_target);
+                fwrite(&anim->axis_dir, sizeof(struct triplet), 1, f_target);
+            }
+        }
+    }
+}
+
+
 int mlod2odol(char *source, char *target) {
     /*
      * Converts the MLOD P3D to ODOL. Overwrites the target if it already
@@ -1081,6 +1229,8 @@ int mlod2odol(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern int current_operation;
+    extern char current_target[2048];
     FILE *f_source;
     FILE *f_temp;
     FILE *f_target;
@@ -1088,6 +1238,7 @@ int mlod2odol(char *source, char *target) {
     int datasize;
     int i;
     int j;
+    int success;
     long fp_lods;
     long fp_temp;
     uint32_t num_lods;
@@ -1095,10 +1246,13 @@ int mlod2odol(char *source, char *target) {
     struct model_info model_info;
     struct odol_lod odol_lod;
 
+    current_operation = OP_P3D;
+    strcpy(current_target, source);
+
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        printf("Failed to get temp file name.\n");
+        errorf("Failed to get temp file name.\n");
         return 1;
     }
     f_temp = fopen(temp_name, "w+");
@@ -1107,20 +1261,20 @@ int mlod2odol(char *source, char *target) {
 #endif
 
     if (!f_temp) {
-        printf("Failed to open temp file.\n");
+        errorf("Failed to open temp file.\n");
         return 1;
     }
 
     // Open source and read LODs
     f_source = fopen(source, "r");
     if (!f_source) {
-        printf("Failed to open source file.\n");
+        errorf("Failed to open source file.\n");
         return 2;
     }
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "MLOD", 4) != 0) {
-        printf("Source file is not MLOD.\n");
+        errorf("Source file is not MLOD.\n");
         return -3;
     }
 
@@ -1128,7 +1282,7 @@ int mlod2odol(char *source, char *target) {
     fread(&num_lods, 4, 1, f_source);
     mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
     if (read_lods(f_source, mlod_lods, num_lods)) {
-        printf("Failed to read LODs.\n");
+        errorf("Failed to read LODs.\n");
         return 4;
     }
 
@@ -1148,10 +1302,22 @@ int mlod2odol(char *source, char *target) {
 
     // Write model info
     build_model_info(mlod_lods, num_lods, &model_info);
+    success = read_model_config(source, model_info.skeleton);
+    if (success > 0)
+        return success;
+
+    current_operation = OP_P3D;
+    strcpy(current_target, source);
+
     write_model_info(f_temp, num_lods, &model_info);
 
-    // Write animations (@todo)
-    fputc(0, f_temp); // nope
+    // Write animations
+    if (model_info.skeleton->num_animations > 0) {
+        fputc(1, f_temp);
+        write_animations(f_temp, num_lods, mlod_lods, &model_info);
+    } else {
+        fputc(0, f_temp);
+    }
 
     // Write place holder LOD addresses
     fp_lods = ftell(f_temp);
@@ -1215,7 +1381,7 @@ int mlod2odol(char *source, char *target) {
 
     f_target = fopen(target, "w");
     if (!f_target) {
-        printf("Failed to open target file.\n");
+        errorf("Failed to open target file.\n");
         return 5;
     }
 
@@ -1240,6 +1406,7 @@ int mlod2odol(char *source, char *target) {
         free(mlod_lods[i].facenormals);
         free(mlod_lods[i].faces);
         free(mlod_lods[i].mass);
+        free(mlod_lods[i].sharp_edges);
 
         for (j = 0; j < mlod_lods[i].num_selections; j++) {
             free(mlod_lods[i].selections[j].points);
@@ -1251,6 +1418,7 @@ int mlod2odol(char *source, char *target) {
     free(mlod_lods);
 
     free(model_info.lod_resolutions);
+    free(model_info.skeleton);
 
     return 0;
 }

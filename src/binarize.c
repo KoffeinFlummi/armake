@@ -69,10 +69,12 @@ int binarize_file(char *source, char *target, char *includefolder) {
 }
 
 
-int binarize(DocoptArgs args) {
+int binarize() {
+    extern DocoptArgs args;
+
     // check if target already exists
     if (access(args.target, F_OK) != -1 && !args.force) {
-        printf("File %s already exists and --force was not set.\n", args.target);
+        errorf("File %s already exists and --force was not set.\n", args.target);
         return 1;
     }
 
@@ -92,7 +94,7 @@ int binarize(DocoptArgs args) {
     int success = binarize_file(args.source, args.target, includefolder);
 
     if (success == -1) {
-        printf("File is no P3D and doesn't seem rapifiable.\n");
+        errorf("File is no P3D and doesn't seem rapifiable.\n");
         return 1;
     }
 

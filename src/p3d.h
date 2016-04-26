@@ -56,18 +56,9 @@
 #define LOD_WRECK                        21000000000000000.0f
 
 
-struct point {
-    float x;
-    float y;
-    float z;
-    uint32_t point_flags;
-};
+#include "utils.h"
+#include "model_config.h"
 
-struct triplet {
-    float x;
-    float y;
-    float z;
-};
 
 struct uv_pair {
     float u;
@@ -223,10 +214,6 @@ struct odol_lod {
     struct triplet *normals;
 };
 
-struct skeleton {
-
-};
-
 struct model_info {
     float *lod_resolutions;
     uint32_t index;
@@ -245,16 +232,14 @@ struct model_info {
     struct triplet geometry_center;
     struct triplet centre_of_mass;
     struct triplet inv_inertia;
-    char thermal_profile2[24];
     bool autocenter;
     bool lock_autocenter;
     bool can_occlude;
     bool can_be_occluded;
     bool allow_animation;
     char unknown_flags[6];
-    char thermal_profile[24];
     uint32_t unknown_long;
-    struct skeleton skeleton;
+    struct skeleton *skeleton;
     char unknown_byte;
     uint32_t n_floats;
     float mass;

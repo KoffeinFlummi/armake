@@ -4,7 +4,7 @@ SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -std=gnu99 -ggdb
+CFLAGS = -Wall -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm
 
 $(BIN)/armake: \
@@ -50,7 +50,10 @@ docopt:
 	cat tmp/license > src/docopt.h
 	echo -e "#pragma once\n\n" >> src/docopt.h
 	grep -A 2 "#" tmp/docopt >> src/docopt.h
+	echo -e "#define MAXWARNINGS 32\n\n" >> src/docopt.h
 	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n" tmp/docopt >> src/docopt.h
+	echo -e "\nDocoptArgs args;" >> src/docopt.h
+	echo -e "char muted_warnings[MAXWARNINGS][512];\n\n" >> src/docopt.h
 	grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
 	sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
 	cat tmp/license > src/docopt.c

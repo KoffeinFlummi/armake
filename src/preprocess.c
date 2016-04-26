@@ -70,6 +70,8 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
             continue;
 
         fgets(prefixedpath, sizeof(prefixedpath), f_prefix);
+        fclose(f_prefix);
+
         if (prefixedpath[strlen(prefixedpath) - 1] == '\n')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
         if (prefixedpath[strlen(prefixedpath) - 1] == '\\')
@@ -115,7 +117,8 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
         strncpy(target + 1, includepath, 2046 - (target - actualpath));
 
 #ifndef _WIN32
-        for (int i = 0; i < strlen(actualpath); i++) {
+        int i;
+        for (i = 0; i < strlen(actualpath); i++) {
             if (actualpath[i] == '\\')
                 actualpath[i] = '/';
         }
@@ -179,8 +182,10 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 
     while ((f = fts_read(tree))) {
         switch (f->fts_info) {
-            case FTS_DNR: return 2;
-            case FTS_ERR: return 3;
+            case FTS_DNR:
+            case FTS_ERR:
+                fts_close(tree);
+                return 2;
             case FTS_NS: continue;
             case FTS_DP: continue;
             case FTS_D: continue;
@@ -189,17 +194,20 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
 
         if (strcmp(filename, f->fts_name) == 0 && matches_includepath(f->fts_path, includepath, includefolder)) {
             strncpy(actualpath, f->fts_path, 2048);
+            fts_close(tree);
             return 0;
         }
     }
 
+    fts_close(tree);
 #endif
 
     // check for file without pboprefix
     strncpy(filename, includefolder, sizeof(filename));
     strncat(filename, includepath, sizeof(filename) - strlen(filename) - 1);
 #ifndef _WIN32
-    for (int i = 0; i < strlen(filename); i++) {
+    int i;
+    for (i = 0; i < strlen(filename); i++) {
         if (filename[i] == '\\')
             filename[i] = '/';
     }
@@ -402,6 +410,8 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
      *     - nested ifs
      */
 
+    extern int current_operation;
+    extern char current_target[2048];
     int line = 0;
     int i = 0;
     int j = 0;
@@ -418,9 +428,12 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     char actualpath[2048];
     FILE *f_source;
 
+    current_operation = OP_PREPROCESS;
+    strcpy(current_target, source);
+
     f_source = fopen(source, "r");
     if (!f_source) {
-        printf("Failed to open %s.\n", source);
+        errorf("Failed to open %s.\n", source);
         return 1;
     }
 
@@ -434,8 +447,10 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
         line++;
         buffsize = 8192;
         buffer = (char *)malloc(buffsize + 1);
-        if (getline(&buffer, &buffsize, f_source) == -1)
+        if (getline(&buffer, &buffsize, f_source) == -1) {
+            free(buffer);
             break;
+        }
 
         // fix Windows line endings
         if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {

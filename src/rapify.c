@@ -128,6 +128,11 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
             return 3;
 
         unescape_string(buffer, sizeof(buffer));
+    } else if (buffer[0] != '"' && buffer[0] != '\'') {
+        if (name == NULL)
+            nwarningf("unquoted-string", "String in array is not quoted properly.\n");
+        else
+            nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", name);
     }
 
     fwrite(buffer, strlen(buffer) + 1, 1, f_target);
@@ -639,10 +644,13 @@ int rapify_file(char *source, char *target, char *includefolder) {
     uint32_t enum_offset = 0;
     struct constant *constants;
 
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
+
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        printf("Failed to get temp file name.\n");
+        errorf("Failed to get temp file name.\n");
         return 1;
     }
     f_temp = fopen(temp_name, "w+");
@@ -651,7 +659,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 #endif
 
     if (!f_temp) {
-        printf("Failed to open temp file.\n");
+        errorf("Failed to open temp file.\n");
         return 1;
     }
 
@@ -663,9 +671,11 @@ int rapify_file(char *source, char *target, char *includefolder) {
         constants[i].value[0] = 0;
     }
     success = preprocess(source, f_temp, includefolder, constants);
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
     free(constants);
     if (success) {
-        printf("Failed to preprocess %s.\n", source);
+        errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);
         return success;
     }
@@ -674,7 +684,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
     fseek(f_temp, 0, SEEK_SET);
     f_target = fopen(target, "w");
     if (!f_target) {
-        printf("Failed to open %s.\n", target);
+        errorf("Failed to open %s.\n", target);
         fclose(f_temp);
         return 2;
     }
@@ -684,7 +694,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 
     success = rapify_class(f_temp, f_target);
     if (success) {
-        printf("Failed to rapify %s.\n", source);
+        errorf("Failed to rapify %s.\n", source);
 
         fclose(f_temp);
         fclose(f_target);
