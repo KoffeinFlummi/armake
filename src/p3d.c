@@ -1201,7 +1201,7 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
 
             if (index == -1) {
                 if (i == 0) {
-                    warningf("Failed to find bone \"%s\" for animation \"%s\".\n",
+                    nwarningf("unknown-bone", "Failed to find bone \"%s\" for animation \"%s\".\n",
                             model_info->skeleton->bones[k].name, anim->name);
                 }
             } else {

@@ -31,8 +31,12 @@
 
 int main(int argc, char *argv[]) {
     extern DocoptArgs args;
-    args = docopt(argc, argv, 1, VERSION);
+    extern char muted_warnings[MAXWARNINGS][512];
+    int i;
+    int j;
     char *halp[] = {argv[0], "-h"};
+
+    args = docopt(argc, argv, 1, VERSION);
 
     // Docopt doesn't yet support positional arguments
     if (argc < 4)
@@ -46,13 +50,12 @@ int main(int argc, char *argv[]) {
 
 
     // @todo
-    int i;
-    for (i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "-i") == 0) {
-            if (i + 1 < argc)
-                args.includefolder = argv[i+1];
-            else
-                docopt(2, halp, 1, VERSION);
+    for (i = 0; i < argc - 1; i++) {
+        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--include") == 0)
+            args.includefolder = argv[i+1];
+        if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--warning") == 0) {
+            for (j = 0; j < MAXWARNINGS && muted_warnings[j][0] != 0; j++);
+            strncpy(muted_warnings[j], argv[i + 1], sizeof(muted_warnings[j]));
         }
     }
 

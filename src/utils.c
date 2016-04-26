@@ -63,6 +63,31 @@ void warningf(char *format, ...) {
 }
 
 
+void nwarningf(char *name, char *format, ...) {
+    extern char muted_warnings[MAXWARNINGS][512];
+    int i;
+    char buffer[4096];
+    char temp[4096];
+    va_list argptr;
+
+    for (i = 0; i < MAXWARNINGS; i++) {
+        if (strcmp(muted_warnings[i], name) == 0)
+            return;
+    }
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    if (buffer[strlen(buffer) - 1] == '\n')
+        buffer[strlen(buffer) - 1] = 0;
+
+    sprintf(temp, "%s [%s]\n", buffer, name);
+
+    warningf(temp);
+}
+
+
 void errorf(char *format, ...) {
     extern int current_operation;
     extern char current_target[2048];

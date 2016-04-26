@@ -128,6 +128,11 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
             return 3;
 
         unescape_string(buffer, sizeof(buffer));
+    } else if (buffer[0] != '"' && buffer[0] != '\'') {
+        if (name == NULL)
+            nwarningf("unquoted-string", "String in array is not quoted properly.\n");
+        else
+            nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", name);
     }
 
     fwrite(buffer, strlen(buffer) + 1, 1, f_target);

@@ -741,6 +741,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
      */
 
     extern int current_operation;
+    extern char current_target[2048];
     FILE *f;
     int i;
     int success;

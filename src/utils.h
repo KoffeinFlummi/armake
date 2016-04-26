@@ -61,6 +61,8 @@ char current_target[2048];
 
 void warningf(char *format, ...);
 
+void nwarningf(char *name, char *format, ...);
+
 void errorf(char *format, ...);
 
 #ifndef _WIN32
