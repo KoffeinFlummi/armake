@@ -3,9 +3,9 @@
 #include "vector.h"
 
 typedef struct {
-	float m00, m01, m02;
-	float m10, m11, m12;
-	float m20, m21, m22;
+    float m00, m01, m02;
+    float m10, m11, m12;
+    float m20, m21, m22;
 } matrix;
 
 static const matrix EmptyMatrix = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };

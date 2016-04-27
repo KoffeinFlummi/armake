@@ -273,71 +273,71 @@ float get_sphere(struct mlod_lod *mlod_lod, struct triplet *centre_of_mass) {
 
 void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info)
 {
-	int i;
-	struct mlod_lod *massLod;
-	
-	//mass is primarily stored in geometry
-	for (i = 0; i < num_lods; i++) {
-		if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
-			break;
-	}
+    int i;
+    struct mlod_lod *massLod;
+    
+    //mass is primarily stored in geometry
+    for (i = 0; i < num_lods; i++) {
+        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
+            break;
+    }
 
-	//alternatively use the PhysX LOD
-	if (i >= num_lods || mlod_lods[i].num_points == 0)
-	{
-		for (i = 0; i < num_lods; i++) {
-			if (float_equal(mlod_lods[i].resolution, LOD_PHYSX, 0.01))
-				break;
-		}
-	}
-	
-	//mass data available?
-	if (i >= num_lods || mlod_lods[i].num_points == 0)
-	{
-		model_info->mass = 0;
-		model_info->mass_reciprocal = 1;
-		model_info->inv_inertia = IdentityMatrix;
-		model_info->centre_of_mass = EmptyVector;
-		return;
-	}
+    //alternatively use the PhysX LOD
+    if (i >= num_lods || mlod_lods[i].num_points == 0)
+    {
+        for (i = 0; i < num_lods; i++) {
+            if (float_equal(mlod_lods[i].resolution, LOD_PHYSX, 0.01))
+                break;
+        }
+    }
+    
+    //mass data available?
+    if (i >= num_lods || mlod_lods[i].num_points == 0)
+    {
+        model_info->mass = 0;
+        model_info->mass_reciprocal = 1;
+        model_info->inv_inertia = IdentityMatrix;
+        model_info->centre_of_mass = EmptyVector;
+        return;
+    }
 
-	massLod = &mlod_lods[i];
-	float* massArray = massLod->mass;
-	vector sum = EmptyVector;
-	float mass = 0;
-	for (i = 0; i < massLod->num_points; i++)
-	{
-		vector pos = *((vector*)&massLod->points[i].x);
-		float m = massArray[i];
-		mass += m;
-		sum = vectorAdd(sum, vectorMultScalar(m, pos));
-	}
+    massLod = &mlod_lods[i];
+    float* massArray = massLod->mass;
+    vector sum = EmptyVector;
+    float mass = 0;
+    for (i = 0; i < massLod->num_points; i++)
+    {
+        vector pos = *((vector*)&massLod->points[i].x);
+        float m = massArray[i];
+        mass += m;
+        sum = vectorAdd(sum, vectorMultScalar(m, pos));
+    }
 
-	vector centreOfMass = (mass > 0) ? vectorMultScalar(1 / mass, sum) : EmptyVector ;
+    vector centreOfMass = (mass > 0) ? vectorMultScalar(1 / mass, sum) : EmptyVector ;
 
-	matrix inertia = EmptyMatrix;
-	for (i = 0; i < massLod->num_points; i++)
-	{
-		float m = massArray[i];
-		vector pos = *((vector*)&massLod->points[i].x);
-		vector relPos = vectorSub(pos, centreOfMass);
-		matrix rTilda = vectorTilda(relPos);
-		inertia = matrixSub(inertia, matrixMultScalar(m, matrixMult(rTilda, rTilda)));
-	}
+    matrix inertia = EmptyMatrix;
+    for (i = 0; i < massLod->num_points; i++)
+    {
+        float m = massArray[i];
+        vector pos = *((vector*)&massLod->points[i].x);
+        vector relPos = vectorSub(pos, centreOfMass);
+        matrix rTilda = vectorTilda(relPos);
+        inertia = matrixSub(inertia, matrixMultScalar(m, matrixMult(rTilda, rTilda)));
+    }
 
-	//apply calculations to modelinfo
-	model_info->mass = mass;
-	model_info->centre_of_mass = centreOfMass;
-	if (mass>0)
-	{
-		model_info->mass_reciprocal = 1 / mass;
-		model_info->inv_inertia = matrixInverse(inertia);
-	}
-	else
-	{
-		model_info->mass_reciprocal = 1;
-		model_info->inv_inertia = IdentityMatrix;
-	}
+    //apply calculations to modelinfo
+    model_info->mass = mass;
+    model_info->centre_of_mass = centreOfMass;
+    if (mass>0)
+    {
+        model_info->mass_reciprocal = 1 / mass;
+        model_info->inv_inertia = matrixInverse(inertia);
+    }
+    else
+    {
+        model_info->mass_reciprocal = 1;
+        model_info->inv_inertia = IdentityMatrix;
+    }
 }
 
 void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
