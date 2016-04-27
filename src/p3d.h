@@ -22,6 +22,7 @@
 //#define VERSION70
 
 #define MAXTEXTURES 128
+#define MAXMATERIALS 128
 #define MAXPROPERTIES 128
 
 #define LOD_GRAPHICAL                                  999.9f
@@ -83,6 +84,7 @@ struct mlod_face {
     uint32_t face_flags;
     char texture_name[512];
     char material_name[512];
+    char section_names[512];
 };
 
 struct mlod_selection {
@@ -122,16 +124,13 @@ struct odol_proxy {
 struct odol_bonelink {
 };
 
-struct odol_material {
-};
-
 struct odol_section {
     uint32_t face_index_start;
     uint32_t face_index_end;
     uint32_t material_index_start;
     uint32_t material_index_end;
     uint32_t common_point_flags;
-    uint16_t common_texture_index;
+    int16_t common_texture_index;
     uint32_t common_face_flags;
     int32_t material_index;
     uint32_t unknown_long_1;
@@ -184,13 +183,17 @@ struct odol_lod {
     uint32_t num_textures;
     char *textures;
     uint32_t num_materials;
-    struct odol_material *materials;
+    struct material *materials;
 #ifdef VERSION70
     uint32_t *point_to_vertex;
     uint32_t *vertex_to_point;
+    uint32_t *face_lookup;
+    uint32_t *face_lookup_reverse;
 #else
     uint16_t *point_to_vertex;
     uint16_t *vertex_to_point;
+    uint16_t *face_lookup;
+    uint16_t *face_lookup_reverse;
 #endif
     uint32_t num_faces;
     uint32_t offset_sections;

@@ -36,8 +36,6 @@ int skip_array(FILE *f) {
     uint8_t type;
     uint32_t num_entries;
 
-    num_entries = read_compressed_int(f);
-
     for (num_entries = read_compressed_int(f); num_entries > 0; num_entries--) {
         type = fgetc(f);
 
@@ -571,6 +569,8 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
 
     // Now go through all the animations
     char anim_names[MAXANIMS][512];
+    for (i = 0; i < MAXANIMS; i++)
+        anim_names[i][0] = 0;
 
     success = read_classes(f, config_path, (char *)anim_names, MAXANIMS, 512);
     if (success)
