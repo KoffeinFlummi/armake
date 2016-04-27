@@ -32,6 +32,7 @@
 #include "filesystem.h"
 #include "utils.h"
 #include "model_config.h"
+#include "material.h"
 #include "p3d.h"
 
 
@@ -86,6 +87,8 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
             fread(mlod_lods[i].faces[j].material_name,
                 sizeof(mlod_lods[i].faces[j].material_name), 1, f_source);
             fseek(f_source, fp_tmp + strlen(mlod_lods[i].faces[j].material_name) + 1, SEEK_SET);
+
+            strcpy(mlod_lods[i].faces[j].section_names, "");
         }
 
         fread(buffer, 4, 1, f_source);
@@ -330,12 +333,35 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->index = 0;
 
+    model_info->autocenter = false;
+    model_info->lock_autocenter = false; // @todo
+    model_info->can_occlude = false; // @todo
+    model_info->can_be_occluded = true; // @todo
+    model_info->allow_animation = false; // @todo
+
+    for (i = 0; i < num_lods; i++) {
+        for (j = 0; j < MAXPROPERTIES; j++) {
+            if (strcmp(mlod_lods[i].properties[j].name, "autocenter") != 0)
+                continue;
+            if (strcmp(mlod_lods[i].properties[j].value, "1") == 0) {
+                model_info->autocenter = true;
+                break;
+            }
+        }
+    }
+
     // Bounding box & center
     get_bounding_box(mlod_lods, num_lods, &bbox_total_min, &bbox_total_max, false, false);
 
     model_info->bounding_center.x = (bbox_total_min.x + bbox_total_max.x) / 2;
     model_info->bounding_center.y = (bbox_total_min.y + bbox_total_max.y) / 2;
     model_info->bounding_center.z = (bbox_total_min.z + bbox_total_max.z) / 2;
+
+    if (!model_info->autocenter) {
+        model_info->bounding_center.x = 0;
+        model_info->bounding_center.y = 0;
+        model_info->bounding_center.z = 0;
+    }
 
     model_info->bbox_min.x = bbox_total_min.x - model_info->bounding_center.x;
     model_info->bbox_min.y = bbox_total_min.y - model_info->bounding_center.y;
@@ -368,6 +394,10 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->centre_of_mass.y -= model_info->bounding_center.y;
     model_info->centre_of_mass.z -= model_info->bounding_center.z;
 
+    model_info->centre_of_mass.x = 0.0f;
+    model_info->centre_of_mass.y = 0.0f;
+    model_info->centre_of_mass.z = 0.0f;
+
     // Inv inertia (whatever that is) @todo
     model_info->inv_inertia.x = 0;
     model_info->inv_inertia.y = 0;
@@ -396,12 +426,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->map_selected_color = 0xff9d8254;
 
     model_info->view_density = -100.0f; // @todo
-
-    model_info->autocenter = true; // @todo
-    model_info->lock_autocenter = false; // @todo
-    model_info->can_occlude = false; // @todo
-    model_info->can_be_occluded = true; // @todo
-    model_info->allow_animation = false; // @todo
 
     strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
 
@@ -452,7 +476,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
 
 uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
-    uint32_t point_index_mlod, struct triplet *normal, struct uv_pair *uv_coords) {
+        uint32_t point_index_mlod, struct triplet *normal, struct uv_pair *uv_coords) {
     uint32_t i;
 
     // Check if there already is a vertex that satisfies the requirements
@@ -461,16 +485,16 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
             continue;
 
         // normals and uvs don't matter for non-visual lods
-        if (mlod_lod->resolution < LOD_GRAPHICAL && (
-                !float_equal(odol_lod->normals[i].x, normal->x, 0.001) ||
-                !float_equal(odol_lod->normals[i].y, normal->y, 0.001) ||
-                !float_equal(odol_lod->normals[i].z, normal->z, 0.001)))
-            continue;
+        if (mlod_lod->resolution < LOD_GEOMETRY) {
+            if (!float_equal(odol_lod->normals[i].x, normal->x, 0.0001) ||
+                    !float_equal(odol_lod->normals[i].y, normal->y, 0.0001) ||
+                    !float_equal(odol_lod->normals[i].z, normal->z, 0.0001))
+                continue;
 
-        if (mlod_lod->resolution < LOD_GRAPHICAL && (
-                !float_equal(odol_lod->uv_coords[i].u, uv_coords->u, 0.001) ||
-                !float_equal(odol_lod->uv_coords[i].v, uv_coords->v, 0.001)))
-            continue;
+            if (!float_equal(odol_lod->uv_coords[i].u, uv_coords->u, 0.0001) ||
+                    !float_equal(odol_lod->uv_coords[i].v, uv_coords->v, 0.0001))
+                continue;
+        }
 
         return i;
     }
@@ -489,11 +513,50 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
 }
 
 
+#ifdef VERSION70
+void sort_faces(struct mlod_face *mlod_faces, uint32_t *face_lookup,
+        int key_offset, uint32_t low, uint32_t high) {
+#else
+void sort_faces(struct mlod_face *mlod_faces, uint16_t *face_lookup,
+        int key_offset, long low, long high) {
+#endif
+    /*
+     * Creates a face lookup array that resoluts in a face array that is sorted
+     * according to the struct member reached using key_offset.
+     */
+
+    if (low >= high)
+        return;
+
+    long i;
+    long j;
+    uint32_t temp;
+
+    i = low;
+    for (j = low; j < high; j++) {
+        if (strcmp((char *)((uint64_t)&mlod_faces[face_lookup[j]] + key_offset),
+                (char *)((uint64_t)&mlod_faces[face_lookup[high]] + key_offset)) <= 0) {
+            temp = face_lookup[j];
+            face_lookup[j] = face_lookup[i];
+            face_lookup[i] = temp;
+            i++;
+        }
+    }
+    temp = face_lookup[high];
+    face_lookup[high] = face_lookup[i];
+    face_lookup[i] = temp;
+
+    sort_faces(mlod_faces, face_lookup, key_offset, low, i - 1);
+    sort_faces(mlod_faces, face_lookup, key_offset, i + 1, high);
+}
+
+
 void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         struct model_info *model_info) {
     unsigned long i;
     unsigned long j;
     unsigned long k;
+    unsigned long face_start;
     unsigned long face_end;
     bool first;
     size_t size;
@@ -544,6 +607,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         textures[i][0] = 0;
 
     odol_lod->num_textures = 0;
+    odol_lod->num_materials = 0;
+    odol_lod->materials = (struct material *)malloc(sizeof(struct material) * MAXMATERIALS);
+    for (i = 0; i < MAXMATERIALS; i++)
+        odol_lod->materials[i].path[0] = 0;
+
     size = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
         for (j = 0; j < MAXTEXTURES && textures[j][0] != 0; j++) {
@@ -556,14 +624,28 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             break;
         }
 
-        if (textures[j][0] != 0)
-            continue;
-        if (mlod_lod->faces[i].texture_name[0] == 0)
-            continue;
+        if (textures[j][0] == 0 && mlod_lod->faces[i].texture_name[0] != 0) {
+            strcpy(textures[j], mlod_lod->faces[i].texture_name);
+            odol_lod->num_textures++;
+            size += strlen(textures[j]) + 1;
+        }
 
-        strcpy(textures[j], mlod_lod->faces[i].texture_name);
-        odol_lod->num_textures++;
-        size += strlen(textures[j]) + 1;
+        for (j = 0; j < MAXMATERIALS && odol_lod->materials[j].path[0] != 0; j++) {
+            if (strcmp(mlod_lod->faces[i].material_name, odol_lod->materials[j].path) == 0)
+                break;
+        }
+
+        if (j >= MAXMATERIALS) {
+            warningf("Maximum amount of materials per LOD (%i) exceeded.", MAXMATERIALS);
+            break;
+        }
+
+        if (odol_lod->materials[j].path[0] == 0 && mlod_lod->faces[i].material_name[0] != 0) {
+            strcpy(odol_lod->materials[j].path, mlod_lod->faces[i].material_name);
+            odol_lod->num_materials++;
+            odol_lod->materials[j].type = 11; // @todo
+            //read_material(&odol_lod->materials[j]);
+        }
     }
 
     odol_lod->textures = (char *)malloc(size);
@@ -573,25 +655,37 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         ptr += strlen(textures[i]) + 1;
     }
 
-    odol_lod->num_materials = 0; // @todo;
-    odol_lod->materials = 0;
-
     odol_lod->num_faces = mlod_lod->num_faces;
     odol_lod->offset_sections = sizeof(struct odol_face) * odol_lod->num_faces + 8;
 
     odol_lod->always_0 = 0;
 
     odol_lod->faces = (struct odol_face *)malloc(sizeof(struct odol_face) * odol_lod->num_faces);
+    for (i = 0; i < odol_lod->num_faces; i++) {
+        odol_lod->faces[i].face_type = 0;
+        // shut up, valgrind
+        odol_lod->faces[i].table[0] = 0;
+        odol_lod->faces[i].table[1] = 0;
+        odol_lod->faces[i].table[2] = 0;
+        odol_lod->faces[i].table[3] = 0;
+    }
 
     odol_lod->num_points = 0;
 
 #ifdef VERSION70
     odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
     odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
+    odol_lod->face_lookup_reverse = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
 #else
     odol_lod->point_to_vertex = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points_mlod);
     odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
+    odol_lod->face_lookup_reverse = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
 #endif
+
+    for (i = 0; i < mlod_lod->num_faces; i++)
+        odol_lod->face_lookup[i] = i;
 
     for (i = 0; i < odol_lod->num_points_mlod; i++)
 #ifdef VERSION70
@@ -604,14 +698,52 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
     odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
+    // Sort faces by texture, material and bone
+    for (i = 0; i < model_info->skeleton->num_sections; i++) {
+        for (j = 0; j < mlod_lod->num_selections; j++) {
+            if (strcmp(model_info->skeleton->sections[i],
+                    mlod_lod->selections[j].name) == 0)
+                break;
+        }
+
+        if (j >= mlod_lod->num_selections)
+            continue;
+
+        for (k = 0; k < mlod_lod->num_faces; k++) {
+            if (mlod_lod->selections[j].faces[k] > 0)
+                strcat(mlod_lod->faces[k].section_names, model_info->skeleton->sections[i]);
+        }
+    }
+
+    if (mlod_lod->num_faces > 1) {
+        sort_faces(mlod_lod->faces, odol_lod->face_lookup,
+            ((void *)mlod_lod->faces[0].section_names - (void *)&mlod_lod->faces[0]),
+            0, mlod_lod->num_faces - 1);
+        //sort_faces(mlod_lod->faces, odol_lod->face_lookup,
+        //    ((void *)mlod_lod->faces[0].material_name - (void *)&mlod_lod->faces[0]),
+        //    0, mlod_lod->num_faces - 1);
+        sort_faces(mlod_lod->faces, odol_lod->face_lookup,
+            ((void *)mlod_lod->faces[0].texture_name - (void *)&mlod_lod->faces[0]),
+            0, mlod_lod->num_faces - 1);
+    }
+
+    // Create reverse face lookup table
+    for (i = 0; i < mlod_lod->num_faces; i++)
+        odol_lod->face_lookup_reverse[odol_lod->face_lookup[i]] = i;
+
     // Write face vertices
     face_end = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
-        odol_lod->faces[i].face_type = mlod_lod->faces[i].face_type;
-        for (j = 0; j < odol_lod->faces[i].face_type; j++) {
+        odol_lod->faces[odol_lod->face_lookup[i]].face_type = mlod_lod->faces[i].face_type;
+        for (j = 0; j < odol_lod->faces[odol_lod->face_lookup[i]].face_type; j++) {
             memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index], sizeof(struct triplet));
             uv_coords.u = mlod_lod->faces[i].table[j].u;
             uv_coords.v = mlod_lod->faces[i].table[j].v;
+
+            for (; uv_coords.u < 0.0f; uv_coords.u += 1.0f);
+            for (; uv_coords.v < 0.0f; uv_coords.v += 1.0f);
+            for (; uv_coords.u > 1.0f; uv_coords.u -= 1.0f);
+            for (; uv_coords.v > 1.0f; uv_coords.v -= 1.0f);
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
@@ -619,15 +751,15 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
             if (j <= 1)
                 k = 1 - j;
-            else if (odol_lod->faces[i].face_type == 3)
+            else if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 3)
                 k = j;
             else
                 k = 2 + (1 - (j - 2));
 
-            odol_lod->faces[i].table[k] = add_point(odol_lod, mlod_lod,
+            odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
-        face_end += 2 + 2 * odol_lod->faces[i].face_type;
+        face_end += 2 + 2 * odol_lod->faces[odol_lod->face_lookup[i]].face_type;
     }
 
     odol_lod->offset_sections = face_end;
@@ -652,22 +784,69 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             i, &normal, &uv_coords);
     }
 
+    // Write sections
     if (odol_lod->num_faces > 0) {
-        odol_lod->num_sections = 1; // @todo
+        odol_lod->num_sections = 1;
+        for (i = 1; i < odol_lod->num_faces; i++) {
+            if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].texture_name,
+                    mlod_lod->faces[odol_lod->face_lookup_reverse[i - 1]].texture_name)) {
+                odol_lod->num_sections++;
+                continue;
+            }
+            //if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].material_name,
+            //        mlod_lod->faces[odol_lod->face_lookup_reverse[i - 1]].material_name)) {
+            //    odol_lod->num_sections++;
+            //    continue;
+            //}
+            if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].section_names,
+                    mlod_lod->faces[odol_lod->face_lookup_reverse[i - 1]].section_names)) {
+                odol_lod->num_sections++;
+                continue;
+            }
+        }
+
         odol_lod->sections = (struct odol_section *)malloc(sizeof(struct odol_section) * odol_lod->num_sections);
 
-        odol_lod->sections[0].face_index_start = 0;
-        odol_lod->sections[0].face_index_end = face_end;
-        odol_lod->sections[0].material_index_start = 0;
-        odol_lod->sections[0].material_index_end = 0;
-        odol_lod->sections[0].common_point_flags = 0;
-        odol_lod->sections[0].common_texture_index = (odol_lod->num_textures == 1) ? 0 : -1;
-        odol_lod->sections[0].common_face_flags = 0;
-        odol_lod->sections[0].material_index = -1;
-        odol_lod->sections[0].unknown_long_1 = 2;
-        odol_lod->sections[0].unknown_resolution_1 = 0.0f;
-        odol_lod->sections[0].unknown_resolution_2 = 1000.0f;
-        odol_lod->sections[0].unknown_long_2 = 0;
+        face_start = 0;
+        face_end = 0;
+        k = 0;
+        for (i = 0; i < odol_lod->num_faces;) {
+            for (j = 0; j < MAXTEXTURES; j++) {
+                if (strcmp(textures[j], mlod_lod->faces[odol_lod->face_lookup_reverse[i]].texture_name) == 0)
+                    break;
+            }
+
+            odol_lod->sections[k].face_index_start = face_start;
+            odol_lod->sections[k].face_index_end = face_start;
+            odol_lod->sections[k].material_index_start = 0;
+            odol_lod->sections[k].material_index_end = 0;
+            odol_lod->sections[k].common_point_flags = 0;
+            odol_lod->sections[k].common_texture_index = (j < odol_lod->num_textures) ? j : -1;
+            odol_lod->sections[k].common_face_flags = 0;
+            odol_lod->sections[k].material_index = -1;
+            odol_lod->sections[k].unknown_long_1 = 2;
+            odol_lod->sections[k].unknown_resolution_1 = 0.0f; // @todo
+            odol_lod->sections[k].unknown_resolution_2 = 1000.0f;
+            odol_lod->sections[k].unknown_long_2 = 0;
+
+            for (j = i; j < odol_lod->num_faces; j++) {
+                if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].texture_name,
+                        mlod_lod->faces[odol_lod->face_lookup_reverse[j]].texture_name))
+                    break;
+                //if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].material_name,
+                //        mlod_lod->faces[odol_lod->face_lookup_reverse[j]].material_name))
+                //    break;
+                if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].section_names,
+                        mlod_lod->faces[odol_lod->face_lookup_reverse[j]].section_names))
+                    break;
+                odol_lod->sections[k].face_index_end += 2 + 2 * odol_lod->faces[j].face_type;
+            }
+
+            face_start = odol_lod->sections[k].face_index_end;
+            i = j;
+            k++;
+        }
+
     } else {
         odol_lod->num_sections = 0;
         odol_lod->sections = 0;
@@ -709,7 +888,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                     break;
 #endif
             }
-            odol_lod->selections[i].faces[k] = j;
+            odol_lod->selections[i].faces[k] = odol_lod->face_lookup[j];
         }
 
         odol_lod->selections[i].always_0 = 0;
@@ -910,6 +1089,50 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
 }
 
 
+void write_material(FILE *f_target, struct material *material) {
+    int i;
+
+    fwrite( material->path, strlen(material->path) + 1, 1, f_target);
+    fwrite(&material->type, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->emissive, sizeof(struct color), 1, f_target);
+    fwrite(&material->ambient, sizeof(struct color), 1, f_target);
+    fwrite(&material->diffuse, sizeof(struct color), 1, f_target);
+    fwrite(&material->forced_diffuse, sizeof(struct color), 1, f_target);
+    fwrite(&material->specular, sizeof(struct color), 1, f_target);
+    fwrite(&material->specular2, sizeof(struct color), 1, f_target);
+    fwrite(&material->specular_power, sizeof(float), 1, f_target);
+    fwrite(&material->pixel_shader_id, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->vertex_shader_id, sizeof(uint32_t), 1, f_target);
+    material->depr_1 = 256;
+    fwrite(&material->depr_1, sizeof(uint32_t), 1, f_target);
+    material->depr_2 = 512;
+    fwrite(&material->depr_2, sizeof(uint32_t), 1, f_target);
+    fwrite( material->surface, strlen(material->surface) + 1, 1, f_target);
+    material->depr_3 = 1024;
+    fwrite(&material->depr_3, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->render_flags, sizeof(uint32_t), 1, f_target);
+    material->num_textures = 0; // @todo
+    fwrite(&material->num_textures, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->num_textures, sizeof(uint32_t), 1, f_target);
+
+    for (i = 0; i < material->num_textures; i++) {
+        fwrite(&material->textures[i].texture_filter, sizeof(uint32_t), 1, f_target);
+        fwrite( material->textures[i].path, strlen(material->textures[i].path) + 1, 1, f_target);
+        fwrite(&material->textures[i].transform_index, sizeof(uint32_t), 1, f_target);
+        if (material->type >= 11)
+            fwrite(&material->textures[i].type11_bool, sizeof(bool), 1, f_target);
+    }
+
+    fwrite( material->transforms, sizeof(struct stage_transform) * material->num_textures, 1, f_target);
+
+    fwrite(&material->dummy_texture.texture_filter, sizeof(uint32_t), 1, f_target);
+    fwrite( material->dummy_texture.path, strlen(material->dummy_texture.path) + 1, 1, f_target);
+    fwrite(&material->dummy_texture.transform_index, sizeof(uint32_t), 1, f_target);
+    if (material->type >= 11)
+        fwrite(&material->dummy_texture.type11_bool, sizeof(bool), 1, f_target);
+}
+
+
 void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     short u, v;
     int x, y, z;
@@ -932,15 +1155,17 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->max_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->autocenter_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->sphere, sizeof(float), 1, f_target);
-    fwrite(&odol_lod->num_textures, sizeof(uint32_t), 1, f_target);
 
+    fwrite(&odol_lod->num_textures, sizeof(uint32_t), 1, f_target);
     ptr = odol_lod->textures;
     for (i = 0; i < odol_lod->num_textures; i++)
         ptr += strlen(ptr) + 1;
-
     fwrite( odol_lod->textures, ptr - odol_lod->textures, 1, f_target);
+
+    odol_lod->num_materials = 0;
     fwrite(&odol_lod->num_materials, sizeof(uint32_t), 1, f_target);
-    // @todo materials
+    for (i = 0; i < odol_lod->num_materials; i++)
+        write_material(f_target, &odol_lod->materials[i]);
 
     // the point-to-vertex and vertex-to-point arrays are just left out
     fwrite("\0\0\0\0\0\0\0\0", sizeof(uint32_t) * 2, 1, f_target);
@@ -1312,7 +1537,7 @@ int mlod2odol(char *source, char *target) {
     write_model_info(f_temp, num_lods, &model_info);
 
     // Write animations
-    if (model_info.skeleton->num_animations > 0) {
+    if (false && model_info.skeleton->num_animations > 0) {
         fputc(1, f_temp);
         write_animations(f_temp, num_lods, mlod_lods, &model_info);
     } else {
@@ -1344,8 +1569,11 @@ int mlod2odol(char *source, char *target) {
 
         // Clean up
         free(odol_lod.textures);
+        free(odol_lod.materials);
         free(odol_lod.point_to_vertex);
         free(odol_lod.vertex_to_point);
+        free(odol_lod.face_lookup);
+        free(odol_lod.face_lookup_reverse);
         free(odol_lod.faces);
         free(odol_lod.uv_coords);
         free(odol_lod.points);
