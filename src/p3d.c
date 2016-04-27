@@ -33,6 +33,8 @@
 #include "utils.h"
 #include "model_config.h"
 #include "p3d.h"
+#include "vector.h"
+#include "matrix.h"
 
 
 int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
@@ -191,52 +193,6 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     return 0;
 }
 
-
-void get_centre_of_mass(struct mlod_lod *mlod_lods, uint32_t num_lods, struct triplet *centre_of_mass) {
-    /*
-     * Calculate the centre of mass for the given LODs and stores
-     * it in the given triplet struct.
-     */
-
-    int i;
-    int j;
-    float mass;
-    float x;
-    float y;
-    float z;
-
-    centre_of_mass->x = 0;
-    centre_of_mass->y = 0;
-    centre_of_mass->z = 0;
-
-    for (i = 0; i < num_lods; i++) {
-        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
-            break;
-    }
-
-    if (i == num_lods)
-        return;
-
-    if (mlod_lods[i].mass == 0)
-        return;
-
-    mass = 0;
-    for (j = 0; j < mlod_lods[i].num_points; j++) {
-        mass += mlod_lods[i].mass[j];
-    }
-
-    for (j = 0; j < mlod_lods[i].num_points; j++) {
-        x = mlod_lods[i].points[j].x;
-        y = mlod_lods[i].points[j].y;
-        z = mlod_lods[i].points[j].z;
-
-        centre_of_mass->x += x * (mlod_lods[i].mass[j] / mass);
-        centre_of_mass->y += y * (mlod_lods[i].mass[j] / mass);
-        centre_of_mass->z += z * (mlod_lods[i].mass[j] / mass);
-    }
-}
-
-
 void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
         struct triplet *bbox_min, struct triplet *bbox_max, bool visual_only, bool geometry_only) {
     /*
@@ -315,10 +271,77 @@ float get_sphere(struct mlod_lod *mlod_lod, struct triplet *centre_of_mass) {
     return sphere;
 }
 
+void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info)
+{
+	int i;
+	struct mlod_lod *massLod;
+	
+	//mass is primarily stored in geometry
+	for (i = 0; i < num_lods; i++) {
+		if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
+			break;
+	}
+
+	//alternatively use the PhysX LOD
+	if (i >= num_lods || mlod_lods[i].num_points == 0)
+	{
+		for (i = 0; i < num_lods; i++) {
+			if (float_equal(mlod_lods[i].resolution, LOD_PHYSX, 0.01))
+				break;
+		}
+	}
+	
+	//mass data available?
+	if (i >= num_lods || mlod_lods[i].num_points == 0)
+	{
+		model_info->mass = 0;
+		model_info->mass_reciprocal = 1;
+		model_info->inv_inertia = IdentityMatrix;
+		model_info->centre_of_mass = EmptyVector;
+		return;
+	}
+
+	massLod = &mlod_lods[i];
+	float* massArray = massLod->mass;
+	vector sum = EmptyVector;
+	float mass = 0;
+	for (i = 0; i < massLod->num_points; i++)
+	{
+		vector pos = *((vector*)&massLod->points[i].x);
+		float m = massArray[i];
+		mass += m;
+		sum = vectorAdd(sum, vectorMultScalar(m, pos));
+	}
+
+	vector centreOfMass = (mass > 0) ? vectorMultScalar(1 / mass, sum) : EmptyVector ;
+
+	matrix inertia = EmptyMatrix;
+	for (i = 0; i < massLod->num_points; i++)
+	{
+		float m = massArray[i];
+		vector pos = *((vector*)&massLod->points[i].x);
+		vector relPos = vectorSub(pos, centreOfMass);
+		matrix rTilda = vectorTilda(relPos);
+		inertia = matrixSub(inertia, matrixMultScalar(m, matrixMult(rTilda, rTilda)));
+	}
+
+	//apply calculations to modelinfo
+	model_info->mass = mass;
+	model_info->centre_of_mass = centreOfMass;
+	if (mass>0)
+	{
+		model_info->mass_reciprocal = 1 / mass;
+		model_info->inv_inertia = matrixInverse(inertia);
+	}
+	else
+	{
+		model_info->mass_reciprocal = 1;
+		model_info->inv_inertia = IdentityMatrix;
+	}
+}
 
 void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
     int i;
-    int j;
     float sphere;
     struct triplet bbox_total_min;
     struct triplet bbox_total_max;
@@ -361,17 +384,8 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->geometry_center.y = (bbox_total_min.y + bbox_total_max.y) / 2 - model_info->bounding_center.y;
     model_info->geometry_center.z = (bbox_total_min.z + bbox_total_max.z) / 2 - model_info->bounding_center.z;
 
-    // Centre of mass
-    get_centre_of_mass(mlod_lods, num_lods, &model_info->centre_of_mass);
-
-    model_info->centre_of_mass.x -= model_info->bounding_center.x;
-    model_info->centre_of_mass.y -= model_info->bounding_center.y;
-    model_info->centre_of_mass.z -= model_info->bounding_center.z;
-
-    // Inv inertia (whatever that is) @todo
-    model_info->inv_inertia.x = 0;
-    model_info->inv_inertia.y = 0;
-    model_info->inv_inertia.z = 0;
+    // Centre of mass, inverse inertia, mass and inverse mass
+    get_mass_data(mlod_lods, num_lods, model_info);
 
     // Aiming Center
     // @todo: i think this uses the fire geo lod if available
@@ -427,14 +441,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->unknown_byte = 0;
     model_info->n_floats = 0;
 
-    model_info->mass = 0;
-    for (i = 0; i < num_lods; i++) {
-        if (!float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
-            continue;
-        for (j = 0; j < mlod_lods[i].num_points; j++)
-            model_info->mass += mlod_lods[i].mass[j];
-    }
-    model_info->mass_reciprocal = 10000000000.0f; // @todo
     model_info->alt_mass = 200.0f; // @todo
     model_info->alt_mass_reciprocal = 0.005f; // @todo
 
@@ -813,9 +819,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->geometry_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->centre_of_mass,      sizeof(struct triplet), 1, f_target);
-    // @todo: replace these two with the proper inertia matrix
-    fwrite(&model_info->inv_inertia,         sizeof(struct triplet), 1, f_target);
-    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 24, 1, f_target);
+    fwrite(&model_info->inv_inertia,         sizeof(matrix), 1, f_target);
     fwrite(&model_info->autocenter,          sizeof(bool), 1, f_target);
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
