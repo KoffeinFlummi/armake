@@ -337,7 +337,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
     model_info->can_be_occluded = true; // @todo
-    model_info->allow_animation = false; // @todo
+    model_info->animated = false; // @todo
 
     for (i = 0; i < num_lods; i++) {
         for (j = 0; j < MAXPROPERTIES; j++) {
@@ -427,9 +427,10 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->view_density = -100.0f; // @todo
 
-    strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
-
-    model_info->unknown_long = 0xff000000;
+    model_info->forceNotAlphaModel = false; //@todo
+    model_info->sbSource = 0; //@todo
+    model_info->prefershadowvolume = false; //@todo
+    model_info->shadow_offset = 1.0f; //@todo
 
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
     model_info->skeleton->num_bones = 0;
@@ -448,7 +449,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     for (i = 0; i < MAXANIMS; i++)
         model_info->skeleton->animations[i].name[0] = 0;
 
-    model_info->unknown_byte = 0;
+    model_info->map_type = 0; //@todo
     model_info->n_floats = 0;
 
     model_info->mass = 0;
@@ -459,18 +460,20 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
             model_info->mass += mlod_lods[i].mass[j];
     }
     model_info->mass_reciprocal = 10000000000.0f; // @todo
-    model_info->alt_mass = 200.0f; // @todo
-    model_info->alt_mass_reciprocal = 0.005f; // @todo
+    model_info->armor = 200.0f; // @todo
+    model_info->inv_armor = 0.005f; // @todo
 
-    strncpy(model_info->unknown_indices,
+    //the real indices to the lods are calculated by the engine when the model is loaded 
+    strncpy((char*)&model_info->special_lod_indices,
         "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff",
-        sizeof(model_info->unknown_indices));
+        sizeof(struct lod_indices));
 
-    model_info->unknown_long_2 = num_lods;
-    model_info->unknown_bool = false;
-    model_info->class_type = 0;
-    model_info->destruct_type = 0;
-    model_info->unknown_bool_2 = false;
+    //according to BIS: first LOD that can be used for shadowing
+    model_info->minShadow = num_lods; // @todo
+    model_info->canBlend = false; // @todo
+    model_info->class_type = 0; // @todo
+    model_info->destruct_type = 0; // @todo
+    model_info->property_frequent = false; //@todo
     model_info->always_0 = 0;
 }
 
@@ -957,33 +960,39 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
-    fwrite(&model_info->allow_animation,     sizeof(bool), 1, f_target);
-    fwrite( model_info->unknown_flags,       sizeof(char) * 6, 1, f_target);
     fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->mf_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->mf_act,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->t_body,    sizeof(float), 1, f_target);
-    fwrite(&model_info->unknown_long,        sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->forceNotAlphaModel,  sizeof(bool), 1, f_target);
+#ifdef VERSION70
+    fwrite("\0\0\0\0", 4, 1, f_target); //unknown int
+#endif
+    fwrite(&model_info->sbSource,            sizeof(int32_t), 1, f_target);
+    fwrite(&model_info->prefershadowvolume,  sizeof(bool), 1, f_target);
+    fwrite(&model_info->shadow_offset,       sizeof(float), 1, f_target);
+    fwrite(&model_info->animated,            sizeof(bool), 1, f_target);
     write_skeleton(f_target, model_info->skeleton);
-    fwrite(&model_info->unknown_byte,        sizeof(char), 1, f_target);
+    fwrite(&model_info->map_type,            sizeof(char), 1, f_target);
     fwrite(&model_info->n_floats,            sizeof(uint32_t), 1, f_target);
     //fwrite("\0\0\0\0\0", 4, 1, f_target); // compression header for empty array
     fwrite(&model_info->mass,                sizeof(float), 1, f_target);
     fwrite(&model_info->mass_reciprocal,     sizeof(float), 1, f_target);
-    fwrite(&model_info->alt_mass,            sizeof(float), 1, f_target);
-    fwrite(&model_info->alt_mass_reciprocal, sizeof(float), 1, f_target);
-    fwrite( model_info->unknown_indices,     sizeof(char) * 14, 1, f_target);
-    fwrite(&model_info->unknown_long_2,      sizeof(uint32_t), 1, f_target);
-    fwrite(&model_info->unknown_bool,        sizeof(bool), 1, f_target);
+    fwrite(&model_info->armor,               sizeof(float), 1, f_target);
+    fwrite(&model_info->inv_armor,           sizeof(float), 1, f_target);
+    fwrite(&model_info->special_lod_indices, sizeof(struct lod_indices), 1, f_target);
+    fwrite(&model_info->minShadow,           sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->canBlend,            sizeof(bool), 1, f_target);
     fwrite(&model_info->class_type,          sizeof(char), 1, f_target);
     fwrite(&model_info->destruct_type,       sizeof(char), 1, f_target);
-    fwrite(&model_info->unknown_bool_2,      sizeof(bool), 1, f_target);
+    fwrite(&model_info->property_frequent,   sizeof(bool), 1, f_target);
     fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target);
 
+    //sets preferredShadowVolumeLod, preferredShadowBufferLod, and preferredShadowBufferLodVis for each LOD
     for (i = 0; i < num_lods; i++)
-        fwrite("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 12, 1, f_target);
+        fwrite("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 12, 1, f_target); 
 }
 
 

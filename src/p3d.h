@@ -206,6 +206,23 @@ struct odol_lod {
     struct triplet *normals;
 };
 
+struct lod_indices {
+    int8_t geometrySimple;
+    int8_t geometryPhys;
+    int8_t memory;
+    int8_t geometry;
+    int8_t geometryFire;
+    int8_t geometryView;
+    int8_t geometryViewPilot;
+    int8_t geometryViewGunner;
+    int8_t geometryViewCommander; //always -1 because it is not used anymore
+    int8_t geometryViewCargo;
+    int8_t landContact;
+    int8_t roadway;
+    int8_t paths;
+    int8_t hitpoints;
+};
+
 struct model_info {
     float *lod_resolutions;
     uint32_t index;
@@ -228,24 +245,25 @@ struct model_info {
     bool lock_autocenter;
     bool can_occlude;
     bool can_be_occluded;
-    bool allow_animation;
-    char unknown_flags[6];
-    uint32_t unknown_long;
+    bool forceNotAlphaModel;
+    int32_t sbSource;
+    bool prefershadowvolume;
+    float shadow_offset;
+    bool animated;
     struct skeleton *skeleton;
-    char unknown_byte;
+    char map_type;
     uint32_t n_floats;
     float mass;
     float mass_reciprocal;
-    float alt_mass;
-    float alt_mass_reciprocal;
-    char unknown_indices[14];
-    uint32_t unknown_long_2;
-    bool unknown_bool;
+    float armor;
+    float inv_armor;
+    struct lod_indices special_lod_indices;
+    uint32_t minShadow;
+    bool canBlend;
     char class_type;
     char destruct_type;
-    bool unknown_bool_2;
+    bool property_frequent;
     uint32_t always_0;
 };
-
 
 int mlod2odol(char *source, char *target);
