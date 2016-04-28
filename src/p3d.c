@@ -408,12 +408,12 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->aiming_center = model_info->geometry_center;
 
     // Spheres
-    model_info->mem_lod_sphere = 0.0f;
+    model_info->bounding_sphere = 0.0f;
     model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
         sphere = get_sphere(&mlod_lods[i], &model_info->centre_of_mass);
-        if (sphere > model_info->mem_lod_sphere)
-            model_info->mem_lod_sphere = sphere;
+        if (sphere > model_info->bounding_sphere)
+            model_info->bounding_sphere = sphere;
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             model_info->geo_lod_sphere = sphere;
     }
@@ -939,7 +939,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
 
     fwrite( model_info->lod_resolutions,     sizeof(float) * num_lods, 1, f_target);
     fwrite(&model_info->index,               sizeof(uint32_t), 1, f_target);
-    fwrite(&model_info->mem_lod_sphere,      sizeof(float), 1, f_target);
+    fwrite(&model_info->bounding_sphere,     sizeof(float), 1, f_target);
     fwrite(&model_info->geo_lod_sphere,      sizeof(float), 1, f_target);
     fwrite( model_info->point_flags,         sizeof(uint32_t) * 3, 1, f_target);
     fwrite(&model_info->aiming_center,       sizeof(struct triplet), 1, f_target);

@@ -226,7 +226,7 @@ struct lod_indices {
 struct model_info {
     float *lod_resolutions;
     uint32_t index;
-    float mem_lod_sphere;
+    float bounding_sphere;
     float geo_lod_sphere;
     uint32_t point_flags[3];
     struct triplet aiming_center;
