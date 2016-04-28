@@ -169,9 +169,8 @@ struct odol_lod {
     struct odol_bonelink *bonelinks;
     uint32_t num_points;
     uint32_t num_points_mlod;
-    float unknown_v52_float;
-    float unknown_float_1;
-    float unknown_float_2;
+    float face_area;
+    uint32_t clip_flags[2];
     struct triplet min_pos;
     struct triplet max_pos;
     struct triplet autocenter_pos;
@@ -198,8 +197,8 @@ struct odol_lod {
     struct odol_frame *frames;
     uint32_t icon_color;
     uint32_t selected_color;
-    uint32_t unknown_residue;
-    char unknown_byte;
+    uint32_t flags;
+    bool vertexBoneRefIsSimple;
     float uv_scale[4];
     struct uv_pair *uv_coords;
     struct triplet *points;

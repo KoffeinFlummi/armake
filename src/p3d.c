@@ -568,9 +568,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->num_points_mlod = mlod_lod->num_points;
 
-    odol_lod->unknown_v52_float = 0;
-    odol_lod->unknown_float_1 = 0;
-    odol_lod->unknown_float_2 = 0;
+    odol_lod->face_area = 0;
+    odol_lod->clip_flags[0] = 0;
+    odol_lod->clip_flags[1] = 0;
 
     odol_lod->min_pos.x = 0;
     odol_lod->min_pos.y = 0;
@@ -907,8 +907,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->icon_color = 0xff9d8254;
     odol_lod->selected_color = 0xff9d8254;
 
-    odol_lod->unknown_residue = 0;
-    odol_lod->unknown_byte = 0;
+    odol_lod->flags = 0;
+    odol_lod->vertexBoneRefIsSimple = 0;
 
     odol_lod->uv_scale[0] = 0;
     odol_lod->uv_scale[1] = 0;
@@ -1107,9 +1107,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->num_bonelinks, sizeof(uint32_t), 1, f_target);
     // @todo bonelinks
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_v52_float, sizeof(float), 1, f_target);
-    fwrite(&odol_lod->unknown_float_1, sizeof(float), 1, f_target);
-    fwrite(&odol_lod->unknown_float_2, sizeof(float), 1, f_target);
+    fwrite(&odol_lod->face_area, sizeof(float), 1, f_target);
+    fwrite(odol_lod->clip_flags, sizeof(uint32_t), 2, f_target);
     fwrite(&odol_lod->min_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->max_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->autocenter_pos, sizeof(struct triplet), 1, f_target);
@@ -1159,8 +1158,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 
     fwrite(&odol_lod->icon_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->selected_color, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_residue, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_byte, sizeof(char), 1, f_target);
+    fwrite(&odol_lod->flags, sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_lod->vertexBoneRefIsSimple, sizeof(bool), 1, f_target);
 
     fp_vertextable_size = ftell(f_target);
     fwrite("\0\0\0\0", 4, 1, f_target);
