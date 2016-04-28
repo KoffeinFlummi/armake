@@ -337,7 +337,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
     model_info->can_be_occluded = true; // @todo
-    model_info->allow_animation = false; // @todo
+    model_info->animated = false; // @todo
 
     for (i = 0; i < num_lods; i++) {
         for (j = 0; j < MAXPROPERTIES; j++) {
@@ -408,12 +408,12 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->aiming_center = model_info->geometry_center;
 
     // Spheres
-    model_info->mem_lod_sphere = 0.0f;
+    model_info->bounding_sphere = 0.0f;
     model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
         sphere = get_sphere(&mlod_lods[i], &model_info->centre_of_mass);
-        if (sphere > model_info->mem_lod_sphere)
-            model_info->mem_lod_sphere = sphere;
+        if (sphere > model_info->bounding_sphere)
+            model_info->bounding_sphere = sphere;
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             model_info->geo_lod_sphere = sphere;
     }
@@ -427,9 +427,10 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->view_density = -100.0f; // @todo
 
-    strncpy(model_info->unknown_flags, "\0\0\0\0\0\0", sizeof(model_info->unknown_flags)); // @todo
-
-    model_info->unknown_long = 0xff000000;
+    model_info->forceNotAlphaModel = false; //@todo
+    model_info->sbSource = 0; //@todo
+    model_info->prefershadowvolume = false; //@todo
+    model_info->shadow_offset = 1.0f; //@todo
 
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
     model_info->skeleton->num_bones = 0;
@@ -448,7 +449,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     for (i = 0; i < MAXANIMS; i++)
         model_info->skeleton->animations[i].name[0] = 0;
 
-    model_info->unknown_byte = 0;
+    model_info->map_type = 0; //@todo
     model_info->n_floats = 0;
 
     model_info->mass = 0;
@@ -459,18 +460,20 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
             model_info->mass += mlod_lods[i].mass[j];
     }
     model_info->mass_reciprocal = 10000000000.0f; // @todo
-    model_info->alt_mass = 200.0f; // @todo
-    model_info->alt_mass_reciprocal = 0.005f; // @todo
+    model_info->armor = 200.0f; // @todo
+    model_info->inv_armor = 0.005f; // @todo
 
-    strncpy(model_info->unknown_indices,
+    //the real indices to the lods are calculated by the engine when the model is loaded 
+    strncpy((char*)&model_info->special_lod_indices,
         "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff",
-        sizeof(model_info->unknown_indices));
+        sizeof(struct lod_indices));
 
-    model_info->unknown_long_2 = num_lods;
-    model_info->unknown_bool = false;
-    model_info->class_type = 0;
-    model_info->destruct_type = 0;
-    model_info->unknown_bool_2 = false;
+    //according to BIS: first LOD that can be used for shadowing
+    model_info->minShadow = num_lods; // @todo
+    model_info->canBlend = false; // @todo
+    model_info->class_type = 0; // @todo
+    model_info->destruct_type = 0; // @todo
+    model_info->property_frequent = false; //@todo
     model_info->always_0 = 0;
 }
 
@@ -512,14 +515,8 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
     return (odol_lod->num_points - 1);
 }
 
-
-#ifdef VERSION70
-void sort_faces(struct mlod_face *mlod_faces, uint32_t *face_lookup,
+void sort_faces(struct mlod_face *mlod_faces, pointIndex *face_lookup,
         int key_offset, uint32_t low, uint32_t high) {
-#else
-void sort_faces(struct mlod_face *mlod_faces, uint16_t *face_lookup,
-        int key_offset, long low, long high) {
-#endif
     /*
      * Creates a face lookup array that resoluts in a face array that is sorted
      * according to the struct member reached using key_offset.
@@ -530,7 +527,7 @@ void sort_faces(struct mlod_face *mlod_faces, uint16_t *face_lookup,
 
     long i;
     long j;
-    uint32_t temp;
+    pointIndex temp;
 
     i = low;
     for (j = low; j < high; j++) {
@@ -571,9 +568,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->num_points_mlod = mlod_lod->num_points;
 
-    odol_lod->unknown_v52_float = 0;
-    odol_lod->unknown_float_1 = 0;
-    odol_lod->unknown_float_2 = 0;
+    odol_lod->face_area = 0;
+    odol_lod->clip_flags[0] = 0;
+    odol_lod->clip_flags[1] = 0;
 
     odol_lod->min_pos.x = 0;
     odol_lod->min_pos.y = 0;
@@ -672,27 +669,16 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->num_points = 0;
 
-#ifdef VERSION70
-    odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
-    odol_lod->face_lookup_reverse = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
-#else
-    odol_lod->point_to_vertex = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
-    odol_lod->face_lookup_reverse = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
-#endif
+    odol_lod->point_to_vertex = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->num_points_mlod);
+    odol_lod->vertex_to_point = (pointIndex *)malloc(sizeof(pointIndex) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (pointIndex *)malloc(sizeof(pointIndex) * mlod_lod->num_faces);
+    odol_lod->face_lookup_reverse = (pointIndex *)malloc(sizeof(pointIndex) * mlod_lod->num_faces);
 
     for (i = 0; i < mlod_lod->num_faces; i++)
         odol_lod->face_lookup[i] = i;
 
     for (i = 0; i < odol_lod->num_points_mlod; i++)
-#ifdef VERSION70
-        odol_lod->point_to_vertex[i] = UINT32_MAX;
-#else
-        odol_lod->point_to_vertex[i] = UINT16_MAX;
-#endif
+        odol_lod->point_to_vertex[i] = NOPOINT;
 
     odol_lod->uv_coords = (struct uv_pair *)malloc(sizeof(struct uv_pair) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
     odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
@@ -766,22 +752,18 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     // Write remaining vertices
     for (i = 0; i < odol_lod->num_points_mlod; i++) {
-#ifdef VERSION70
-        if (odol_lod->point_to_vertex[i] < UINT32_MAX)
-#else
-        if (odol_lod->point_to_vertex[i] < UINT16_MAX)
-#endif
-            continue;
 
-        normal.x = 0.0f;
-        normal.y = 0.0f;
-        normal.z = 0.0f;
+        if (odol_lod->point_to_vertex[i] == NOPOINT) {
+            normal.x = 0.0f;
+            normal.y = 0.0f;
+            normal.z = 0.0f;
 
-        uv_coords.u = 0.0f;
-        uv_coords.v = 0.0f;
+            uv_coords.u = 0.0f;
+            uv_coords.v = 0.0f;
 
-        odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
-            i, &normal, &uv_coords);
+            odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
+                i, &normal, &uv_coords);
+        }
     }
 
     // Write sections
@@ -865,28 +847,17 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 odol_lod->selections[i].num_faces++;
         }
 
-#ifdef VERSION70
-        odol_lod->selections[i].faces = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_faces);
+        odol_lod->selections[i].faces = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->selections[i].num_faces);
         for (j = 0; j < odol_lod->selections[i].num_faces; j++)
-            odol_lod->selections[i].faces[j] = UINT32_MAX;
-#else
-        odol_lod->selections[i].faces = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->selections[i].num_faces);
-        for (j = 0; j < odol_lod->selections[i].num_faces; j++)
-            odol_lod->selections[i].faces[j] = UINT16_MAX;
-#endif
+            odol_lod->selections[i].faces[j] = NOPOINT;
 
         for (j = 0; j < odol_lod->num_faces; j++) {
             if (mlod_lod->selections[i].faces[j] == 0)
                 continue;
 
             for (k = 0; k < odol_lod->selections[i].num_faces; k++) {
-#ifdef VERSION70
-                if (odol_lod->selections[i].faces[k] == UINT16_MAX)
+                if (odol_lod->selections[i].faces[k] == NOPOINT)
                     break;
-#else
-                if (odol_lod->selections[i].faces[k] == UINT16_MAX)
-                    break;
-#endif
             }
             odol_lod->selections[i].faces[k] = odol_lod->face_lookup[j];
         }
@@ -904,15 +875,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
         odol_lod->selections[i].num_vertex_weights = odol_lod->selections[i].num_vertices;
 
-#ifdef VERSION70
-        odol_lod->selections[i].vertices = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_vertices);
+        odol_lod->selections[i].vertices = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->selections[i].num_vertices);
         for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
-            odol_lod->selections[i].vertices[j] = UINT32_MAX;
-#else
-        odol_lod->selections[i].vertices = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->selections[i].num_vertices);
-        for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
-            odol_lod->selections[i].vertices[j] = UINT16_MAX;
-#endif
+            odol_lod->selections[i].vertices[j] = NOPOINT;
+
         odol_lod->selections[i].vertex_weights = (uint8_t *)malloc(sizeof(uint8_t) * odol_lod->selections[i].num_vertex_weights);
 
         for (j = 0; j < odol_lod->num_points; j++) {
@@ -920,13 +886,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 continue;
 
             for (k = 0; k < odol_lod->selections[i].num_vertices; k++) {
-#ifdef VERSION70
-                if (odol_lod->selections[i].vertices[k] == UINT16_MAX)
+                if (odol_lod->selections[i].vertices[k] == NOPOINT)
                     break;
-#else
-                if (odol_lod->selections[i].vertices[k] == UINT16_MAX)
-                    break;
-#endif
             }
             odol_lod->selections[i].vertices[k] = j;
             odol_lod->selections[i].vertex_weights[k] = mlod_lod->selections[i].points[odol_lod->vertex_to_point[j]];
@@ -946,8 +907,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->icon_color = 0xff9d8254;
     odol_lod->selected_color = 0xff9d8254;
 
-    odol_lod->unknown_residue = 0;
-    odol_lod->unknown_byte = 0;
+    odol_lod->flags = 0;
+    odol_lod->vertexBoneRefIsSimple = 0;
 
     odol_lod->uv_scale[0] = 0;
     odol_lod->uv_scale[1] = 0;
@@ -978,7 +939,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
 
     fwrite( model_info->lod_resolutions,     sizeof(float) * num_lods, 1, f_target);
     fwrite(&model_info->index,               sizeof(uint32_t), 1, f_target);
-    fwrite(&model_info->mem_lod_sphere,      sizeof(float), 1, f_target);
+    fwrite(&model_info->bounding_sphere,     sizeof(float), 1, f_target);
     fwrite(&model_info->geo_lod_sphere,      sizeof(float), 1, f_target);
     fwrite( model_info->point_flags,         sizeof(uint32_t) * 3, 1, f_target);
     fwrite(&model_info->aiming_center,       sizeof(struct triplet), 1, f_target);
@@ -999,33 +960,39 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
-    fwrite(&model_info->allow_animation,     sizeof(bool), 1, f_target);
-    fwrite( model_info->unknown_flags,       sizeof(char) * 6, 1, f_target);
     fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->mf_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->mf_act,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->t_body,    sizeof(float), 1, f_target);
-    fwrite(&model_info->unknown_long,        sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->forceNotAlphaModel,  sizeof(bool), 1, f_target);
+#ifdef VERSION70
+    fwrite("\0\0\0\0", 4, 1, f_target); //unknown int
+#endif
+    fwrite(&model_info->sbSource,            sizeof(int32_t), 1, f_target);
+    fwrite(&model_info->prefershadowvolume,  sizeof(bool), 1, f_target);
+    fwrite(&model_info->shadow_offset,       sizeof(float), 1, f_target);
+    fwrite(&model_info->animated,            sizeof(bool), 1, f_target);
     write_skeleton(f_target, model_info->skeleton);
-    fwrite(&model_info->unknown_byte,        sizeof(char), 1, f_target);
+    fwrite(&model_info->map_type,            sizeof(char), 1, f_target);
     fwrite(&model_info->n_floats,            sizeof(uint32_t), 1, f_target);
     //fwrite("\0\0\0\0\0", 4, 1, f_target); // compression header for empty array
     fwrite(&model_info->mass,                sizeof(float), 1, f_target);
     fwrite(&model_info->mass_reciprocal,     sizeof(float), 1, f_target);
-    fwrite(&model_info->alt_mass,            sizeof(float), 1, f_target);
-    fwrite(&model_info->alt_mass_reciprocal, sizeof(float), 1, f_target);
-    fwrite( model_info->unknown_indices,     sizeof(char) * 14, 1, f_target);
-    fwrite(&model_info->unknown_long_2,      sizeof(uint32_t), 1, f_target);
-    fwrite(&model_info->unknown_bool,        sizeof(bool), 1, f_target);
+    fwrite(&model_info->armor,               sizeof(float), 1, f_target);
+    fwrite(&model_info->inv_armor,           sizeof(float), 1, f_target);
+    fwrite(&model_info->special_lod_indices, sizeof(struct lod_indices), 1, f_target);
+    fwrite(&model_info->minShadow,           sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->canBlend,            sizeof(bool), 1, f_target);
     fwrite(&model_info->class_type,          sizeof(char), 1, f_target);
     fwrite(&model_info->destruct_type,       sizeof(char), 1, f_target);
-    fwrite(&model_info->unknown_bool_2,      sizeof(bool), 1, f_target);
+    fwrite(&model_info->property_frequent,   sizeof(bool), 1, f_target);
     fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target);
 
+    //sets preferredShadowVolumeLod, preferredShadowBufferLod, and preferredShadowBufferLodVis for each LOD
     for (i = 0; i < num_lods; i++)
-        fwrite("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 12, 1, f_target);
+        fwrite("\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 12, 1, f_target); 
 }
 
 
@@ -1053,11 +1020,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_faces, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_faces > 0) {
         fputc(0, f_target);
-#ifdef VERSION70
-        fwrite(odol_selection->faces, sizeof(uint32_t) * odol_selection->num_faces, 1, f_target);
-#else
-        fwrite(odol_selection->faces, sizeof(uint16_t) * odol_selection->num_faces, 1, f_target);
-#endif
+        fwrite(odol_selection->faces, sizeof(pointIndex) * odol_selection->num_faces, 1, f_target);
     }
 
     fwrite(&odol_selection->always_0, sizeof(uint32_t), 1, f_target);
@@ -1072,11 +1035,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_vertices, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_vertices > 0) {
         fputc(0, f_target);
-#ifdef VERSION70
-        fwrite(odol_selection->vertices, sizeof(uint32_t) * odol_selection->num_vertices, 1, f_target);
-#else
-        fwrite(odol_selection->vertices, sizeof(uint16_t) * odol_selection->num_vertices, 1, f_target);
-#endif
+        fwrite(odol_selection->vertices, sizeof(pointIndex) * odol_selection->num_vertices, 1, f_target);
     }
 
     odol_selection->num_vertex_weights = 0;
@@ -1148,9 +1107,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->num_bonelinks, sizeof(uint32_t), 1, f_target);
     // @todo bonelinks
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_v52_float, sizeof(float), 1, f_target);
-    fwrite(&odol_lod->unknown_float_1, sizeof(float), 1, f_target);
-    fwrite(&odol_lod->unknown_float_2, sizeof(float), 1, f_target);
+    fwrite(&odol_lod->face_area, sizeof(float), 1, f_target);
+    fwrite(odol_lod->clip_flags, sizeof(uint32_t), 2, f_target);
     fwrite(&odol_lod->min_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->max_pos, sizeof(struct triplet), 1, f_target);
     fwrite(&odol_lod->autocenter_pos, sizeof(struct triplet), 1, f_target);
@@ -1176,11 +1134,7 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 
     for (i = 0; i < odol_lod->num_faces; i++) {
         fwrite(&odol_lod->faces[i].face_type, sizeof(uint8_t), 1, f_target);
-#ifdef VERSION70
-        fwrite( odol_lod->faces[i].table, sizeof(uint32_t) * odol_lod->faces[i].face_type, 1, f_target);
-#else
-        fwrite( odol_lod->faces[i].table, sizeof(uint16_t) * odol_lod->faces[i].face_type, 1, f_target);
-#endif
+        fwrite( odol_lod->faces[i].table, sizeof(pointIndex) * odol_lod->faces[i].face_type, 1, f_target);
     }
 
     fwrite(&odol_lod->num_sections, sizeof(uint32_t), 1, f_target);
@@ -1204,8 +1158,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 
     fwrite(&odol_lod->icon_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->selected_color, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_residue, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->unknown_byte, sizeof(char), 1, f_target);
+    fwrite(&odol_lod->flags, sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_lod->vertexBoneRefIsSimple, sizeof(bool), 1, f_target);
 
     fp_vertextable_size = ftell(f_target);
     fwrite("\0\0\0\0", 4, 1, f_target);

@@ -60,6 +60,14 @@
 #include "utils.h"
 #include "model_config.h"
 
+#ifdef VERSION70
+    typedef uint32_t pointIndex;
+    #define NOPOINT UINT32_MAX //=-1 as int32_t
+#else
+    typedef uint16_t pointIndex;
+    #define NOPOINT UINT16_MAX //=-1 as int32_t
+#endif
+
 
 struct uv_pair {
     float u;
@@ -111,11 +119,7 @@ struct mlod_lod {
 
 struct odol_face {
     uint8_t face_type;
-#ifdef VERSION70
-    uint32_t table[4];
-#else
-    uint16_t table[4];
-#endif
+    pointIndex table[4];
 };
 
 struct odol_proxy {
@@ -142,21 +146,13 @@ struct odol_section {
 struct odol_selection {
     char name[512];
     uint32_t num_faces;
-#ifdef VERSION70
-    uint32_t *faces;
-#else
-    uint16_t *faces;
-#endif
+    pointIndex *faces;
     uint32_t always_0;
     bool is_sectional;
     uint32_t num_sections;
     uint32_t *sections;
     uint32_t num_vertices;
-#ifdef VERSION70
-    uint32_t *vertices;
-#else
-    uint16_t *vertices;
-#endif
+    pointIndex *vertices;
     uint32_t num_vertex_weights;
     uint8_t *vertex_weights;
 };
@@ -173,9 +169,8 @@ struct odol_lod {
     struct odol_bonelink *bonelinks;
     uint32_t num_points;
     uint32_t num_points_mlod;
-    float unknown_v52_float;
-    float unknown_float_1;
-    float unknown_float_2;
+    float face_area;
+    uint32_t clip_flags[2];
     struct triplet min_pos;
     struct triplet max_pos;
     struct triplet autocenter_pos;
@@ -184,17 +179,10 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct material *materials;
-#ifdef VERSION70
-    uint32_t *point_to_vertex;
-    uint32_t *vertex_to_point;
-    uint32_t *face_lookup;
-    uint32_t *face_lookup_reverse;
-#else
-    uint16_t *point_to_vertex;
-    uint16_t *vertex_to_point;
-    uint16_t *face_lookup;
-    uint16_t *face_lookup_reverse;
-#endif
+    pointIndex *point_to_vertex;
+    pointIndex *vertex_to_point;
+    pointIndex *face_lookup;
+    pointIndex *face_lookup_reverse;
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;
@@ -209,18 +197,35 @@ struct odol_lod {
     struct odol_frame *frames;
     uint32_t icon_color;
     uint32_t selected_color;
-    uint32_t unknown_residue;
-    char unknown_byte;
+    uint32_t flags;
+    bool vertexBoneRefIsSimple;
     float uv_scale[4];
     struct uv_pair *uv_coords;
     struct triplet *points;
     struct triplet *normals;
 };
 
+struct lod_indices {
+    int8_t geometrySimple;
+    int8_t geometryPhys;
+    int8_t memory;
+    int8_t geometry;
+    int8_t geometryFire;
+    int8_t geometryView;
+    int8_t geometryViewPilot;
+    int8_t geometryViewGunner;
+    int8_t geometryViewCommander; //always -1 because it is not used anymore
+    int8_t geometryViewCargo;
+    int8_t landContact;
+    int8_t roadway;
+    int8_t paths;
+    int8_t hitpoints;
+};
+
 struct model_info {
     float *lod_resolutions;
     uint32_t index;
-    float mem_lod_sphere;
+    float bounding_sphere;
     float geo_lod_sphere;
     uint32_t point_flags[3];
     struct triplet aiming_center;
@@ -239,24 +244,25 @@ struct model_info {
     bool lock_autocenter;
     bool can_occlude;
     bool can_be_occluded;
-    bool allow_animation;
-    char unknown_flags[6];
-    uint32_t unknown_long;
+    bool forceNotAlphaModel;
+    int32_t sbSource;
+    bool prefershadowvolume;
+    float shadow_offset;
+    bool animated;
     struct skeleton *skeleton;
-    char unknown_byte;
+    char map_type;
     uint32_t n_floats;
     float mass;
     float mass_reciprocal;
-    float alt_mass;
-    float alt_mass_reciprocal;
-    char unknown_indices[14];
-    uint32_t unknown_long_2;
-    bool unknown_bool;
+    float armor;
+    float inv_armor;
+    struct lod_indices special_lod_indices;
+    uint32_t minShadow;
+    bool canBlend;
     char class_type;
     char destruct_type;
-    bool unknown_bool_2;
+    bool property_frequent;
     uint32_t always_0;
 };
-
 
 int mlod2odol(char *source, char *target);
