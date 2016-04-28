@@ -60,6 +60,14 @@
 #include "utils.h"
 #include "model_config.h"
 
+#ifdef VERSION70
+    typedef uint32_t pointIndex;
+    #define NOPOINT UINT32_MAX //=-1 as int32_t
+#else
+    typedef uint16_t pointIndex;
+    #define NOPOINT UINT16_MAX //=-1 as int32_t
+#endif
+
 
 struct uv_pair {
     float u;
@@ -111,11 +119,7 @@ struct mlod_lod {
 
 struct odol_face {
     uint8_t face_type;
-#ifdef VERSION70
-    uint32_t table[4];
-#else
-    uint16_t table[4];
-#endif
+    pointIndex table[4];
 };
 
 struct odol_proxy {
@@ -142,21 +146,13 @@ struct odol_section {
 struct odol_selection {
     char name[512];
     uint32_t num_faces;
-#ifdef VERSION70
-    uint32_t *faces;
-#else
-    uint16_t *faces;
-#endif
+    pointIndex *faces;
     uint32_t always_0;
     bool is_sectional;
     uint32_t num_sections;
     uint32_t *sections;
     uint32_t num_vertices;
-#ifdef VERSION70
-    uint32_t *vertices;
-#else
-    uint16_t *vertices;
-#endif
+    pointIndex *vertices;
     uint32_t num_vertex_weights;
     uint8_t *vertex_weights;
 };
@@ -184,17 +180,10 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct material *materials;
-#ifdef VERSION70
-    uint32_t *point_to_vertex;
-    uint32_t *vertex_to_point;
-    uint32_t *face_lookup;
-    uint32_t *face_lookup_reverse;
-#else
-    uint16_t *point_to_vertex;
-    uint16_t *vertex_to_point;
-    uint16_t *face_lookup;
-    uint16_t *face_lookup_reverse;
-#endif
+    pointIndex *point_to_vertex;
+    pointIndex *vertex_to_point;
+    pointIndex *face_lookup;
+    pointIndex *face_lookup_reverse;
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;

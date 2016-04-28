@@ -512,14 +512,8 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
     return (odol_lod->num_points - 1);
 }
 
-
-#ifdef VERSION70
-void sort_faces(struct mlod_face *mlod_faces, uint32_t *face_lookup,
+void sort_faces(struct mlod_face *mlod_faces, pointIndex *face_lookup,
         int key_offset, uint32_t low, uint32_t high) {
-#else
-void sort_faces(struct mlod_face *mlod_faces, uint16_t *face_lookup,
-        int key_offset, long low, long high) {
-#endif
     /*
      * Creates a face lookup array that resoluts in a face array that is sorted
      * according to the struct member reached using key_offset.
@@ -530,7 +524,7 @@ void sort_faces(struct mlod_face *mlod_faces, uint16_t *face_lookup,
 
     long i;
     long j;
-    uint32_t temp;
+    pointIndex temp;
 
     i = low;
     for (j = low; j < high; j++) {
@@ -672,27 +666,16 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->num_points = 0;
 
-#ifdef VERSION70
-    odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
-    odol_lod->face_lookup_reverse = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
-#else
-    odol_lod->point_to_vertex = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint16_t *)malloc(sizeof(uint16_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
-    odol_lod->face_lookup_reverse = (uint16_t *)malloc(sizeof(uint16_t) * mlod_lod->num_faces);
-#endif
+    odol_lod->point_to_vertex = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->num_points_mlod);
+    odol_lod->vertex_to_point = (pointIndex *)malloc(sizeof(pointIndex) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (pointIndex *)malloc(sizeof(pointIndex) * mlod_lod->num_faces);
+    odol_lod->face_lookup_reverse = (pointIndex *)malloc(sizeof(pointIndex) * mlod_lod->num_faces);
 
     for (i = 0; i < mlod_lod->num_faces; i++)
         odol_lod->face_lookup[i] = i;
 
     for (i = 0; i < odol_lod->num_points_mlod; i++)
-#ifdef VERSION70
-        odol_lod->point_to_vertex[i] = UINT32_MAX;
-#else
-        odol_lod->point_to_vertex[i] = UINT16_MAX;
-#endif
+        odol_lod->point_to_vertex[i] = NOPOINT;
 
     odol_lod->uv_coords = (struct uv_pair *)malloc(sizeof(struct uv_pair) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
     odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
@@ -766,22 +749,18 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     // Write remaining vertices
     for (i = 0; i < odol_lod->num_points_mlod; i++) {
-#ifdef VERSION70
-        if (odol_lod->point_to_vertex[i] < UINT32_MAX)
-#else
-        if (odol_lod->point_to_vertex[i] < UINT16_MAX)
-#endif
-            continue;
 
-        normal.x = 0.0f;
-        normal.y = 0.0f;
-        normal.z = 0.0f;
+        if (odol_lod->point_to_vertex[i] == NOPOINT) {
+            normal.x = 0.0f;
+            normal.y = 0.0f;
+            normal.z = 0.0f;
 
-        uv_coords.u = 0.0f;
-        uv_coords.v = 0.0f;
+            uv_coords.u = 0.0f;
+            uv_coords.v = 0.0f;
 
-        odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
-            i, &normal, &uv_coords);
+            odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
+                i, &normal, &uv_coords);
+        }
     }
 
     // Write sections
@@ -865,28 +844,17 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 odol_lod->selections[i].num_faces++;
         }
 
-#ifdef VERSION70
-        odol_lod->selections[i].faces = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_faces);
+        odol_lod->selections[i].faces = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->selections[i].num_faces);
         for (j = 0; j < odol_lod->selections[i].num_faces; j++)
-            odol_lod->selections[i].faces[j] = UINT32_MAX;
-#else
-        odol_lod->selections[i].faces = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->selections[i].num_faces);
-        for (j = 0; j < odol_lod->selections[i].num_faces; j++)
-            odol_lod->selections[i].faces[j] = UINT16_MAX;
-#endif
+            odol_lod->selections[i].faces[j] = NOPOINT;
 
         for (j = 0; j < odol_lod->num_faces; j++) {
             if (mlod_lod->selections[i].faces[j] == 0)
                 continue;
 
             for (k = 0; k < odol_lod->selections[i].num_faces; k++) {
-#ifdef VERSION70
-                if (odol_lod->selections[i].faces[k] == UINT16_MAX)
+                if (odol_lod->selections[i].faces[k] == NOPOINT)
                     break;
-#else
-                if (odol_lod->selections[i].faces[k] == UINT16_MAX)
-                    break;
-#endif
             }
             odol_lod->selections[i].faces[k] = odol_lod->face_lookup[j];
         }
@@ -904,15 +872,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
         odol_lod->selections[i].num_vertex_weights = odol_lod->selections[i].num_vertices;
 
-#ifdef VERSION70
-        odol_lod->selections[i].vertices = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_vertices);
+        odol_lod->selections[i].vertices = (pointIndex *)malloc(sizeof(pointIndex) * odol_lod->selections[i].num_vertices);
         for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
-            odol_lod->selections[i].vertices[j] = UINT32_MAX;
-#else
-        odol_lod->selections[i].vertices = (uint16_t *)malloc(sizeof(uint16_t) * odol_lod->selections[i].num_vertices);
-        for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
-            odol_lod->selections[i].vertices[j] = UINT16_MAX;
-#endif
+            odol_lod->selections[i].vertices[j] = NOPOINT;
+
         odol_lod->selections[i].vertex_weights = (uint8_t *)malloc(sizeof(uint8_t) * odol_lod->selections[i].num_vertex_weights);
 
         for (j = 0; j < odol_lod->num_points; j++) {
@@ -920,13 +883,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 continue;
 
             for (k = 0; k < odol_lod->selections[i].num_vertices; k++) {
-#ifdef VERSION70
-                if (odol_lod->selections[i].vertices[k] == UINT16_MAX)
+                if (odol_lod->selections[i].vertices[k] == NOPOINT)
                     break;
-#else
-                if (odol_lod->selections[i].vertices[k] == UINT16_MAX)
-                    break;
-#endif
             }
             odol_lod->selections[i].vertices[k] = j;
             odol_lod->selections[i].vertex_weights[k] = mlod_lod->selections[i].points[odol_lod->vertex_to_point[j]];
@@ -1053,11 +1011,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_faces, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_faces > 0) {
         fputc(0, f_target);
-#ifdef VERSION70
-        fwrite(odol_selection->faces, sizeof(uint32_t) * odol_selection->num_faces, 1, f_target);
-#else
-        fwrite(odol_selection->faces, sizeof(uint16_t) * odol_selection->num_faces, 1, f_target);
-#endif
+        fwrite(odol_selection->faces, sizeof(pointIndex) * odol_selection->num_faces, 1, f_target);
     }
 
     fwrite(&odol_selection->always_0, sizeof(uint32_t), 1, f_target);
@@ -1072,11 +1026,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_vertices, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_vertices > 0) {
         fputc(0, f_target);
-#ifdef VERSION70
-        fwrite(odol_selection->vertices, sizeof(uint32_t) * odol_selection->num_vertices, 1, f_target);
-#else
-        fwrite(odol_selection->vertices, sizeof(uint16_t) * odol_selection->num_vertices, 1, f_target);
-#endif
+        fwrite(odol_selection->vertices, sizeof(pointIndex) * odol_selection->num_vertices, 1, f_target);
     }
 
     odol_selection->num_vertex_weights = 0;
@@ -1176,11 +1126,7 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 
     for (i = 0; i < odol_lod->num_faces; i++) {
         fwrite(&odol_lod->faces[i].face_type, sizeof(uint8_t), 1, f_target);
-#ifdef VERSION70
-        fwrite( odol_lod->faces[i].table, sizeof(uint32_t) * odol_lod->faces[i].face_type, 1, f_target);
-#else
-        fwrite( odol_lod->faces[i].table, sizeof(uint16_t) * odol_lod->faces[i].face_type, 1, f_target);
-#endif
+        fwrite( odol_lod->faces[i].table, sizeof(pointIndex) * odol_lod->faces[i].face_type, 1, f_target);
     }
 
     fwrite(&odol_lod->num_sections, sizeof(uint32_t), 1, f_target);
