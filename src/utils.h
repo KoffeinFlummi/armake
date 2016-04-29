@@ -48,13 +48,6 @@ struct point {
     uint32_t point_flags;
 };
 
-struct triplet {
-    float x;
-    float y;
-    float z;
-};
-
-
 int current_operation;
 char current_target[2048];
 

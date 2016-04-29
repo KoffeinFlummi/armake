@@ -34,6 +34,8 @@
 #include "model_config.h"
 #include "material.h"
 #include "p3d.h"
+#include "vector.h"
+#include "matrix.h"
 
 
 int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
@@ -194,52 +196,6 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     return 0;
 }
 
-
-void get_centre_of_mass(struct mlod_lod *mlod_lods, uint32_t num_lods, struct triplet *centre_of_mass) {
-    /*
-     * Calculate the centre of mass for the given LODs and stores
-     * it in the given triplet struct.
-     */
-
-    int i;
-    int j;
-    float mass;
-    float x;
-    float y;
-    float z;
-
-    centre_of_mass->x = 0;
-    centre_of_mass->y = 0;
-    centre_of_mass->z = 0;
-
-    for (i = 0; i < num_lods; i++) {
-        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
-            break;
-    }
-
-    if (i == num_lods)
-        return;
-
-    if (mlod_lods[i].mass == 0)
-        return;
-
-    mass = 0;
-    for (j = 0; j < mlod_lods[i].num_points; j++) {
-        mass += mlod_lods[i].mass[j];
-    }
-
-    for (j = 0; j < mlod_lods[i].num_points; j++) {
-        x = mlod_lods[i].points[j].x;
-        y = mlod_lods[i].points[j].y;
-        z = mlod_lods[i].points[j].z;
-
-        centre_of_mass->x += x * (mlod_lods[i].mass[j] / mass);
-        centre_of_mass->y += y * (mlod_lods[i].mass[j] / mass);
-        centre_of_mass->z += z * (mlod_lods[i].mass[j] / mass);
-    }
-}
-
-
 void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
         struct triplet *bbox_min, struct triplet *bbox_max, bool visual_only, bool geometry_only) {
     /*
@@ -324,6 +280,66 @@ float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
     return sphere;
 }
 
+void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
+    int i;
+    float mass;
+    vector sum;
+    vector pos;
+    matrix inertia;
+    matrix r_tilda;
+    struct mlod_lod *mass_lod;
+    
+    // mass is primarily stored in geometry
+    for (i = 0; i < num_lods; i++) {
+        if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
+            break;
+    }
+
+    // alternatively use the PhysX LOD
+    if (i >= num_lods || mlod_lods[i].num_points == 0) {
+        for (i = 0; i < num_lods; i++) {
+            if (float_equal(mlod_lods[i].resolution, LOD_PHYSX, 0.01))
+                break;
+        }
+    }
+    
+    // mass data available?
+    if (i >= num_lods || mlod_lods[i].num_points == 0) {
+        model_info->mass = 0;
+        model_info->mass_reciprocal = 1;
+        model_info->inv_inertia = identity_matrix;
+        model_info->centre_of_mass = empty_vector;
+        return;
+    }
+
+    mass_lod = &mlod_lods[i];
+    sum = empty_vector;
+    mass = 0;
+    for (i = 0; i < mass_lod->num_points; i++) {
+        pos = *((vector *)&mass_lod->points[i].x);
+        mass += mass_lod->mass[i];
+        sum = vector_add(sum, vector_mult_scalar(mass_lod->mass[i], pos));
+    }
+
+    model_info->centre_of_mass = (mass > 0) ? vector_mult_scalar(1 / mass, sum) : empty_vector;
+
+    inertia = empty_matrix;
+    for (i = 0; i < mass_lod->num_points; i++) {
+        pos = *((vector *)&mass_lod->points[i].x);
+        r_tilda = vector_tilda(vector_sub(pos, model_info->centre_of_mass));
+        inertia = matrix_sub(inertia, matrix_mult_scalar(mass_lod->mass[i], matrix_mult(r_tilda, r_tilda)));
+    }
+
+    // apply calculations to modelinfo
+    model_info->mass = mass;
+    if (mass > 0) {
+        model_info->mass_reciprocal = 1 / mass;
+        model_info->inv_inertia = matrix_inverse(inertia);
+    } else {
+        model_info->mass_reciprocal = 1;
+        model_info->inv_inertia = identity_matrix;
+    }
+}
 
 void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
     int i;
@@ -393,21 +409,8 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->geometry_center.y = (bbox_total_min.y + bbox_total_max.y) / 2 - model_info->bounding_center.y;
     model_info->geometry_center.z = (bbox_total_min.z + bbox_total_max.z) / 2 - model_info->bounding_center.z;
 
-    // Centre of mass
-    get_centre_of_mass(mlod_lods, num_lods, &model_info->centre_of_mass);
-
-    model_info->centre_of_mass.x -= model_info->bounding_center.x;
-    model_info->centre_of_mass.y -= model_info->bounding_center.y;
-    model_info->centre_of_mass.z -= model_info->bounding_center.z;
-
-    model_info->centre_of_mass.x = 0.0f;
-    model_info->centre_of_mass.y = 0.0f;
-    model_info->centre_of_mass.z = 0.0f;
-
-    // Inv inertia (whatever that is) @todo
-    model_info->inv_inertia.x = 0;
-    model_info->inv_inertia.y = 0;
-    model_info->inv_inertia.z = 0;
+    // Centre of mass, inverse inertia, mass and inverse mass
+    get_mass_data(mlod_lods, num_lods, model_info);
 
     // Aiming Center
     // @todo: i think this uses the fire geo lod if available
@@ -459,14 +462,6 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->map_type = 0; //@todo
     model_info->n_floats = 0;
 
-    model_info->mass = 0;
-    for (i = 0; i < num_lods; i++) {
-        if (!float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
-            continue;
-        for (j = 0; j < mlod_lods[i].num_points; j++)
-            model_info->mass += mlod_lods[i].mass[j];
-    }
-    model_info->mass_reciprocal = 10000000000.0f; // @todo
     model_info->armor = 200.0f; // @todo
     model_info->inv_armor = 0.005f; // @todo
 
@@ -1109,9 +1104,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->geometry_center,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->centre_of_mass,      sizeof(struct triplet), 1, f_target);
-    // @todo: replace these two with the proper inertia matrix
-    fwrite(&model_info->inv_inertia,         sizeof(struct triplet), 1, f_target);
-    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 24, 1, f_target);
+    fwrite(&model_info->inv_inertia,         sizeof(matrix), 1, f_target);
     fwrite(&model_info->autocenter,          sizeof(bool), 1, f_target);
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);

@@ -34,6 +34,7 @@
 #define LOD_SHADOW_VOLUME                            11000.0f
 #define LOD_SHADOW_VOLUME_2                          11010.0f
 #define LOD_GEOMETRY                        10000000000000.0f
+#define LOD_PHYSX                           40000000000000.0f
 #define LOD_MEMORY                        1000000000000000.0f
 #define LOD_LAND_CONTACT                  2000000000000000.0f
 #define LOD_ROADWAY                       3000000000000000.0f
@@ -57,8 +58,9 @@
 #define LOD_WRECK                        21000000000000000.0f
 
 
-#include "utils.h"
+//#include "utils.h"
 #include "model_config.h"
+#include "matrix.h"
 
 #ifdef VERSION70
     typedef uint32_t point_index;
@@ -252,7 +254,7 @@ struct model_info {
     struct triplet bounding_center;
     struct triplet geometry_center;
     struct triplet centre_of_mass;
-    struct triplet inv_inertia;
+    matrix inv_inertia;
     bool autocenter;
     bool lock_autocenter;
     bool can_occlude;
