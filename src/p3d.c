@@ -1026,10 +1026,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         odol_lod->proxies[k].transform_x = vector_crossproduct(
             odol_lod->proxies[k].transform_y,
             odol_lod->proxies[k].transform_z);
-        //odol_lod->proxies[k].transform_x = vector_normalize(odol_lod->proxies[k].transform_x);
 
         memcpy(&odol_lod->proxies[k].transform_n,
-            &mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup_reverse[odol_lod->sections[j].face_start]].table[0].points_index],
+            &mlod_lod->points[mlod_lod->faces[face].table[0].points_index],
             sizeof(struct triplet));
 
         k++;
