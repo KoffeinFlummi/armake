@@ -119,12 +119,25 @@ struct odol_face {
 };
 
 struct odol_proxy {
+    char name[512];
+    struct triplet transform_x;
+    struct triplet transform_y;
+    struct triplet transform_z;
+    struct triplet transform_n;
+    uint32_t proxy_id;
+    uint32_t selection_index;
+    int32_t bone_index;
+    uint32_t section_index;
 };
 
 struct odol_bonelink {
+    uint32_t num_links;
+    uint32_t links[4];
 };
 
 struct odol_section {
+    uint32_t face_start;
+    uint32_t face_end;
     uint32_t face_index_start;
     uint32_t face_index_end;
     uint32_t material_index_start;
