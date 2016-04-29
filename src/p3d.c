@@ -375,9 +375,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     // Bounding box & center
     get_bounding_box(mlod_lods, num_lods, &bbox_total_min, &bbox_total_max, false, false);
 
-    model_info->bounding_center.x = (bbox_total_min.x + bbox_total_max.x) / 2;
-    model_info->bounding_center.y = (bbox_total_min.y + bbox_total_max.y) / 2;
-    model_info->bounding_center.z = (bbox_total_min.z + bbox_total_max.z) / 2;
+    model_info->bounding_center = vector_mult_scalar(0.5f, vector_add(bbox_total_min, bbox_total_max));
 
     if (!model_info->autocenter) {
         model_info->bounding_center.x = 0;
@@ -385,22 +383,14 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
         model_info->bounding_center.z = 0;
     }
 
-    model_info->bbox_min.x = bbox_total_min.x - model_info->bounding_center.x;
-    model_info->bbox_min.y = bbox_total_min.y - model_info->bounding_center.y;
-    model_info->bbox_min.z = bbox_total_min.z - model_info->bounding_center.z;
-    model_info->bbox_max.x = bbox_total_max.x - model_info->bounding_center.x;
-    model_info->bbox_max.y = bbox_total_max.y - model_info->bounding_center.y;
-    model_info->bbox_max.z = bbox_total_max.z - model_info->bounding_center.z;
+    model_info->bbox_min = vector_sub(bbox_total_min, model_info->bounding_center);
+    model_info->bbox_max = vector_sub(bbox_total_max, model_info->bounding_center);
 
     // Visual bounding box
     get_bounding_box(mlod_lods, num_lods, &model_info->bbox_visual_min, &model_info->bbox_visual_max, true, false);
 
-    model_info->bbox_visual_min.x -= model_info->bounding_center.x;
-    model_info->bbox_visual_min.y -= model_info->bounding_center.y;
-    model_info->bbox_visual_min.z -= model_info->bounding_center.z;
-    model_info->bbox_visual_max.x -= model_info->bounding_center.x;
-    model_info->bbox_visual_max.y -= model_info->bounding_center.y;
-    model_info->bbox_visual_max.z -= model_info->bounding_center.z;
+    model_info->bbox_visual_min = vector_sub(model_info->bbox_visual_min, model_info->bounding_center);
+    model_info->bbox_visual_max = vector_sub(model_info->bbox_visual_max, model_info->bounding_center);
 
     // Geometry center
     get_bounding_box(mlod_lods, num_lods, &bbox_total_min, &bbox_total_max, false, true);
@@ -802,9 +792,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         if (odol_lod->point_to_vertex[i] < NOPOINT)
             continue;
 
-        normal.x = 0.0f;
-        normal.y = 0.0f;
-        normal.z = 0.0f;
+        normal = empty_vector;
 
         uv_coords.u = 0.0f;
         uv_coords.v = 0.0f;
@@ -1025,17 +1013,20 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             break;
         }
 
-        odol_lod->proxies[k].transform_x.x = 1.0f;
-        odol_lod->proxies[k].transform_x.y = 0.0f;
-        odol_lod->proxies[k].transform_x.z = 0.0f;
+        odol_lod->proxies[k].transform_y = vector_sub(
+            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[1].points_index]),
+            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[0].points_index]));
+        odol_lod->proxies[k].transform_y = vector_normalize(odol_lod->proxies[k].transform_y);
 
-        odol_lod->proxies[k].transform_y.x = 0.0f;
-        odol_lod->proxies[k].transform_y.y = 1.0f;
-        odol_lod->proxies[k].transform_y.z = 0.0f;
+        odol_lod->proxies[k].transform_z = vector_sub(
+            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[2].points_index]),
+            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[0].points_index]));
+        odol_lod->proxies[k].transform_z = vector_normalize(odol_lod->proxies[k].transform_z);
 
-        odol_lod->proxies[k].transform_z.x = 0.0f;
-        odol_lod->proxies[k].transform_z.y = 0.0f;
-        odol_lod->proxies[k].transform_z.z = 1.0f;
+        odol_lod->proxies[k].transform_x = vector_crossproduct(
+            odol_lod->proxies[k].transform_y,
+            odol_lod->proxies[k].transform_z);
+        //odol_lod->proxies[k].transform_x = vector_normalize(odol_lod->proxies[k].transform_x);
 
         memcpy(&odol_lod->proxies[k].transform_n,
             &mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup_reverse[odol_lod->sections[j].face_start]].table[0].points_index],

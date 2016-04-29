@@ -17,6 +17,8 @@
  */
 
 
+#include <math.h>
+
 #include "vector.h"
 
 
@@ -47,5 +49,28 @@ vector vector_mult_scalar(const float s, const vector v) {
     r.y = v.y * s;
     r.z = v.z * s;
     
+    return r;
+}
+
+vector vector_normalize(const vector v) {
+    vector r;
+    float magnitude;
+
+    magnitude = (float)sqrt((double)(v.x * v.x + v.y * v.y + v.z * v.z));
+
+    r.x = v.x / magnitude;
+    r.y = v.y / magnitude;
+    r.z = v.z / magnitude;
+
+    return r;
+}
+
+vector vector_crossproduct(const vector v1, const vector v2) {
+    vector r;
+
+    r.x = v1.y * v2.z - v1.z * v2.y;
+    r.y = v1.z * v2.x - v1.x * v2.z;
+    r.z = v1.x * v2.y - v1.y * v2.x;
+
     return r;
 }
