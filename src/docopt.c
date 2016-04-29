@@ -38,7 +38,7 @@ const char help_message[] =
 "\n"
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
@@ -49,8 +49,10 @@ const char help_message[] =
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
 "    -p --packonly   Don't binarize models, configs etc.\n"
-"    -w --warning    Warning to disable\n"
+"    -w --warning    Warning to disable, may be used multiple times\n"
 "    -i --include    Folder to search for includes, defaults to CWD\n"
+"    -x --exclude    Glob patterns to exclude from PBO, seperated by semicolons\n"
+"    -k --keyfile    Keyfile to use for signing the PBO\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
 "\n"
@@ -65,7 +67,7 @@ const char help_message[] =
 const char usage_pattern[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)";
 
@@ -252,12 +254,16 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
                    !strcmp(option->olong, "--version")) {
             printf("%s\n", version);
             return 1;
+        } else if (!strcmp(option->olong, "--exclude")) {
+            args->exclude = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
             args->help = option->value;
         } else if (!strcmp(option->olong, "--include")) {
             args->include = option->value;
+        } else if (!strcmp(option->olong, "--keyfile")) {
+            args->keyfile = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
             args->packonly = option->value;
         } else if (!strcmp(option->olong, "--version")) {
@@ -280,12 +286,16 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
         argument = &elements->arguments[i];
         if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
+        } else if (!strcmp(argument->name, "<keyfile>")) {
+            args->keyfile = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
             args->target = argument->value;
         } else if (!strcmp(argument->name, "<wname>")) {
             args->wname = argument->value;
+        } else if (!strcmp(argument->name, "<xlist>")) {
+            args->xlist = argument->value;
         }
     }
     return 0;
@@ -298,7 +308,7 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0,
+        0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -308,19 +318,23 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     };
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
+        {"<keyfile>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL},
-        {"<wname>", NULL, NULL}
+        {"<wname>", NULL, NULL},
+        {"<xlist>", NULL, NULL}
     };
     Option options[] = {
+        {"-x", "--exclude", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
+        {"-k", "--keyfile", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {2, 4, 6, commands, arguments, options};
+    Elements elements = {2, 6, 8, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
