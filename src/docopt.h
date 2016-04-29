@@ -59,15 +59,18 @@ typedef struct {
     const char *usage_pattern;
     const char *help_message;
 } DocoptArgs;
+
 typedef struct {
     const char *name;
     bool value;
 } Command;
+
 typedef struct {
     const char *name;
     char *value;
     char **array;
 } Argument;
+
 typedef struct {
     const char *oshort;
     const char *olong;
@@ -75,6 +78,7 @@ typedef struct {
     bool value;
     char *argument;
 } Option;
+
 typedef struct {
     int n_commands;
     int n_arguments;
@@ -83,12 +87,14 @@ typedef struct {
     Argument *arguments;
     Option *options;
 } Elements;
+
 typedef struct Tokens {
     int argc;
     char **argv;
     int i;
     char *current;
 } Tokens;
+
 
 DocoptArgs args;
 char muted_warnings[MAXWARNINGS][512];
