@@ -52,7 +52,7 @@ const char help_message[] =
 "    -w --warning    Warning to disable, may be used multiple times\n"
 "    -i --include    Folder to search for includes, defaults to CWD\n"
 "    -x --exclude    Glob patterns to exclude from PBO, seperated by semicolons\n"
-"    -k --keyfile    Keyfile to use for signing the PBO\n"
+"    -k --key        Keyfile to use for signing the PBO\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
 "\n"
@@ -262,8 +262,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->help = option->value;
         } else if (!strcmp(option->olong, "--include")) {
             args->include = option->value;
-        } else if (!strcmp(option->olong, "--keyfile")) {
-            args->keyfile = option->value;
+        } else if (!strcmp(option->olong, "--key")) {
+            args->key = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
             args->packonly = option->value;
         } else if (!strcmp(option->olong, "--version")) {
@@ -329,7 +329,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
-        {"-k", "--keyfile", 0, 0, NULL},
+        {"-k", "--key", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}

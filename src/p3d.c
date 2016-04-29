@@ -1746,6 +1746,8 @@ int mlod2odol(char *source, char *target) {
 
         // Clean up
         free(odol_lod.proxies);
+        free(odol_lod.items);
+        free(odol_lod.bonelinks);
         free(odol_lod.textures);
         free(odol_lod.materials);
         free(odol_lod.point_to_vertex);

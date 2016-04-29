@@ -16,7 +16,7 @@ Options:
     -w --warning    Warning to disable, may be used multiple times
     -i --include    Folder to search for includes, defaults to CWD
     -x --exclude    Glob patterns to exclude from PBO, seperated by semicolons
-    -k --keyfile    Keyfile to use for signing the PBO
+    -k --key        Keyfile to use for signing the PBO
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit
 
