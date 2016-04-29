@@ -445,7 +445,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     while (true) {
         // get line
         line++;
-        buffsize = 8192;
+        buffsize = 131072;
         buffer = (char *)malloc(buffsize + 1);
         if (getline(&buffer, &buffsize, f_source) == -1) {
             free(buffer);
@@ -460,6 +460,10 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
 
         // add next lines if line ends with a backslash
         while (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\\') {
+            if (strlen(buffer) >= buffsize) {
+                errorf("Line %i exceeds maximum length.\n", line);
+                return 1;
+            }
             buffsize -= strlen(buffer);
             ptr = (char *)malloc(buffsize + 1);
             if (getline(&ptr, &buffsize, f_source) == -1)
