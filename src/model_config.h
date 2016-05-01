@@ -39,8 +39,7 @@
 #define SOURCE_LOOP   2
 
 
-#include "utils.h"
-
+#include "vector.h"
 
 struct bone {
     char name[512];

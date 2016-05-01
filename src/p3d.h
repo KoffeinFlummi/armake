@@ -34,6 +34,7 @@
 #define LOD_SHADOW_VOLUME                            11000.0f
 #define LOD_SHADOW_VOLUME_2                          11010.0f
 #define LOD_GEOMETRY                        10000000000000.0f
+#define LOD_PHYSX                           40000000000000.0f
 #define LOD_MEMORY                        1000000000000000.0f
 #define LOD_LAND_CONTACT                  2000000000000000.0f
 #define LOD_ROADWAY                       3000000000000000.0f
@@ -57,14 +58,15 @@
 #define LOD_WRECK                        21000000000000000.0f
 
 
-#include "utils.h"
+//#include "utils.h"
 #include "model_config.h"
+#include "matrix.h"
 
 #ifdef VERSION70
-    typedef uint32_t pointIndex;
+    typedef uint32_t point_index;
     #define NOPOINT UINT32_MAX //=-1 as int32_t
 #else
-    typedef uint16_t pointIndex;
+    typedef uint16_t point_index;
     #define NOPOINT UINT16_MAX //=-1 as int32_t
 #endif
 
@@ -119,7 +121,7 @@ struct mlod_lod {
 
 struct odol_face {
     uint8_t face_type;
-    pointIndex table[4];
+    point_index table[4];
 };
 
 struct odol_proxy {
@@ -159,13 +161,13 @@ struct odol_section {
 struct odol_selection {
     char name[512];
     uint32_t num_faces;
-    pointIndex *faces;
+    point_index *faces;
     uint32_t always_0;
     bool is_sectional;
     uint32_t num_sections;
     uint32_t *sections;
     uint32_t num_vertices;
-    pointIndex *vertices;
+    point_index *vertices;
     uint32_t num_vertex_weights;
     uint8_t *vertex_weights;
 };
@@ -192,10 +194,10 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct material *materials;
-    pointIndex *point_to_vertex;
-    pointIndex *vertex_to_point;
-    pointIndex *face_lookup;
-    pointIndex *face_lookup_reverse;
+    point_index *point_to_vertex;
+    point_index *vertex_to_point;
+    point_index *face_lookup;
+    point_index *face_lookup_reverse;
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;
@@ -211,7 +213,7 @@ struct odol_lod {
     uint32_t icon_color;
     uint32_t selected_color;
     uint32_t flags;
-    bool vertexBoneRefIsSimple;
+    bool vertex_bone_ref_is_simple;
     float uv_scale[4];
     struct uv_pair *uv_coords;
     struct triplet *points;
@@ -219,17 +221,17 @@ struct odol_lod {
 };
 
 struct lod_indices {
-    int8_t geometrySimple;
-    int8_t geometryPhys;
+    int8_t geometry_simple;
+    int8_t geometry_physx;
     int8_t memory;
     int8_t geometry;
-    int8_t geometryFire;
-    int8_t geometryView;
-    int8_t geometryViewPilot;
-    int8_t geometryViewGunner;
-    int8_t geometryViewCommander; //always -1 because it is not used anymore
-    int8_t geometryViewCargo;
-    int8_t landContact;
+    int8_t geometry_fire;
+    int8_t geometry_view;
+    int8_t geometry_view_pilot;
+    int8_t geometry_view_gunner;
+    int8_t geometry_view_commander; //always -1 because it is not used anymore
+    int8_t geometry_view_cargo;
+    int8_t land_contact;
     int8_t roadway;
     int8_t paths;
     int8_t hitpoints;
@@ -252,14 +254,14 @@ struct model_info {
     struct triplet bounding_center;
     struct triplet geometry_center;
     struct triplet centre_of_mass;
-    struct triplet inv_inertia;
+    matrix inv_inertia;
     bool autocenter;
     bool lock_autocenter;
     bool can_occlude;
     bool can_be_occluded;
-    bool forceNotAlphaModel;
-    int32_t sbSource;
-    bool prefershadowvolume;
+    bool force_not_alpha;
+    int32_t sb_source;
+    bool prefer_shadow_volume;
     float shadow_offset;
     bool animated;
     struct skeleton *skeleton;
@@ -270,8 +272,8 @@ struct model_info {
     float armor;
     float inv_armor;
     struct lod_indices special_lod_indices;
-    uint32_t minShadow;
-    bool canBlend;
+    uint32_t min_shadow;
+    bool can_blend;
     char class_type;
     char destruct_type;
     bool property_frequent;

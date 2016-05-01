@@ -60,6 +60,8 @@ void warningf(char *format, ...) {
         fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
     else if (current_operation == OP_MATERIAL)
         fprintf(stderr, "    (encountered while reading %s)\n", filename);
+    else if (current_operation == OP_UNPACK)
+        fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
 }
 
 
@@ -118,6 +120,8 @@ void errorf(char *format, ...) {
         fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
     else if (current_operation == OP_MATERIAL)
         fprintf(stderr, "    (encountered while reading %s)\n", filename);
+    else if (current_operation == OP_UNPACK)
+        fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
 }
 
 

@@ -3,12 +3,14 @@ armake
 Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
     armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>
+    armake unpack [-f] <source> <target>
     armake (-h | --help)
     armake (-v | --version)
 
 Commands:
     binarize     Binarize a file
     build        Pack a folder into a PBO
+    unpack       Unpack a PBO into a folder
 
 Options:
     -f --force      Overwrite the target file/folder if it already exists

@@ -16,7 +16,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
 #pragma once
 
 
-int build();
+typedef struct triplet {
+    float x;
+    float y;
+    float z;
+} vector;
+
+
+static const vector empty_vector = {0, 0, 0};
+
+
+vector vector_add(const vector v1, const vector v2);
+
+vector vector_sub(const vector v1, const vector v2);
+
+vector vector_mult_scalar(const float s, const vector v);
+
+vector vector_normalize(const vector v);
+
+vector vector_crossproduct(const vector v1, const vector v2);

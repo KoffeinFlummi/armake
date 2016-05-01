@@ -36,6 +36,7 @@
 #define OP_P3D 4
 #define OP_MODELCONFIG 5
 #define OP_MATERIAL 6
+#define OP_UNPACK 7
 
 
 #include "docopt.h"
@@ -47,13 +48,6 @@ struct point {
     float z;
     uint32_t point_flags;
 };
-
-struct triplet {
-    float x;
-    float y;
-    float z;
-};
-
 
 int current_operation;
 char current_target[2048];
