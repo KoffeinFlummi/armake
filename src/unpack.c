@@ -160,5 +160,23 @@ int unpack() {
     // clean up
     fclose(f_source);
 
+    // if prefix file wasn't included but there is a prefix, create one
+    strcpy(full_path, args.target);
+    strcat(full_path, "?");
+    full_path[strlen(full_path) - 1] = PATHSEP;
+    strcat(full_path, "$PBOPREFIX$");
+    if (access(full_path, F_OK) == -1 && strlen(prefix) > 0) {
+        f_target = fopen(full_path, "w");
+        if (!f_target) {
+            errorf("Failed to open file %s.\n", full_path);
+            return 8;
+        }
+
+        fputs(prefix, f_target);
+        fputc('\n', f_target);
+
+        fclose(f_target);
+    }
+
     return 0;
 }
