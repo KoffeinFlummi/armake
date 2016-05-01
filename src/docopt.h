@@ -41,13 +41,17 @@ typedef struct {
     int build;
     /* arguments */
     char *includefolder;
+    char *keyfile;
     char *source;
     char *target;
     char *wname;
+    char *xlist;
     /* options without arguments */
+    int exclude;
     int force;
     int help;
     int include;
+    int key;
     int packonly;
     int version;
     int warning;

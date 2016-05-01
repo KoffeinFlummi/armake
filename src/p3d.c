@@ -296,7 +296,7 @@ void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
 }
 
 
-float get_sphere(struct mlod_lod *mlod_lod, struct triplet *centre_of_mass) {
+float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
     /*
      * Calculate and return the bounding sphere for the given LOD.
      */
@@ -307,10 +307,16 @@ float get_sphere(struct mlod_lod *mlod_lod, struct triplet *centre_of_mass) {
 
     sphere = 0;
     for (i = 0; i < mlod_lod->num_points; i++) {
-        dist = (float)sqrt((double)(
-            (mlod_lod->points[i].x - centre_of_mass->x) * (mlod_lod->points[i].x - centre_of_mass->x) +
-            (mlod_lod->points[i].y - centre_of_mass->y) * (mlod_lod->points[i].y - centre_of_mass->y) +
-            (mlod_lod->points[i].z - centre_of_mass->z) * (mlod_lod->points[i].z - centre_of_mass->z)));
+        if (model_info->autocenter)
+            dist = (float)sqrt((double)(
+                (mlod_lod->points[i].x - model_info->centre_of_mass.x) * (mlod_lod->points[i].x - model_info->centre_of_mass.x) +
+                (mlod_lod->points[i].y - model_info->centre_of_mass.y) * (mlod_lod->points[i].y - model_info->centre_of_mass.y) +
+                (mlod_lod->points[i].z - model_info->centre_of_mass.z) * (mlod_lod->points[i].z - model_info->centre_of_mass.z)));
+        else
+            dist = (float)sqrt((double)(
+                (mlod_lod->points[i].x) * (mlod_lod->points[i].x) +
+                (mlod_lod->points[i].y) * (mlod_lod->points[i].y) +
+                (mlod_lod->points[i].z) * (mlod_lod->points[i].z)));
         if (dist > sphere)
             sphere = dist;
     }
@@ -411,9 +417,15 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->bounding_sphere = 0.0f;
     model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
+<<<<<<< HEAD
         sphere = get_sphere(&mlod_lods[i], &model_info->centre_of_mass);
         if (sphere > model_info->bounding_sphere)
             model_info->bounding_sphere = sphere;
+=======
+        sphere = get_sphere(&mlod_lods[i], model_info);
+        if (sphere > model_info->mem_lod_sphere)
+            model_info->mem_lod_sphere = sphere;
+>>>>>>> refs/remotes/KoffeinFlummi/master
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             model_info->geo_lod_sphere = sphere;
     }
@@ -433,6 +445,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->shadow_offset = 1.0f; //@todo
 
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
+    model_info->skeleton->name[0] = 0;
     model_info->skeleton->num_bones = 0;
     model_info->skeleton->num_sections = 0;
     model_info->skeleton->num_animations = 0;
@@ -553,6 +566,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     unsigned long i;
     unsigned long j;
     unsigned long k;
+    unsigned long face;
     unsigned long face_start;
     unsigned long face_end;
     bool first;
@@ -562,9 +576,40 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     struct triplet normal;
     struct uv_pair uv_coords;
 
-    odol_lod->num_proxies = 0; // @todo
-    odol_lod->num_items = 0; // @todo
-    odol_lod->num_bonelinks = 0; // @todo
+    odol_lod->num_items = 0;
+    for (i = 0; i < model_info->skeleton->num_bones; i++) {
+        for (j = 0; j < mlod_lod->num_selections; j++) {
+            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
+                break;
+        }
+
+        if (j >= mlod_lod->num_selections)
+            continue;
+
+        odol_lod->num_items++;
+    }
+    odol_lod->num_bonelinks = model_info->skeleton->num_bones;
+
+    odol_lod->items = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_items);
+    odol_lod->bonelinks = (struct odol_bonelink *)malloc(sizeof(struct odol_bonelink) * odol_lod->num_bonelinks);
+    k = 0;
+    for (i = 0; i < model_info->skeleton->num_bones; i++) {
+        for (j = 0; j < mlod_lod->num_selections; j++) {
+            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
+                break;
+        }
+
+        if (j >= mlod_lod->num_selections) {
+            odol_lod->bonelinks[i].num_links = 0;
+            continue;
+        }
+
+        odol_lod->items[k] = i;
+        odol_lod->bonelinks[i].num_links = 1;
+        odol_lod->bonelinks[i].links[0] = k;
+        k++;
+    }
+
 
     odol_lod->num_points_mlod = mlod_lod->num_points;
 
@@ -598,7 +643,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->autocenter_pos.y = (odol_lod->min_pos.y + odol_lod->max_pos.y) / 2;
     odol_lod->autocenter_pos.z = (odol_lod->min_pos.z + odol_lod->max_pos.z) / 2;
 
-    odol_lod->sphere = get_sphere(mlod_lod, &model_info->centre_of_mass);
+    odol_lod->sphere = get_sphere(mlod_lod, model_info);
 
     for (i = 0; i < MAXTEXTURES; i++)
         textures[i][0] = 0;
@@ -687,8 +732,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     // Sort faces by texture, material and bone
     for (i = 0; i < model_info->skeleton->num_sections; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(model_info->skeleton->sections[i],
-                    mlod_lod->selections[j].name) == 0)
+            if (strcmp(mlod_lod->selections[j].name, 
+                    model_info->skeleton->sections[i]) == 0)
                 break;
         }
 
@@ -697,11 +742,24 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
         for (k = 0; k < mlod_lod->num_faces; k++) {
             if (mlod_lod->selections[j].faces[k] > 0)
-                strcat(mlod_lod->faces[k].section_names, model_info->skeleton->sections[i]);
+                strcat(mlod_lod->faces[k].section_names, mlod_lod->selections[j].name);
+        }
+    }
+
+    for (i = 0; i < mlod_lod->num_selections; i++) {
+        if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) != 0)
+            continue;
+
+        for (k = 0; k < mlod_lod->num_faces; k++) {
+            if (mlod_lod->selections[i].faces[k] > 0) {
+                strcat(mlod_lod->faces[k].section_names, mlod_lod->selections[i].name);
+                mlod_lod->faces[k].face_flags = 0x10008000;
+            }
         }
     }
 
     if (mlod_lod->num_faces > 1) {
+        // @todo: sort by face flags
         sort_faces(mlod_lod->faces, odol_lod->face_lookup,
             ((void *)mlod_lod->faces[0].section_names - (void *)&mlod_lod->faces[0]),
             0, mlod_lod->num_faces - 1);
@@ -766,7 +824,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
     }
 
-    // Write sections
+    // Sections
     if (odol_lod->num_faces > 0) {
         odol_lod->num_sections = 1;
         for (i = 1; i < odol_lod->num_faces; i++) {
@@ -785,6 +843,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 odol_lod->num_sections++;
                 continue;
             }
+            if (mlod_lod->faces[odol_lod->face_lookup_reverse[i]].face_flags !=
+                    mlod_lod->faces[odol_lod->face_lookup_reverse[i - 1]].face_flags) {
+                odol_lod->num_sections++;
+                continue;
+            }
         }
 
         odol_lod->sections = (struct odol_section *)malloc(sizeof(struct odol_section) * odol_lod->num_sections);
@@ -798,13 +861,15 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                     break;
             }
 
+            odol_lod->sections[k].face_start = i;
+            odol_lod->sections[k].face_end = i;
             odol_lod->sections[k].face_index_start = face_start;
             odol_lod->sections[k].face_index_end = face_start;
             odol_lod->sections[k].material_index_start = 0;
             odol_lod->sections[k].material_index_end = 0;
             odol_lod->sections[k].common_point_flags = 0;
             odol_lod->sections[k].common_texture_index = (j < odol_lod->num_textures) ? j : -1;
-            odol_lod->sections[k].common_face_flags = 0;
+            odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup_reverse[i]].face_flags;
             odol_lod->sections[k].material_index = -1;
             odol_lod->sections[k].unknown_long_1 = 2;
             odol_lod->sections[k].unknown_resolution_1 = 0.0f; // @todo
@@ -821,6 +886,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].section_names,
                         mlod_lod->faces[odol_lod->face_lookup_reverse[j]].section_names))
                     break;
+                if (mlod_lod->faces[odol_lod->face_lookup_reverse[i]].face_flags !=
+                        mlod_lod->faces[odol_lod->face_lookup_reverse[j]].face_flags)
+                    break;
+                odol_lod->sections[k].face_end++;
                 odol_lod->sections[k].face_index_end += 2 + 2 * odol_lod->faces[j].face_type;
             }
 
@@ -828,18 +897,52 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             i = j;
             k++;
         }
-
     } else {
         odol_lod->num_sections = 0;
         odol_lod->sections = 0;
     }
 
+    // Selections
     odol_lod->num_selections = mlod_lod->num_selections;
     odol_lod->selections = (struct odol_selection *)malloc(sizeof(struct odol_selection) * odol_lod->num_selections);
-
     for (i = 0; i < odol_lod->num_selections; i++) {
         strcpy(odol_lod->selections[i].name, mlod_lod->selections[i].name);
         lower_case(odol_lod->selections[i].name);
+
+        for (j = 0; j < model_info->skeleton->num_sections; j++) {
+            if (strcmp(model_info->skeleton->sections[j], mlod_lod->selections[i].name) == 0)
+                break;
+        }
+        odol_lod->selections[i].is_sectional = j < model_info->skeleton->num_sections;
+
+        if (odol_lod->selections[i].is_sectional) {
+            odol_lod->selections[i].num_faces = 0;
+            odol_lod->selections[i].faces = 0;
+            odol_lod->selections[i].always_0 = 0;
+            odol_lod->selections[i].num_vertices = 0;
+            odol_lod->selections[i].vertices = 0;
+            odol_lod->selections[i].num_vertex_weights = 0;
+            odol_lod->selections[i].vertex_weights = 0;
+
+            odol_lod->selections[i].num_sections = 0;
+            for (j = 0; j < odol_lod->num_sections; j++) {
+                if (mlod_lod->selections[i].faces[odol_lod->face_lookup_reverse[odol_lod->sections[j].face_start]] > 0)
+                    odol_lod->selections[i].num_sections++;
+            }
+            odol_lod->selections[i].sections = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_sections);
+            k = 0;
+            for (j = 0; j < odol_lod->num_sections; j++) {
+                if (mlod_lod->selections[i].faces[odol_lod->face_lookup_reverse[odol_lod->sections[j].face_start]] > 0) {
+                    odol_lod->selections[i].sections[k] = j;
+                    k++;
+                }
+            }
+
+            continue;
+        } else {
+            odol_lod->selections[i].num_sections = 0;
+            odol_lod->selections[i].sections = 0;
+        }
 
         odol_lod->selections[i].num_faces = 0;
         for (j = 0; j < odol_lod->num_faces; j++) {
@@ -863,9 +966,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         odol_lod->selections[i].always_0 = 0;
-        odol_lod->selections[i].is_sectional = false;
-        odol_lod->selections[i].num_sections = 0;
-        odol_lod->selections[i].sections = 0;
 
         odol_lod->selections[i].num_vertices = 0;
         for (j = 0; j < odol_lod->num_points; j++) {
@@ -894,6 +994,68 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
     }
 
+    // Proxies
+    odol_lod->num_proxies = 0;
+    for (i = 0; i < mlod_lod->num_selections; i++) {
+        if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) == 0)
+            odol_lod->num_proxies++;
+    }
+    odol_lod->proxies = (struct odol_proxy *)malloc(sizeof(struct odol_proxy) * odol_lod->num_proxies);
+    k = 0;
+    for (i = 0; i < mlod_lod->num_selections; i++) {
+        if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) != 0)
+            continue;
+
+        for (j = 0; j < mlod_lod->num_faces; j++) {
+            if (mlod_lod->selections[i].faces[j] > 0) {
+                face = j;
+                break;
+            }
+        }
+
+        if (j >= mlod_lod->num_faces) {
+            nwarningf("no-proxy-face", "No face found for proxy \"%s\".\n", mlod_lod->selections[i].name + 6);
+            odol_lod->num_proxies--;
+            continue;
+        }
+
+        strcpy(odol_lod->proxies[k].name, mlod_lod->selections[i].name + 6);
+        odol_lod->proxies[k].proxy_id = strtol(strrchr(odol_lod->proxies[k].name, '.') + 1, &ptr, 10);
+        *strrchr(odol_lod->proxies[k].name, '.') = 0;
+        lower_case(odol_lod->proxies[k].name);
+
+        odol_lod->proxies[k].selection_index = i;
+        odol_lod->proxies[k].bone_index = -1; // @todo
+
+        for (j = 0; j < odol_lod->num_sections; j++) {
+            if (odol_lod->face_lookup[face] < odol_lod->sections[j].face_start)
+                continue;
+            if (odol_lod->face_lookup[face] >= odol_lod->sections[j].face_end)
+                continue;
+            odol_lod->proxies[k].section_index = j;
+            break;
+        }
+
+        odol_lod->proxies[k].transform_x.x = 1.0f;
+        odol_lod->proxies[k].transform_x.y = 0.0f;
+        odol_lod->proxies[k].transform_x.z = 0.0f;
+
+        odol_lod->proxies[k].transform_y.x = 0.0f;
+        odol_lod->proxies[k].transform_y.y = 1.0f;
+        odol_lod->proxies[k].transform_y.z = 0.0f;
+
+        odol_lod->proxies[k].transform_z.x = 0.0f;
+        odol_lod->proxies[k].transform_z.y = 0.0f;
+        odol_lod->proxies[k].transform_z.z = 1.0f;
+
+        memcpy(&odol_lod->proxies[k].transform_n,
+            &mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup_reverse[odol_lod->sections[j].face_start]].table[0].points_index],
+            sizeof(struct triplet));
+
+        k++;
+    }
+
+    // Properties
     odol_lod->num_properties = 0;
     for (i = 0; i < MAXPROPERTIES; i++) {
         if (mlod_lod->properties[i].name[0] != 0)
@@ -1101,11 +1263,27 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     char *ptr;
 
     fwrite(&odol_lod->num_proxies, sizeof(uint32_t), 1, f_target);
-    // @todo proxies
+    for (i = 0; i < odol_lod->num_proxies; i++) {
+        fwrite( odol_lod->proxies[i].name, strlen(odol_lod->proxies[i].name) + 1, 1, f_target);
+        fwrite(&odol_lod->proxies[i].transform_x, sizeof(struct triplet), 1, f_target);
+        fwrite(&odol_lod->proxies[i].transform_y, sizeof(struct triplet), 1, f_target);
+        fwrite(&odol_lod->proxies[i].transform_z, sizeof(struct triplet), 1, f_target);
+        fwrite(&odol_lod->proxies[i].transform_n, sizeof(struct triplet), 1, f_target);
+        fwrite(&odol_lod->proxies[i].proxy_id, sizeof(uint32_t), 1, f_target);
+        fwrite(&odol_lod->proxies[i].selection_index, sizeof(uint32_t), 1, f_target);
+        fwrite(&odol_lod->proxies[i].bone_index, sizeof(int32_t), 1, f_target);
+        fwrite(&odol_lod->proxies[i].section_index, sizeof(uint32_t), 1, f_target);
+    }
+
     fwrite(&odol_lod->num_items, sizeof(uint32_t), 1, f_target);
     fwrite( odol_lod->items, sizeof(uint32_t) * odol_lod->num_items, 1, f_target);
+
     fwrite(&odol_lod->num_bonelinks, sizeof(uint32_t), 1, f_target);
-    // @todo bonelinks
+    for (i = 0; i < odol_lod->num_bonelinks; i++) {
+        fwrite(&odol_lod->bonelinks[i].num_links, sizeof(uint32_t), 1, f_target);
+        fwrite( odol_lod->bonelinks[i].links, sizeof(uint32_t) * odol_lod->bonelinks[i].num_links, 1, f_target);
+    }
+
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->face_area, sizeof(float), 1, f_target);
     fwrite(odol_lod->clip_flags, sizeof(uint32_t), 2, f_target);
@@ -1377,24 +1555,29 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
                 }
             }
 
+            fwrite(&index, sizeof(int32_t), 1, f_target);
+
             if (index == -1) {
-                if (i == 0) {
+                if (i == 0) { // we only report errors for the first LOD
                     nwarningf("unknown-bone", "Failed to find bone \"%s\" for animation \"%s\".\n",
                             model_info->skeleton->bones[k].name, anim->name);
                 }
-            } else {
-                if (anim->type >= 8)
-                    continue;
+                continue;
+            }
 
-                calculate_axis(anim, num_lods, mlod_lods);
+            if (anim->type >= 8)
+                continue;
 
+            calculate_axis(anim, num_lods, mlod_lods);
+
+            if (model_info->autocenter) {
                 anim->axis_pos.x -= model_info->centre_of_mass.x;
                 anim->axis_pos.y -= model_info->centre_of_mass.y;
                 anim->axis_pos.z -= model_info->centre_of_mass.z;
-
-                fwrite(&anim->axis_pos, sizeof(struct triplet), 1, f_target);
-                fwrite(&anim->axis_dir, sizeof(struct triplet), 1, f_target);
             }
+
+            fwrite(&anim->axis_pos, sizeof(struct triplet), 1, f_target);
+            fwrite(&anim->axis_dir, sizeof(struct triplet), 1, f_target);
         }
     }
 }
@@ -1491,7 +1674,7 @@ int mlod2odol(char *source, char *target) {
     write_model_info(f_temp, num_lods, &model_info);
 
     // Write animations
-    if (false && model_info.skeleton->num_animations > 0) {
+    if (model_info.skeleton->num_animations > 0) {
         fputc(1, f_temp);
         write_animations(f_temp, num_lods, mlod_lods, &model_info);
     } else {
@@ -1522,6 +1705,9 @@ int mlod2odol(char *source, char *target) {
         write_odol_lod(f_temp, &odol_lod);
 
         // Clean up
+        free(odol_lod.proxies);
+        free(odol_lod.items);
+        free(odol_lod.bonelinks);
         free(odol_lod.textures);
         free(odol_lod.materials);
         free(odol_lod.point_to_vertex);
