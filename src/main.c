@@ -25,6 +25,7 @@
 #include "docopt.h"
 #include "binarize.h"
 #include "build.h"
+#include "unpack.h"
 
 #define VERSION "v1.0"
 
