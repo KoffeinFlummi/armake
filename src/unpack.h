@@ -19,4 +19,15 @@
 #pragma once
 
 
-int build();
+#define MAXFILES 1024
+
+
+struct header {
+    char name[2048];
+    uint32_t packing_method;
+    uint32_t original_size;
+    uint32_t data_size;
+};
+
+
+int unpack();

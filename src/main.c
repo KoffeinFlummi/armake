@@ -64,6 +64,8 @@ int main(int argc, char *argv[]) {
         return binarize();
     if (args.build)
         return build();
+    if (args.unpack)
+        return unpack();
 
 
     docopt(2, halp, 1, VERSION);

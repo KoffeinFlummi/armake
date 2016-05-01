@@ -39,12 +39,14 @@ const char help_message[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
+"    armake unpack [-f] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
 "Commands:\n"
 "    binarize     Binarize a file\n"
 "    build        Pack a folder into a PBO\n"
+"    unpack       Unpack a PBO into a folder\n"
 "\n"
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
@@ -68,6 +70,7 @@ const char usage_pattern[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
+"    armake unpack [-f] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)";
 
@@ -279,6 +282,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->binarize = command->value;
         } else if (!strcmp(command->name, "build")) {
             args->build = command->value;
+        } else if (!strcmp(command->name, "unpack")) {
+            args->unpack = command->value;
         }
     }
     /* arguments */
@@ -308,13 +313,14 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
     Command commands[] = {
         {"binarize", 0},
-        {"build", 0}
+        {"build", 0},
+        {"unpack", 0}
     };
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
@@ -334,7 +340,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {2, 6, 8, commands, arguments, options};
+    Elements elements = {3, 6, 8, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

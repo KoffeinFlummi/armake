@@ -36,6 +36,7 @@
 #define OP_P3D 4
 #define OP_MODELCONFIG 5
 #define OP_MATERIAL 6
+#define OP_UNPACK 7
 
 
 #include "docopt.h"
