@@ -290,7 +290,7 @@ int lookahead_word(FILE *f, char *buffer, size_t buffsize) {
     for (i = 0; i < buffsize; i++) {
         if (buffer[i] == 0)
             return 3;
-        if (buffer[i] == ' ' || buffer[i] == '\t' || buffer[i] == '\n' ||
+        if (buffer[i] <= ' ' || buffer[i] == '\t' || buffer[i] == '\n' ||
                 buffer[i] == ',' || buffer[i] == ';' || buffer[i] == '{' ||
                 buffer[i] == '}' || buffer[i] == '(' || buffer[i] == ')' ||
                 buffer[i] == '=') {
