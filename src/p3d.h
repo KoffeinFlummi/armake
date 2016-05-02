@@ -146,16 +146,15 @@ struct odol_section {
     uint32_t face_end;
     uint32_t face_index_start;
     uint32_t face_index_end;
-    uint32_t material_index_start;
-    uint32_t material_index_end;
-    uint32_t common_point_flags;
+    uint32_t min_bone_index;
+    uint32_t bones_count;
+    uint32_t mat_dummy;
     int16_t common_texture_index;
     uint32_t common_face_flags;
     int32_t material_index;
-    uint32_t unknown_long_1;
-    float unknown_resolution_1;
-    float unknown_resolution_2;
-    uint32_t unknown_long_2;
+    uint32_t num_stages;
+    float area_over_tex[2];
+    uint32_t unknown_long;
 };
 
 struct odol_selection {
