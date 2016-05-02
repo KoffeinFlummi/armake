@@ -260,19 +260,12 @@ float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
     long i;
     float sphere;
     float dist;
+    vector point;
 
     sphere = 0;
     for (i = 0; i < mlod_lod->num_points; i++) {
-        if (model_info->autocenter)
-            dist = (float)sqrt((double)(
-                (mlod_lod->points[i].x - model_info->centre_of_mass.x) * (mlod_lod->points[i].x - model_info->centre_of_mass.x) +
-                (mlod_lod->points[i].y - model_info->centre_of_mass.y) * (mlod_lod->points[i].y - model_info->centre_of_mass.y) +
-                (mlod_lod->points[i].z - model_info->centre_of_mass.z) * (mlod_lod->points[i].z - model_info->centre_of_mass.z)));
-        else
-            dist = (float)sqrt((double)(
-                (mlod_lod->points[i].x) * (mlod_lod->points[i].x) +
-                (mlod_lod->points[i].y) * (mlod_lod->points[i].y) +
-                (mlod_lod->points[i].z) * (mlod_lod->points[i].z)));
+        point = *((vector*)&mlod_lod->points[i].x);
+        dist = (model_info->autocenter) ? vector_length(vector_sub(point, model_info->centre_of_mass)) : vector_length(point);
         if (dist > sphere)
             sphere = dist;
     }
@@ -377,11 +370,8 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 
     model_info->bounding_center = vector_mult_scalar(0.5f, vector_add(bbox_total_min, bbox_total_max));
 
-    if (!model_info->autocenter) {
-        model_info->bounding_center.x = 0;
-        model_info->bounding_center.y = 0;
-        model_info->bounding_center.z = 0;
-    }
+    if (!model_info->autocenter)
+        model_info->bounding_center = empty_vector;
 
     model_info->bbox_min = vector_sub(bbox_total_min, model_info->bounding_center);
     model_info->bbox_max = vector_sub(bbox_total_max, model_info->bounding_center);
@@ -395,9 +385,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     // Geometry center
     get_bounding_box(mlod_lods, num_lods, &bbox_total_min, &bbox_total_max, false, true);
 
-    model_info->geometry_center.x = (bbox_total_min.x + bbox_total_max.x) / 2 - model_info->bounding_center.x;
-    model_info->geometry_center.y = (bbox_total_min.y + bbox_total_max.y) / 2 - model_info->bounding_center.y;
-    model_info->geometry_center.z = (bbox_total_min.z + bbox_total_max.z) / 2 - model_info->bounding_center.z;
+    model_info->geometry_center = vector_sub(vector_mult_scalar(0.5, vector_add(bbox_total_min, bbox_total_max)), model_info->bounding_center);
 
     // Centre of mass, inverse inertia, mass and inverse mass
     get_mass_data(mlod_lods, num_lods, model_info);
@@ -410,21 +398,9 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->bounding_sphere = 0.0f;
     model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        sphere = get_sphere(&mlod_lods[i], &model_info->centre_of_mass);
-        if (sphere > model_info->bounding_sphere)
-            model_info->bounding_sphere = sphere;
-=======
-        sphere = get_sphere(&mlod_lods[i], model_info);
-        if (sphere > model_info->mem_lod_sphere)
-            model_info->mem_lod_sphere = sphere;
->>>>>>> refs/remotes/KoffeinFlummi/master
-=======
         sphere = get_sphere(&mlod_lods[i], model_info);
         if (sphere > model_info->bounding_sphere)
             model_info->bounding_sphere = sphere;
->>>>>>> refs/remotes/KoffeinFlummi/master
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
             model_info->geo_lod_sphere = sphere;
     }
@@ -608,12 +584,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->clip_flags[0] = 0;
     odol_lod->clip_flags[1] = 0;
 
-    odol_lod->min_pos.x = 0;
-    odol_lod->min_pos.y = 0;
-    odol_lod->min_pos.z = 0;
-    odol_lod->max_pos.x = 0;
-    odol_lod->max_pos.y = 0;
-    odol_lod->max_pos.z = 0;
+    odol_lod->min_pos = empty_vector;
+    odol_lod->max_pos = empty_vector;
+
     first = false;
     for (i = 0; i < mlod_lod->num_points; i++) {
         if (first || mlod_lod->points[i].x < odol_lod->min_pos.x)
@@ -630,9 +603,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->max_pos.z = mlod_lod->points[i].z;
     }
 
-    odol_lod->autocenter_pos.x = (odol_lod->min_pos.x + odol_lod->max_pos.x) / 2;
-    odol_lod->autocenter_pos.y = (odol_lod->min_pos.y + odol_lod->max_pos.y) / 2;
-    odol_lod->autocenter_pos.z = (odol_lod->min_pos.z + odol_lod->max_pos.z) / 2;
+    odol_lod->autocenter_pos = vector_mult_scalar(0.5, vector_add(odol_lod->min_pos, odol_lod->max_pos));
 
     odol_lod->sphere = get_sphere(mlod_lod, model_info);
 
@@ -854,16 +825,17 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].face_end = i;
             odol_lod->sections[k].face_index_start = face_start;
             odol_lod->sections[k].face_index_end = face_start;
-            odol_lod->sections[k].material_index_start = 0;
-            odol_lod->sections[k].material_index_end = 0;
-            odol_lod->sections[k].common_point_flags = 0;
+            odol_lod->sections[k].min_bone_index = 0; // @todo
+            odol_lod->sections[k].bones_count = 0; // @todo
+            odol_lod->sections[k].mat_dummy = 0;
             odol_lod->sections[k].common_texture_index = (j < odol_lod->num_textures) ? j : -1;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup_reverse[i]].face_flags;
             odol_lod->sections[k].material_index = -1;
-            odol_lod->sections[k].unknown_long_1 = 2;
-            odol_lod->sections[k].unknown_resolution_1 = 0.0f; // @todo
-            odol_lod->sections[k].unknown_resolution_2 = 1000.0f;
-            odol_lod->sections[k].unknown_long_2 = 0;
+            odol_lod->sections[k].num_stages = 2;
+            //num_stages defines number of entries in area_over_tex
+            odol_lod->sections[k].area_over_tex[0] = 1.0f; // @todo
+            odol_lod->sections[k].area_over_tex[1] = 1.0f; // @todo
+            odol_lod->sections[k].unknown_long = 0;
 
             for (j = i; j < odol_lod->num_faces; j++) {
                 if (strcmp(mlod_lod->faces[odol_lod->face_lookup_reverse[i]].texture_name,
@@ -1150,18 +1122,17 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
 void write_odol_section(FILE *f_target, struct odol_section *odol_section) {
     fwrite(&odol_section->face_index_start,     sizeof(uint32_t), 1, f_target);
     fwrite(&odol_section->face_index_end,       sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_section->material_index_start, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_section->material_index_end,   sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_section->common_point_flags,   sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_section->min_bone_index,       sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_section->bones_count,          sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_section->mat_dummy,            sizeof(uint32_t), 1, f_target);
     fwrite(&odol_section->common_texture_index, sizeof(uint16_t), 1, f_target);
     fwrite(&odol_section->common_face_flags,    sizeof(uint32_t), 1, f_target);
     fwrite(&odol_section->material_index,       sizeof(int32_t), 1, f_target);
     if (odol_section->material_index == -1)
         fputc(0, f_target);
-    fwrite(&odol_section->unknown_long_1,       sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_section->unknown_resolution_1, sizeof(float), 1, f_target);
-    fwrite(&odol_section->unknown_resolution_2, sizeof(float), 1, f_target);
-    fwrite(&odol_section->unknown_long_2,       sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_section->num_stages,           sizeof(uint32_t), 1, f_target);
+    fwrite(odol_section->area_over_tex,         sizeof(float), odol_section->num_stages, f_target);
+    fwrite(&odol_section->unknown_long,         sizeof(uint32_t), 1, f_target);
 }
 
 
@@ -1394,12 +1365,8 @@ void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *
     int j;
     int k;
 
-    anim->axis_pos.x = 0;
-    anim->axis_pos.y = 0;
-    anim->axis_pos.z = 0;
-    anim->axis_dir.x = 0;
-    anim->axis_dir.y = 0;
-    anim->axis_dir.z = 0;
+    anim->axis_pos = empty_vector;
+    anim->axis_dir = empty_vector;
 
     if (anim->axis[0] == 0 && anim->begin[0] == 0 && anim->end[0] == 0)
         return;
@@ -1447,9 +1414,7 @@ void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *
         }
     }
 
-    anim->axis_dir.x -= anim->axis_pos.x;
-    anim->axis_dir.y -= anim->axis_pos.y;
-    anim->axis_dir.z -= anim->axis_pos.z;
+    anim->axis_dir = vector_sub(anim->axis_dir, anim->axis_pos);
 }
 
 
@@ -1559,11 +1524,8 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
 
             calculate_axis(anim, num_lods, mlod_lods);
 
-            if (model_info->autocenter) {
-                anim->axis_pos.x -= model_info->centre_of_mass.x;
-                anim->axis_pos.y -= model_info->centre_of_mass.y;
-                anim->axis_pos.z -= model_info->centre_of_mass.z;
-            }
+            if (model_info->autocenter)
+                anim->axis_pos = vector_sub(anim->axis_pos, model_info->centre_of_mass);
 
             fwrite(&anim->axis_pos, sizeof(struct triplet), 1, f_target);
             fwrite(&anim->axis_dir, sizeof(struct triplet), 1, f_target);

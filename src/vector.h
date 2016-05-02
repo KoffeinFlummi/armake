@@ -39,3 +39,5 @@ vector vector_mult_scalar(const float s, const vector v);
 vector vector_normalize(const vector v);
 
 vector vector_crossproduct(const vector v1, const vector v2);
+
+float vector_length(const vector v);

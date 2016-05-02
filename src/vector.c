@@ -56,7 +56,7 @@ vector vector_normalize(const vector v) {
     vector r;
     float magnitude;
 
-    magnitude = (float)sqrt((double)(v.x * v.x + v.y * v.y + v.z * v.z));
+    magnitude = vector_length(v);
 
     r.x = v.x / magnitude;
     r.y = v.y / magnitude;
@@ -73,4 +73,8 @@ vector vector_crossproduct(const vector v1, const vector v2) {
     r.z = v1.x * v2.y - v1.y * v2.x;
 
     return r;
+}
+
+float vector_length(const vector v) {
+    return (float)sqrt((double)(v.x * v.x + v.y * v.y + v.z * v.z));
 }
