@@ -57,6 +57,11 @@
 #define LOD_SHADOW_VOLUME_VIEW_GUNNER    20000000000000000.0f
 #define LOD_WRECK                        21000000000000000.0f
 
+#define SORT_TEXTURES 1
+#define SORT_MATERIALS 2
+#define SORT_SECTIONS 3
+#define SORT_FLAGS 4
+
 
 //#include "utils.h"
 #include "model_config.h"

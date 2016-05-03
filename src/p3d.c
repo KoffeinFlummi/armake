@@ -196,6 +196,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     return 0;
 }
 
+
 void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
         struct triplet *bbox_min, struct triplet *bbox_max, bool visual_only, bool geometry_only) {
     /*
@@ -273,6 +274,7 @@ float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
     return sphere;
 }
 
+
 void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
     int i;
     float mass;
@@ -333,6 +335,7 @@ void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_i
         model_info->inv_inertia = identity_matrix;
     }
 }
+
 
 void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_info *model_info) {
     int i;
@@ -495,36 +498,60 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
     return (odol_lod->num_points - 1);
 }
 
+
 void sort_faces(struct mlod_face *mlod_faces, point_index *face_lookup,
-        int key_offset, uint32_t low, uint32_t high) {
+        int sort_type, uint32_t low, uint32_t high) {
     /*
      * Creates a face lookup array that resoluts in a face array that is sorted
-     * according to the struct member reached using key_offset.
+     * according to the given criterium.
      */
 
-    if (low >= high)
+    if (high - low <= 1)
         return;
 
-    long i;
-    long j;
+    int i;
+    int split;
+    bool smaller;
     point_index temp;
 
     i = low;
-    for (j = low; j < high; j++) {
-        if (strcmp((char *)((uint64_t)&mlod_faces[face_lookup[j]] + key_offset),
-                (char *)((uint64_t)&mlod_faces[face_lookup[high]] + key_offset)) <= 0) {
-            temp = face_lookup[j];
-            face_lookup[j] = face_lookup[i];
-            face_lookup[i] = temp;
-            i++;
-        }
-    }
-    temp = face_lookup[high];
-    face_lookup[high] = face_lookup[i];
-    face_lookup[i] = temp;
+    split = low + 1;
 
-    sort_faces(mlod_faces, face_lookup, key_offset, low, i - 1);
-    sort_faces(mlod_faces, face_lookup, key_offset, i + 1, high);
+    while (++i <= high) {
+        switch (sort_type) {
+            case SORT_TEXTURES:
+                smaller = strcmp(mlod_faces[face_lookup[i]].texture_name,
+                    mlod_faces[face_lookup[low]].texture_name) < 0;
+                break;
+            case SORT_MATERIALS:
+                smaller = strcmp(mlod_faces[face_lookup[i]].material_name,
+                    mlod_faces[face_lookup[low]].material_name) < 0;
+                break;
+            case SORT_SECTIONS:
+                smaller = strcmp(mlod_faces[face_lookup[i]].section_names,
+                    mlod_faces[face_lookup[low]].section_names) < 0;
+                break;
+            case SORT_FLAGS:
+                smaller = mlod_faces[face_lookup[i]].face_flags < mlod_faces[face_lookup[low]].face_flags;
+                break;
+            default:
+                smaller = false;
+        }
+
+        if (!smaller)
+            continue;
+
+        temp = face_lookup[split];
+        face_lookup[split] = face_lookup[i];
+        face_lookup[i] = temp;
+    }
+
+    temp = face_lookup[split - 1];
+    face_lookup[split - 1] = face_lookup[low];
+    face_lookup[low] = temp;
+
+    sort_faces(mlod_faces, face_lookup, sort_type, low, split - 1);
+    sort_faces(mlod_faces, face_lookup, sort_type, split, high);
 }
 
 
@@ -722,15 +749,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     if (mlod_lod->num_faces > 1) {
         // @todo: sort by face flags
-        sort_faces(mlod_lod->faces, odol_lod->face_lookup,
-            ((void *)mlod_lod->faces[0].section_names - (void *)&mlod_lod->faces[0]),
-            0, mlod_lod->num_faces - 1);
-        //sort_faces(mlod_lod->faces, odol_lod->face_lookup,
-        //    ((void *)mlod_lod->faces[0].material_name - (void *)&mlod_lod->faces[0]),
-        //    0, mlod_lod->num_faces - 1);
-        sort_faces(mlod_lod->faces, odol_lod->face_lookup,
-            ((void *)mlod_lod->faces[0].texture_name - (void *)&mlod_lod->faces[0]),
-            0, mlod_lod->num_faces - 1);
+        sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_SECTIONS, 0, mlod_lod->num_faces - 1);
+        //sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_MATERIALS, 0, mlod_lod->num_faces - 1);
+        sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_TEXTURES, 0, mlod_lod->num_faces - 1);
     }
 
     // Create reverse face lookup table
