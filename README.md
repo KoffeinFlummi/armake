@@ -26,14 +26,17 @@ $ pacaur -S armake-git
 ```
 
 
-### ToDo List
+### Usage
 
-- [x] Config rapification
-- [x] PBO building
-- [ ] P3D conversion (MLOD -> ODOL)
-- [ ] RTM conversion
+See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blob/master/src/usage).
 
-(some things might only be working on linux right now)
+
+### Credits
+
+- [Mikero](https://dev.withsix.com/projects/mikero-pbodll) for his great documentation of the various file formats used.
+- [T_D](https://github.com/Braini01) for great documentation, lots of pointers and even some code contributions
+- [jonpas](https://github.com/jonpas) for all kinds of help with development and testing
+- [kju](https://forums.bistudio.com/user/768005-kju/) for some pointers and "PR work"
 
 
 ### Used Libraries
@@ -44,6 +47,13 @@ $ pacaur -S armake-git
 - [Paul E. Jones's SHA-1 implementation](https://www.packetizer.com/security/sha1/)
 
 
-### Usage
+### Disclaimer
 
-See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blob/master/src/usage).
+This isn't official BI software. As such, it may not compile certain addons correctly or lag behind BI when new file format versions are introduced. As stated in the GPL, this software is provided without any warranty, so use at your own risk.
+
+
+---
+
+<p align="center"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WQ55N7RKXUCF8"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="max-width:100%;"></a></p>
+
+<p align="center"><b>BTC</b> 1G3RbQr2JHeYDB8YGifkF42aaaMmjRKYyo</p>
