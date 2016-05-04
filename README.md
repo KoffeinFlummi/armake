@@ -54,6 +54,10 @@ This isn't official BI software. As such, it may not compile certain addons corr
 
 ---
 
-<p align="center"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WQ55N7RKXUCF8"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="max-width:100%;"></a></p>
-
-<p align="center"><b>BTC</b> 1G3RbQr2JHeYDB8YGifkF42aaaMmjRKYyo</p>
+<p align="center">
+    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WQ55N7RKXUCF8">
+        <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="max-width:100%;">
+    </a>
+    <br>
+    <b>BTC</b> 1G3RbQr2JHeYDB8YGifkF42aaaMmjRKYyo
+</p>
