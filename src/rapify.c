@@ -682,7 +682,6 @@ int rapify_file(char *source, char *target, char *includefolder) {
     FILE *f_temp;
     FILE *f_target;
     int i;
-    int j;
     int success;
     uint32_t enum_offset = 0;
     struct constant *constants;
@@ -710,14 +709,19 @@ int rapify_file(char *source, char *target, char *includefolder) {
     constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
     for (i = 0; i < MAXCONSTS; i++) {
         constants[i].name[0] = 0;
-        for (j = 0; j < MAXARGS; j++)
-            constants[i].arguments[j][0] = 0;
-        constants[i].value[0] = 0;
+        constants[i].arguments[0][0] = 0;
+        constants[i].value = 0;
     }
+
     success = preprocess(source, f_temp, includefolder, constants);
+
+    for (i = 0; i < MAXCONSTS && constants[i].value != 0; i++)
+        free(constants[i].value);
+    free(constants);
+
     current_operation = OP_RAPIFY;
     strcpy(current_target, source);
-    free(constants);
+
     if (success) {
         errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);

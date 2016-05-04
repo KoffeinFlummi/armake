@@ -172,21 +172,6 @@ void lower_case(char *string) {
 }
 
 
-void get_word(char *target, char *source) {
-    char *ptr;
-    int len = 0;
-    ptr = source;
-    while (*ptr == ',' || *ptr == '(' || *ptr == ')' ||
-            *ptr == ' ' || *ptr == '\t')
-        ptr++;
-    while (ptr[len] != ',' && ptr[len] != '(' && ptr[len] != ')' &&
-            ptr[len] != ' ' && ptr[len] != '\t')
-        len++;
-    strncpy(target, ptr, len);
-    target[len + 1] = 0;
-}
-
-
 void trim_leading(char *string, size_t buffsize) {
     /*
      * Trims leading tabs and spaces on the string.
@@ -198,6 +183,23 @@ void trim_leading(char *string, size_t buffsize) {
     while (*ptr == ' ' || *ptr == '\t')
         ptr++;
     strncpy(string, ptr, buffsize - (2 + ptr - tmp));
+}
+
+
+void trim(char *string, size_t buffsize) {
+    /*
+     * Trims tabs and spaces on either side of the string.
+     */
+
+    char *ptr;
+
+    trim_leading(string, buffsize);
+
+    ptr = string + (strlen(string) - 1);
+    while (ptr >= string && (*ptr == ' ' || *ptr == '\t'))
+        ptr--;
+
+    *(ptr + 1) = 0;
 }
 
 

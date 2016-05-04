@@ -1622,6 +1622,30 @@ int mlod2odol(char *source, char *target) {
 
     fclose(f_source);
 
+    // Get rid of empty LODs
+    empty = 0;
+    for (i = 0; i < num_lods; i++) {
+        if (mlod_lods[i].num_points == 0)
+            empty++;
+    }
+
+    if (empty > 0) {
+        temp = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * (num_lods - empty));
+        j = 0;
+        for (i = 0; i < num_lods; i++) {
+            if (mlod_lods[i].num_points == 0)
+                continue;
+
+            memcpy(&temp[j], &mlod_lods[i], sizeof(struct mlod_lod));
+
+            j++;
+        }
+
+        free(mlod_lods);
+        mlod_lods = temp;
+        num_lods -= empty;
+    }
+
     // Write header
     fwrite("ODOL", 4, 1, f_temp);
 #ifdef VERSION70

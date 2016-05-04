@@ -71,6 +71,8 @@ void get_word(char *target, char *source);
 
 void trim_leading(char *string, size_t buffsize);
 
+void trim(char *string, size_t buffsize);
+
 void replace_string(char *string, size_t buffsize, char *search, char *replace, int max);
 
 void quote(char *string);

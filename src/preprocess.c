@@ -226,13 +226,12 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
     int j;
     int level;
     int success;
-    char tmp[4096];
-    char constant[4096];
-    char replacement[4096];
-    char argsearch[4096];
-    char argvalue[4096];
-    char argquote[4096];
-    char args[MAXARGS][4096];
+    char tmp[1024];
+    char constant[1024];
+    char replacement[262144];
+    char argsearch[1024];
+    char argquote[1024];
+    char args[MAXARGS][1024];
     char *ptr;
     char *ptr_args;
     char *ptr_args_end;
@@ -240,9 +239,9 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
     char in_string;
 
     for (i = 0; i < MAXCONSTS; i++) {
-        if (constants[i].name[0] == 0)
-            continue;
-        if (constants[i].value[0] == 0)
+        if (constants[i].value == 0)
+            break;
+        if (constants[i].name[0] == 0) // this may be an undefed constant, so we have to keep going
             continue;
         if (strstr(string, constants[i].name) == NULL)
             continue;
@@ -364,23 +363,22 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
 
                 // replace arguments with values
                 for (j = 0; j < MAXARGS && constants[i].arguments[j][0] != 0; j++) {
-                    strncpy(argvalue, args[j], sizeof(argvalue));
-                    replace_string(argvalue, sizeof(argvalue), constants[i].arguments[j], "\%\%\%TOKENARG\%\%\%", 0);
+                    replace_string(args[j], sizeof(args[j]), constants[i].arguments[j], "\x11TOKENARG\x11", 0);
 
                     sprintf(argsearch, "##%s##", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
+                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
                     sprintf(argsearch, "%s##", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
+                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
                     sprintf(argsearch, "##%s", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, argvalue, 0);
+                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
 
                     sprintf(argsearch, "#%s", constants[i].arguments[j]);
-                    sprintf(argquote, "\"%s\"", argvalue);
+                    sprintf(argquote, "\"%s\"", args[j]);
                     replace_string(replacement, sizeof(replacement), argsearch, argquote, 0);
 
-                    replace_string(replacement, sizeof(replacement), constants[i].arguments[j], argvalue, 0);
+                    replace_string(replacement, sizeof(replacement), constants[i].arguments[j], args[j], 0);
 
-                    replace_string(replacement, sizeof(replacement), "\%\%\%TOKENARG\%\%\%", constants[i].arguments[j], 0);
+                    replace_string(replacement, sizeof(replacement), "\x11TOKENARG\x11", constants[i].arguments[j], 0);
                 }
             }
 
@@ -399,15 +397,10 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
 int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants) {
     /*
      * Writes the contents of source into the target file pointer, while
-     * recursively resolving includes using the includefolder for finding
-     * included files.
+     * recursively resolving constants and includes using the includefolder
+     * for finding included files.
      *
      * Returns 0 on success, a positive integer on failure.
-     *
-     * Since includes might be found inside #ifs, there needs to be some basic
-     * preprocessing of defines as well. Things that are not supported here:
-     *     - constants in/as include paths
-     *     - nested ifs
      */
 
     extern int current_operation;
@@ -422,8 +415,11 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     size_t buffsize;
     char *buffer;
     char *ptr;
+    char *token;
     char in_string = 0;
+    char valuebuffer[262144];
     char definition[256];
+    char tmp[2048];
     char includepath[2048];
     char actualpath[2048];
     FILE *f_source;
@@ -440,12 +436,14 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
     // first constant is file name
     // @todo: what form?
     strcpy(constants[0].name, "__FILE__");
-    snprintf(constants[0].value, sizeof(constants[0].value), "\"%s\"", source);
+    if (constants[0].value == 0)
+        constants[0].value = (char *)malloc(1024);
+    snprintf(constants[0].value, 1024, "\"%s\"", source);
 
     while (true) {
         // get line
         line++;
-        buffsize = 131072;
+        buffsize = LINEBUFFSIZE;
         buffer = (char *)malloc(buffsize + 1);
         if (getline(&buffer, &buffsize, f_source) == -1) {
             free(buffer);
@@ -515,7 +513,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
         }
 
         // trim leading spaces
-        trim_leading(buffer, 8192);
+        trim_leading(buffer, LINEBUFFSIZE);
 
         // skip lines inside untrue ifs
         if (level > level_true) {
@@ -528,6 +526,8 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
 
         // second constant is line number
         strcpy(constants[1].name, "__LINE__");
+        if (constants[1].value == 0)
+            constants[1].value = (char *)malloc(16);
         sprintf(constants[1].value, "%i", line);
 
         // get the constant name
@@ -546,7 +546,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
             *ptr = 0;
 
             if (strlen(definition) == 0) {
-                printf("Missing definition in line %i of %s.\n", line, source);
+                errorf("Missing definition in line %i of %s.\n", line, source);
                 return 2;
             }
         }
@@ -560,7 +560,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 i++;
 
             if (i == MAXCONSTS) {
-                printf("Maximum number of %i definitions exceeded in line %i of %s.\n", MAXCONSTS, line, source);
+                errorf("Maximum number of %i definitions exceeded in line %i of %s.\n", MAXCONSTS, line, source);
                 return 3;
             }
 
@@ -569,37 +569,56 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 ptr++;
 
             // Get arguments and resolve macros in macro
-            constants[i].arguments[0][0] = 0;
+            for (j = 0; j < MAXARGS; j++)
+                constants[i].arguments[j][0] = 0;
+
             if (*ptr == '(' && strchr(ptr, ')') != NULL) {
-                for (j = 0; j < MAXARGS; j++) {
-                    get_word(constants[i].arguments[j], ptr);
-                    if (strchr(ptr, ',') == NULL || strchr(ptr, ',') > strchr(ptr, ')')) {
-                        ptr = strchr(ptr, ')') + 1;
-                        break;
-                    }
-                    ptr = strchr(ptr, ',') + 1;
+                strncpy(tmp, ptr + 1, sizeof(tmp));
+
+                if (strchr(tmp, ')') == NULL) {
+                    errorf("Macro arguments too long in line %i of %s.\n", line, source);
                 }
-                if (j + 1 < MAXARGS)
-                    constants[i].arguments[j + 1][0] = 0;
+                *strchr(tmp, ')') = 0;
+
+                token = strtok(tmp, ",");
+                for (j = 0; j < MAXARGS && token; j++) {
+                    strncpy(constants[i].arguments[j], token, sizeof(constants[i].arguments[j]));
+                    trim(constants[i].arguments[j], sizeof(constants[i].arguments[j]));
+
+                    token = strtok(NULL, ",");
+                }
+
+                ptr = strchr(ptr, ')') + 1;
             }
 
             while (*ptr == ' ' || *ptr == '\t')
                 ptr++;
 
             if (*ptr != '\n') {
-                strncpy(constants[i].value, ptr, 4096);
-                constants[i].value[strlen(constants[i].value) - 1] = 0;
+                strncpy(valuebuffer, ptr, sizeof(valuebuffer));
+                valuebuffer[strlen(valuebuffer) - 1] = 0;
 
-                success = resolve_macros(constants[i].value, sizeof(constants[i].value), constants);
+                success = resolve_macros(valuebuffer, sizeof(valuebuffer), constants);
                 if (success) {
-                    printf("Failed to resolve macros in line %i of %s.\n", line, source);
+                    errorf("Failed to resolve macros in line %i of %s.\n", line, source);
                     return success;
                 }
+
+                if (strnlen(valuebuffer, sizeof(valuebuffer)) == sizeof(valuebuffer)) {
+                    errorf("Macro value in line %i of %s exceeds maximum size (%i).\n", line, source, sizeof(valuebuffer));
+                    return 3;
+                }
+
+                if (constants[i].value != 0)
+                    free(constants[i].value);
+                constants[i].value = (char *)malloc(strlen(valuebuffer) + 1);
+                strcpy(constants[i].value, valuebuffer);
             } else {
+                constants[i].value = (char *)malloc(1);
                 constants[i].value[0] = 0;
             }
 
-            strncpy(constants[i].name, definition, 256);
+            strncpy(constants[i].name, definition, sizeof(constants[i].name));
         } else if (level_comment == 0 && strlen(buffer) >= 6 && strncmp(buffer, "#undef", 6) == 0) {
             i = 0;
             while (strlen(constants[i].name) != 0 &&
@@ -608,7 +627,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 i++;
 
             if (i == MAXCONSTS) {
-                printf("Include %s not found in line %i of %s.\n", definition, line, source);
+                errorf("Include %s not found in line %i of %s.\n", definition, line, source);
                 return 3;
             }
 
@@ -633,7 +652,7 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 level_true = level;
         } else if (level_comment == 0 && strlen(buffer) >= 6 && strncmp(buffer, "#endif", 6) == 0) {
             if (level == 0) {
-                printf("Unexpected #endif in line %i of %s.\n", line, source);
+                errorf("Unexpected #endif in line %i of %s.\n", line, source);
                 return 4;
             }
             if (level == level_true)
@@ -645,17 +664,17 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                     buffer[i] = '"';
             }
             if (strchr(buffer, '"') == NULL) {
-                printf("Failed to parse #include in line %i in %s.\n", line, source);
+                errorf("Failed to parse #include in line %i in %s.\n", line, source);
                 return 5;
             }
             strncpy(includepath, strchr(buffer, '"') + 1, sizeof(includepath));
             if (strchr(includepath, '"') == NULL) {
-                printf("Failed to parse #include in line %i in %s.\n", line, source);
+                errorf("Failed to parse #include in line %i in %s.\n", line, source);
                 return 6;
             }
             *strchr(includepath, '"') = 0;
             if (find_file(includepath, source, includefolder, actualpath, NULL)) {
-                printf("Failed to find %s in %s.\n", includepath, includefolder);
+                errorf("Failed to find %s in %s.\n", includepath, includefolder);
                 return 7;
             }
             free(buffer);
@@ -666,9 +685,9 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
         }
 
         if (buffer[0] != '#' && strlen(buffer) > 1) {
-            success = resolve_macros(buffer, 4096, constants);
+            success = resolve_macros(buffer, buffsize, constants);
             if (success) {
-                printf("Failed to resolve macros in line %i of %s.\n", line, source);
+                errorf("Failed to resolve macros in line %i of %s.\n", line, source);
                 return success;
             }
             fputs(buffer, f_target);

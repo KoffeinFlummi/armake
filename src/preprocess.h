@@ -19,14 +19,15 @@
 #pragma once
 
 
-#define MAXCONSTS 512
+#define MAXCONSTS 1024
 #define MAXARGS 32
+#define LINEBUFFSIZE 131072
 
 
 struct constant {
     char name[256];
-    char arguments[MAXARGS][256];
-    char value[4096];
+    char arguments[MAXARGS][512];
+    char *value;
 };
 
 
