@@ -355,6 +355,11 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
                         } else if (*ptr_arg_end == ')' || *ptr_arg_end == ',') {
                             strncpy(args[j], ptr_args + 1, ptr_arg_end - ptr_args - 1);
                             args[j][ptr_arg_end - ptr_args - 1] = 0;
+
+                            success = resolve_macros(args[j], sizeof(args[j]), constants);
+                            if (success)
+                                return success;
+
                             ptr_args = ptr_arg_end;
                             break;
                         }
