@@ -43,8 +43,6 @@ int read_material(struct material *material) {
     extern int current_operation;
     extern char current_target[2048];
     FILE *f;
-    int i;
-    int success;
     char actual_path[2048];
     char rapified_path[2048];
 
