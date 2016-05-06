@@ -332,7 +332,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         }
 
         if (strchr(buffer, '{') == NULL) {
-            printf("Failed to find { for class \"%s\".\n", name);
+            errorf("Failed to find { for class \"%s\".\n", name);
             return 5;
         }
 
