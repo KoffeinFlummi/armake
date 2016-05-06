@@ -1325,44 +1325,52 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
 
     // pointflags
     fwrite(&odol_lod->num_points, 4, 1, f_target);
-    fwrite("\x01\0\0\0\0", 5, 1, f_target);
+    fputc(1, f_target);
+    if (odol_lod->num_points > 0)
+        fwrite("\0\0\0\0", 4, 1, f_target);
 
     // uvs
     fwrite( odol_lod->uv_scale, sizeof(float) * 4, 1, f_target);
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
     fputc(0, f_target);
-    fputc(0, f_target);
-    for (i = 0; i < odol_lod->num_points; i++) {
-        // write compressed pair
-        u = (short)(odol_lod->uv_coords[i].u * 2 * INT16_MAX - INT16_MAX);
-        v = (short)(odol_lod->uv_coords[i].v * 2 * INT16_MAX - INT16_MAX);
+    if (odol_lod->num_points > 0) {
+        fputc(0, f_target);
+        for (i = 0; i < odol_lod->num_points; i++) {
+            // write compressed pair
+            u = (short)(odol_lod->uv_coords[i].u * 2 * INT16_MAX - INT16_MAX);
+            v = (short)(odol_lod->uv_coords[i].v * 2 * INT16_MAX - INT16_MAX);
 
-        fwrite(&u, sizeof(int16_t), 1, f_target);
-        fwrite(&v, sizeof(int16_t), 1, f_target);
+            fwrite(&u, sizeof(int16_t), 1, f_target);
+            fwrite(&v, sizeof(int16_t), 1, f_target);
+        }
     }
     fwrite("\x01\0\0\0", 4, 1, f_target);
 
     // points
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
-    fputc(0, f_target);
-    fwrite( odol_lod->points, sizeof(struct triplet) * odol_lod->num_points, 1, f_target);
+    if (odol_lod->num_points > 0) {
+        fputc(0, f_target);
+        fwrite( odol_lod->points, sizeof(struct triplet) * odol_lod->num_points, 1, f_target);
+    }
 
     // normals
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
     fputc(0, f_target);
-    fputc(0, f_target);
-    for (i = 0; i < odol_lod->num_points; i++) {
-        // write compressed triplet
-        x = (int)(-511.0f * odol_lod->normals[i].x + 0.5);
-        y = (int)(-511.0f * odol_lod->normals[i].y + 0.5);
-        z = (int)(-511.0f * odol_lod->normals[i].z + 0.5);
+    if (odol_lod->num_points > 0) {
+        fputc(0, f_target);
+        for (i = 0; i < odol_lod->num_points; i++) {
+            // write compressed triplet
+            x = (int)(-511.0f * odol_lod->normals[i].x + 0.5);
+            y = (int)(-511.0f * odol_lod->normals[i].y + 0.5);
+            z = (int)(-511.0f * odol_lod->normals[i].z + 0.5);
 
-        x = MAX(MIN(x, 511), -511);
-        y = MAX(MIN(y, 511), -511);
-        z = MAX(MIN(z, 511), -511);
+            x = MAX(MIN(x, 511), -511);
+            y = MAX(MIN(y, 511), -511);
+            z = MAX(MIN(z, 511), -511);
 
-        temp = (((uint32_t)z & 0x3FF) << 20) | (((uint32_t)y & 0x3FF) << 10) | ((uint32_t)x & 0x3FF);
-        fwrite(&temp, sizeof(uint32_t), 1, f_target);
+            temp = (((uint32_t)z & 0x3FF) << 20) | (((uint32_t)y & 0x3FF) << 10) | ((uint32_t)x & 0x3FF);
+            fwrite(&temp, sizeof(uint32_t), 1, f_target);
+        }
     }
 
     fwrite("\0\0\0\0\0\0\0\0\0\0\0\0", 12, 1, f_target);
