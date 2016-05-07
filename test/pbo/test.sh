@@ -8,6 +8,10 @@ head -c 256 < /dev/urandom > /tmp/amktest/sample/foo
 ./bin/armake build -f /tmp/amktest/sample /tmp/amktest/foo.pbo
 ./bin/armake unpack -f /tmp/amktest/foo.pbo /tmp/amktest/unpacked
 
+echo ""
+ls /tmp/amktest
+echo ""
+
 cmp --silent /tmp/amktest/sample/foo /tmp/amktest/unpacked/foo || {
     rm -rf /tmp/amktest
     exit 1
