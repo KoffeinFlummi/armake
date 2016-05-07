@@ -27,6 +27,9 @@ $(LIB)/%.o: $(LIB)/%.c
 
 all: $(BIN)/armake
 
+test: $(BIN)/armake FORCE
+	@./test/runall.sh
+
 install: all
 	install -m 0755 $(BIN)/armake $(PREFIX)/usr/bin
 
@@ -36,10 +39,10 @@ uninstall:
 clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
 
-win32: clean
+win32:
 	make CC=i686-w64-mingw32-gcc EXT=.exe
 
-win64: clean
+win64:
 	make CC=x86_64-w64-mingw32-gcc EXT=.exe
 
 docopt:
@@ -61,3 +64,5 @@ docopt:
 	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
 	rm -rf tmp
+
+FORCE:

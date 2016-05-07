@@ -692,7 +692,7 @@ int rapify_file(char *source, char *target, char *includefolder) {
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        errorf("Failed to get temp file name.\n");
+        errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
     f_temp = fopen(temp_name, "w+");

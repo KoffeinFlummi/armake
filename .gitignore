@@ -33,14 +33,5 @@ bin/*
 *.dSYM/
 vgcore.*
 
-# Testing files
-test/*
-*.png
-*.paa
-*.pbo
-*.cpp
-*.p3d
-*.bin
-
 # Tmp
 tmp/*
