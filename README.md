@@ -1,6 +1,9 @@
 armake
 ======
 
+[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg)](https://travis-ci.org/KoffeinFlummi/armake) [![](https://img.shields.io/badge/license-GPLv2-red.svg)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE) [![](https://img.shields.io/aur/version/armake-git.svg)](https://aur.archlinux.org/packages/armake-git)
+
+
 A C implementation of Arma modding tools (PAA conversion, binarization/rapification, PBO packing). (WIP)
 
 
@@ -34,9 +37,9 @@ See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blo
 ### Credits
 
 - [Mikero](https://dev.withsix.com/projects/mikero-pbodll) for his great documentation of the various file formats used.
-- [T_D](https://github.com/Braini01) for great documentation, lots of pointers and even some code contributions
-- [jonpas](https://github.com/jonpas) for all kinds of help with development and testing
-- [kju](https://forums.bistudio.com/user/768005-kju/) for some pointers and "PR work"
+- [T_D](https://github.com/Braini01) for great documentation, lots of pointers and even some code contributions.
+- [jonpas](https://github.com/jonpas) for all kinds of help with development and testing.
+- [kju](https://forums.bistudio.com/user/768005-kju/) for some pointers and "PR work".
 
 
 ### Used Libraries
