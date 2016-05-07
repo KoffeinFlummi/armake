@@ -27,8 +27,6 @@
 #include "build.h"
 #include "unpack.h"
 
-#define VERSION "v1.0"
-
 
 int main(int argc, char *argv[]) {
     extern DocoptArgs args;

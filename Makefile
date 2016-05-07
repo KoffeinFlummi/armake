@@ -1,10 +1,11 @@
+VERSION = v1.0
 PREFIX = ""
 BIN = bin
 SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -std=gnu89 -ggdb
+CFLAGS = -Wall -DVERSION=\"$(VERSION)\" -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm
 
 $(BIN)/armake: \
