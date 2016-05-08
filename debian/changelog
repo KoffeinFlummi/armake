@@ -1,0 +1,19 @@
+armake (0.2.1-1) precise; urgency=low
+
+  * Fix install in Makefile
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 08 May 2016 09:34:00 +0200
+
+
+armake (0.2-1) precise; urgency=low
+
+  * Are you serious?
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 08 May 2016 02:43:28 +0200
+
+
+armake (0.1-1) precise; urgency=low
+
+  * Initial build
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 08 May 2016 02:43:28 +0200

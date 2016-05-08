@@ -1,0 +1,15 @@
+Source: armake
+Section: utils
+Priority: extra
+Maintainer: Felix Wiegand <koffeinflummi@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Vcs-Git: git@github.com:KoffeinFlummi/armake.git
+Vcs-Browser: http://github.com/KoffeinFlummi/armake
+
+Package: armake
+Section: utils
+Priority: extra
+Architecture: any-amd64
+Depends:
+Description: Open-source Arma modding tools

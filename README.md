@@ -10,7 +10,7 @@ A C implementation of Arma modding tools (PAA conversion, binarization/rapificat
 
 ```
 $ make
-# make install
+$ sudo make install
 ```
 
 There are no dependencies other than a C lib with an fts library (like glibc) on \*nix systems.
@@ -19,10 +19,22 @@ There are no dependencies other than a C lib with an fts library (like glibc) on
 
 [PKGBUILD](https://aur.archlinux.org/packages/armake-git/)
 
-Example (using pacaur):
+Example:
 
 ```
-$ pacaur -S armake-git
+$ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
+```
+
+#### Ubuntu & Other Debian Derivatives
+
+[PPA](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
+
+Example:
+
+```
+$ sudo add-apt-repository ppa:koffeinflummi/armake
+$ sudo apt-get update
+$ sudo apt-get install armake
 ```
 
 
