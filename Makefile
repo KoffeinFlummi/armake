@@ -1,11 +1,11 @@
-VERSION = v0.1
-PREFIX = ""
+VERSION = 0.2.1
+DESTDIR = ""
 BIN = bin
 SRC = src
 LIB = lib
 EXT = ""
 CC = gcc
-CFLAGS = -Wall -DVERSION=\"$(VERSION)\" -std=gnu89 -ggdb
+CFLAGS = -Wall -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm
 
 $(BIN)/armake: \
@@ -32,10 +32,11 @@ test: $(BIN)/armake FORCE
 	@./test/runall.sh
 
 install: all
-	install -m 0755 $(BIN)/armake $(PREFIX)/usr/bin
+	mkdir -p $(DESTDIR)/usr/bin
+	install -m 0755 $(BIN)/armake $(DESTDIR)/usr/bin
 
 uninstall:
-	rm $(PREFIX)/usr/bin/armake
+	rm $(DESTDIR)/usr/bin/armake
 
 clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
@@ -65,5 +66,10 @@ docopt:
 	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
 	rm -rf tmp
+
+debian: FORCE
+	tar -czf ../armake_$(VERSION).orig.tar.gz .
+	debuild -S -sa
+	dput ppa:koffeinflummi/armake ../armake_*_source.changes
 
 FORCE:
