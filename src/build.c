@@ -56,8 +56,16 @@ int binarize_file_callback(char *root, char *source, char *junk) {
 
 
 bool file_allowed(char *filename) {
+    int i;
+    extern char exclude_files[MAXEXCLUDEFILES][512];
+
     if (strcmp(filename, "$PBOPREFIX$") == 0)
         return false;
+
+    for (i = 0; i < MAXEXCLUDEFILES && exclude_files[i][0] != 0; i++) {
+        if (matches_glob(filename, exclude_files[i]))
+            return false;
+    }
 
     return true;
 }
