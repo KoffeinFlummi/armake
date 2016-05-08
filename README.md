@@ -22,8 +22,6 @@ There are no dependencies other than a C lib with an fts library (like glibc) on
 
 [PKGBUILD](https://aur.archlinux.org/packages/armake-git/)
 
-Example:
-
 ```
 $ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
 ```
@@ -31,8 +29,6 @@ $ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
 #### Ubuntu & Other Debian Derivatives
 
 [PPA](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
-
-Example:
 
 ```
 $ sudo add-apt-repository ppa:koffeinflummi/armake
