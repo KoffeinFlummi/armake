@@ -39,7 +39,6 @@ int read_material(struct material *material) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    extern DocoptArgs args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f;
@@ -49,7 +48,7 @@ int read_material(struct material *material) {
     current_operation = OP_MATERIAL;
     strcpy(current_target, material->path);
 
-    if (find_file(material->path, "", args.includefolder, actual_path, NULL)) {
+    if (find_file(material->path, "", actual_path, NULL)) {
         errorf("Failed to find material %s.\n", material->path);
         return 1;
     }
@@ -58,7 +57,7 @@ int read_material(struct material *material) {
     strcat(rapified_path, ".armake.bin"); // it is assumed that this doesn't exist
 
     // Rapify file
-    if (rapify_file(actual_path, rapified_path, args.includefolder)) {
+    if (rapify_file(actual_path, rapified_path)) {
         errorf("Failed to rapify %s.\n", actual_path);
         return 2;
     }
