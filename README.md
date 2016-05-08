@@ -42,12 +42,13 @@ $ sudo apt-get install armake
 See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blob/master/src/usage).
 
 
-### Credits
+### Credits & Thanks
 
 - [Mikero](https://dev.withsix.com/projects/mikero-pbodll) for his great documentation of the various file formats used.
 - [T_D](https://github.com/Braini01) for great documentation, lots of pointers and even some code contributions.
 - [jonpas](https://github.com/jonpas) for all kinds of help with development and testing.
 - [kju](https://forums.bistudio.com/user/768005-kju/) for some pointers and "PR work".
+- [Glowbal](https://github.com/Glowbal) for the name.
 
 
 ### Used Libraries
