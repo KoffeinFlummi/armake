@@ -95,7 +95,7 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
 }
 
 
-int find_file(char *includepath, char *origin, char *includefolder, char *actualpath, char *cwd) {
+int find_file_helper(char *includepath, char *origin, char *includefolder, char *actualpath, char *cwd) {
     /*
      * Finds the file referenced in includepath in the includefolder. origin
      * describes the file in which the include is used (used for relative
@@ -215,6 +215,34 @@ int find_file(char *includepath, char *origin, char *includefolder, char *actual
     if (access(filename, F_OK) != -1) {
         strcpy(actualpath, filename);
         return 0;
+    }
+
+    return 2;
+}
+
+
+int find_file(char *includepath, char *origin, char *actualpath, char *cwd) {
+    /*
+     * Finds the file referenced in includepath in the includefolder. origin
+     * describes the file in which the include is used (used for relative
+     * includes). actualpath holds the return pointer. The 4th arg is used for
+     * recursion on Windows and should be passed as NULL initially.
+     *
+     * Returns 0 on success, 1 on error and 2 if no file could be found.
+     *
+     * Please note that relative includes always return a path, even if that
+     * file does not exist.
+     */
+
+    int i;
+    int success;
+    extern char include_folders[MAXINCLUDEFOLDERS][512];
+
+    for (i = 0; i < MAXINCLUDEFOLDERS && include_folders[i][0] != 0; i++) {
+        success = find_file_helper(includepath, origin, include_folders[i], actualpath, cwd);
+
+        if (success != 2)
+            return success;
     }
 
     return 2;
@@ -399,7 +427,7 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
 }
 
 
-int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants) {
+int preprocess(char *source, FILE *f_target, struct constant *constants) {
     /*
      * Writes the contents of source into the target file pointer, while
      * recursively resolving constants and includes using the includefolder
@@ -678,12 +706,12 @@ int preprocess(char *source, FILE *f_target, char *includefolder, struct constan
                 return 6;
             }
             *strchr(includepath, '"') = 0;
-            if (find_file(includepath, source, includefolder, actualpath, NULL)) {
-                errorf("Failed to find %s in %s.\n", includepath, includefolder);
+            if (find_file(includepath, source, actualpath, NULL)) {
+                errorf("Failed to find %s.\n", includepath);
                 return 7;
             }
             free(buffer);
-            success = preprocess(actualpath, f_target, includefolder, constants);
+            success = preprocess(actualpath, f_target, constants);
             if (success)
                 return success;
             continue;

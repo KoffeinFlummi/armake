@@ -126,18 +126,10 @@ void errorf(char *format, ...) {
 
 
 bool matches_glob(char *string, char *pattern) {
-    char *ptr1;
-    char *ptr2;
+    char *ptr1 = string;
+    char *ptr2 = pattern;
 
-    ptr1 = string;
-    ptr2 = pattern;
-
-    do {
-        if (*ptr1 == 0)
-            return (*ptr2 == 0);
-        if (*ptr2 == 0)
-            return (*ptr1 == 0);
-
+    while (*ptr1 != 0 && *ptr2 != 0) {
         if (*ptr2 == '*') {
             ptr2++;
             while (true) {
@@ -147,15 +139,16 @@ bool matches_glob(char *string, char *pattern) {
                     return false;
                 ptr1++;
             }
-            return false;
-        } else if (*ptr2 != '?') {
-            if (*ptr1 != *ptr2)
-                return false;
         }
+
+        if (*ptr2 != '?' && *ptr1 != *ptr2)
+            return false;
 
         ptr1++;
         ptr2++;
-    } while (true);
+    }
+
+    return (*ptr1 == *ptr2);
 }
 
 

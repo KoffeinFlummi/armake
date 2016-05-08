@@ -35,7 +35,7 @@
 #include "build.h"
 
 
-int binarize_file_callback(char *root, char *source, char *includefolder) {
+int binarize_file_callback(char *root, char *source, char *junk) {
     int success;
     char target[2048];
 
@@ -46,7 +46,7 @@ int binarize_file_callback(char *root, char *source, char *includefolder) {
         strcpy(target + strlen(target) - 3, "bin");
     }
 
-    success = binarize_file(source, target, includefolder);
+    success = binarize_file(source, target);
 
     if (success > 0)
         return success * -1;
@@ -219,13 +219,6 @@ int build() {
     if (args.source[strlen(args.source) - 1] == PATHSEP)
         args.source[strlen(args.source) - 1] = 0;
 
-    char *includefolder = ".";
-    if (args.include)
-        includefolder = args.includefolder;
-
-    if (includefolder[strlen(includefolder) - 1] == PATHSEP)
-        includefolder[strlen(includefolder) - 1] = 0;
-
     // get addon prefix
     char prefixpath[1024];
     char addonprefix[512];
@@ -278,7 +271,7 @@ int build() {
 
     // preprocess and binarize stuff if required
     if (!args.packonly) {
-        if (traverse_directory(tempfolder, binarize_file_callback, includefolder)) {
+        if (traverse_directory(tempfolder, binarize_file_callback, "")) {
             current_operation = OP_BUILD;
             strcpy(current_target, args.source);
             errorf("Failed to preprocess some files.\n");

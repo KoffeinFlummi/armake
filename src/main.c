@@ -26,10 +26,13 @@
 #include "binarize.h"
 #include "build.h"
 #include "unpack.h"
+#include "filesystem.h"
 
 
 int main(int argc, char *argv[]) {
     extern DocoptArgs args;
+    extern char exclude_files[MAXEXCLUDEFILES][512];
+    extern char include_folders[MAXINCLUDEFOLDERS][512];
     extern char muted_warnings[MAXWARNINGS][512];
     int i;
     int j;
@@ -42,16 +45,30 @@ int main(int argc, char *argv[]) {
         docopt(2, halp, 1, VERSION);
 
     args.source = argv[argc - 2];
+    if (args.source[strlen(args.source) - 1] == PATHSEP)
+        args.source[strlen(args.source) - 1] = 0;
+
     args.target = argv[argc - 1];
+    if (args.target[strlen(args.target) - 1] == PATHSEP)
+        args.target[strlen(args.target) - 1] = 0;
 
     if (args.source[0] == '-' || args.target[0] == '-')
         docopt(2, halp, 1, VERSION);
 
 
     // @todo
+    strcpy(include_folders[0], ".");
     for (i = 0; i < argc - 1; i++) {
-        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--include") == 0)
-            args.includefolder = argv[i+1];
+        if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--exclude") == 0) {
+            for (j = 0; j < MAXEXCLUDEFILES && exclude_files[j][0] != 0; j++);
+            strncpy(exclude_files[j], argv[i + 1], sizeof(exclude_files[j]));
+        }
+        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--include") == 0) {
+            for (j = 0; j < MAXINCLUDEFOLDERS && include_folders[j][0] != 0; j++);
+            strncpy(include_folders[j], argv[i + 1], sizeof(include_folders[j]));
+            if (include_folders[j][strlen(include_folders[j]) - 1] == PATHSEP)
+                include_folders[j][strlen(include_folders[j]) - 1] = 0;
+        }
         if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--warning") == 0) {
             for (j = 0; j < MAXWARNINGS && muted_warnings[j][0] != 0; j++);
             strncpy(muted_warnings[j], argv[i + 1], sizeof(muted_warnings[j]));

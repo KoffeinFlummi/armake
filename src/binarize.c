@@ -39,7 +39,7 @@
 #include "binarize.h"
 
 
-int binarize_file(char *source, char *target, char *includefolder) {
+int binarize_file(char *source, char *target) {
     /*
      * Binarize the given file. If source and target are identical, the target
      * is overwritten. If the source is a P3D, it is converted to ODOL. If the
@@ -61,7 +61,7 @@ int binarize_file(char *source, char *target, char *includefolder) {
 
     if (!strcmp(fileext, ".cpp") ||
             !strcmp(fileext, ".ext"))
-        return rapify_file(source, target, includefolder);
+        return rapify_file(source, target);
     if (!strcmp(fileext, ".p3d"))
         return mlod2odol(source, target);
 
@@ -78,20 +78,7 @@ int binarize() {
         return 1;
     }
 
-    // remove trailing slash in source and target
-    if (args.source[strlen(args.source) - 1] == PATHSEP)
-        args.source[strlen(args.source) - 1] = 0;
-    if (args.target[strlen(args.target) - 1] == PATHSEP)
-        args.target[strlen(args.target) - 1] = 0;
-
-    char *includefolder = ".";
-    if (args.include)
-        includefolder = args.includefolder;
-
-    if (includefolder[strlen(includefolder) - 1] == PATHSEP)
-        includefolder[strlen(includefolder) - 1] = 0;
-
-    int success = binarize_file(args.source, args.target, includefolder);
+    int success = binarize_file(args.source, args.target);
 
     if (success == -1) {
         errorf("File is no P3D and doesn't seem rapifiable.\n");

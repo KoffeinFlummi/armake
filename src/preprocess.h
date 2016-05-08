@@ -33,8 +33,8 @@ struct constant {
 
 bool matches_includepath(char *path, char *includepath, char *includefolder);
 
-int find_file(char *includepath, char *origin, char *includefolder, char *actualpath, char *cwd);
+int find_file(char *includepath, char *origin, char *actualpath, char *cwd);
 
 int resolve_macros(char *string, size_t buffsize, struct constant *constants);
 
-int preprocess(char *source, FILE *f_target, char *includefolder, struct constant *constants);
+int preprocess(char *source, FILE *f_target, struct constant *constants);

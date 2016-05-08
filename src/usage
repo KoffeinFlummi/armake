@@ -15,9 +15,9 @@ Commands:
 Options:
     -f --force      Overwrite the target file/folder if it already exists
     -p --packonly   Don't binarize models, configs etc.
-    -w --warning    Warning to disable, may be used multiple times
-    -i --include    Folder to search for includes, defaults to CWD
-    -x --exclude    Glob patterns to exclude from PBO, seperated by semicolons
+    -w --warning    Warning to disable (repeatable)
+    -i --include    Folder to search for includes, defaults to CWD (repeatable)
+    -x --exclude    Glob patterns to exclude from PBO (repeatable)
     -k --key        Keyfile to use for signing the PBO
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit

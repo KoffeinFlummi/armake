@@ -32,6 +32,8 @@
 #endif
 
 
+#define MAXEXCLUDEFILES 32
+#define MAXINCLUDEFOLDERS 32
 #define MAXWARNINGS 32
 
 
@@ -98,6 +100,8 @@ typedef struct Tokens {
 
 
 DocoptArgs args;
+char exclude_files[MAXEXCLUDEFILES][512];
+char include_folders[MAXINCLUDEFOLDERS][512];
 char muted_warnings[MAXWARNINGS][512];
 
 

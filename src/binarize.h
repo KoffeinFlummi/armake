@@ -24,4 +24,4 @@
 
 int binarize();
 
-int binarize_file(char *source, char *target, char *includefolder);
+int binarize_file(char *source, char *target);

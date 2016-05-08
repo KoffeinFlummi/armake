@@ -55,10 +55,14 @@ docopt:
 	cat tmp/license > src/docopt.h
 	echo -e "#pragma once\n\n" >> src/docopt.h
 	grep -A 2 "#" tmp/docopt >> src/docopt.h
+	echo "#define MAXEXCLUDEFILES 32" >> src/docopt.h
+	echo "#define MAXINCLUDEFOLDERS 32" >> src/docopt.h
 	echo -e "#define MAXWARNINGS 32\n\n" >> src/docopt.h
 	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n\n" tmp/docopt >> src/docopt.h
 	sed -ie 's/\x0//g' src/docopt.h # I don't know why I suddenly need this
 	echo -e "\nDocoptArgs args;" >> src/docopt.h
+	echo "char exclude_files[MAXEXCLUDEFILES][512];" >> src/docopt.h
+	echo "char include_folders[MAXINCLUDEFOLDERS][512];" >> src/docopt.h
 	echo -e "char muted_warnings[MAXWARNINGS][512];\n\n" >> src/docopt.h
 	grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
 	sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
@@ -67,7 +71,7 @@ docopt:
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
 	rm -rf tmp
 
-debian: FORCE
+debian: clean FORCE
 	tar -czf ../armake_$(VERSION).orig.tar.gz .
 	debuild -S -sa
 	dput ppa:koffeinflummi/armake ../armake_*_source.changes

@@ -28,4 +28,4 @@ int rapify_array(FILE *f_source, FILE *f_target);
 
 int rapify_class(FILE *f_source, FILE *f_target);
 
-int rapify_file(char *source, char *target, char *includefolder);
+int rapify_file(char *source, char *target);
