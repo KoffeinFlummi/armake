@@ -125,6 +125,40 @@ void errorf(char *format, ...) {
 }
 
 
+bool matches_glob(char *string, char *pattern) {
+    char *ptr1;
+    char *ptr2;
+
+    ptr1 = string;
+    ptr2 = pattern;
+
+    do {
+        if (*ptr1 == 0)
+            return (*ptr2 == 0);
+        if (*ptr2 == 0)
+            return (*ptr1 == 0);
+
+        if (*ptr2 == '*') {
+            ptr2++;
+            while (true) {
+                if (matches_glob(ptr1, ptr2))
+                    return true;
+                if (*ptr1 == 0)
+                    return false;
+                ptr1++;
+            }
+            return false;
+        } else if (*ptr2 != '?') {
+            if (*ptr1 != *ptr2)
+                return false;
+        }
+
+        ptr1++;
+        ptr2++;
+    } while (true);
+}
+
+
 #ifndef _WIN32
 int stricmp(char *a, char *b) {
     int d;

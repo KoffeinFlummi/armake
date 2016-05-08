@@ -59,6 +59,8 @@ void nwarningf(char *name, char *format, ...);
 
 void errorf(char *format, ...);
 
+bool matches_glob(char *string, char *pattern);
+
 #ifndef _WIN32
 int stricmp(char *a, char *b);
 #endif
