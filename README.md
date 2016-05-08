@@ -1,7 +1,7 @@
 armake
 ======
 
-[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg)](https://travis-ci.org/KoffeinFlummi/armake) [![](https://img.shields.io/badge/license-GPLv2-red.svg)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE) [![](https://img.shields.io/aur/version/armake-git.svg)](https://aur.archlinux.org/packages/armake-git)
+[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg)](https://travis-ci.org/KoffeinFlummi/armake) [![](https://img.shields.io/badge/license-GPLv2-red.svg)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE) [![](https://img.shields.io/aur/version/armake-git.svg)](https://aur.archlinux.org/packages/armake-git) [![](https://img.shields.io/badge/PPA-koffeinflummi%2Farmake-orange.svg)](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
 
 
 A C implementation of Arma modding tools (PAA conversion, binarization/rapification, PBO packing). (WIP)
@@ -22,8 +22,6 @@ There are no dependencies other than a C lib with an fts library (like glibc) on
 
 [PKGBUILD](https://aur.archlinux.org/packages/armake-git/)
 
-Example:
-
 ```
 $ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
 ```
@@ -31,8 +29,6 @@ $ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
 #### Ubuntu & Other Debian Derivatives
 
 [PPA](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
-
-Example:
 
 ```
 $ sudo add-apt-repository ppa:koffeinflummi/armake
