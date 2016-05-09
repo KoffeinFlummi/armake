@@ -20,10 +20,16 @@ There are no dependencies other than a C lib with an fts library (like glibc) on
 
 #### Arch Linux
 
-[PKGBUILD](https://aur.archlinux.org/packages/armake-git/)
-
+[PKGBUILD](https://aur.archlinux.org/packages/armake/)
 ```
-$ pacaur -S armake-git   # or use yaourt or whatever AUR helper you use
+$ pacaur -S armake      # or use yaourt or whatever AUR helper you use
+```
+
+or
+
+[PKGBUILD (development)](https://aur.archlinux.org/packages/armake-git/)
+```
+$ pacaur -S armake-git
 ```
 
 #### Ubuntu & Other Debian Derivatives
