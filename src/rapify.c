@@ -318,7 +318,8 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         strncpy(name, buffer, sizeof(name));
         trim_leading(name, sizeof(name));
         for (ptr = name; *name != 0; ptr++) {
-            if (*ptr == ' ' || *ptr == '\t' || *ptr == ':' || *ptr == '{') {
+            if (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n' ||
+                    *ptr == ':' || *ptr == '{') {
                 *ptr = 0;
                 break;
             }
