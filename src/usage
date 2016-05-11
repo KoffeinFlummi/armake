@@ -4,13 +4,15 @@ Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
     armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>
     armake unpack [-f] <source> <target>
+    armake derapify [-f] [-d <indentation>] <source> <target>
     armake (-h | --help)
     armake (-v | --version)
 
 Commands:
-    binarize     Binarize a file
-    build        Pack a folder into a PBO
-    unpack       Unpack a PBO into a folder
+    binarize     Binarize a file.
+    build        Pack a folder into a PBO.
+    unpack       Unpack a PBO into a folder.
+    derapify     Derapify a config. You can pass - as the target to print to stdout.
 
 Options:
     -f --force      Overwrite the target file/folder if it already exists
@@ -19,6 +21,7 @@ Options:
     -i --include    Folder to search for includes, defaults to CWD (repeatable)
     -x --exclude    Glob patterns to exclude from PBO (repeatable)
     -k --key        Keyfile to use for signing the PBO
+    -d --indent     String to use for indentation. "    " (4 spaces) by default.
     -h --help       Show usage information and exit
     -v --version    Print the version number and exit
 

@@ -26,6 +26,7 @@
 #include "binarize.h"
 #include "build.h"
 #include "unpack.h"
+#include "derapify.h"
 #include "filesystem.h"
 
 
@@ -52,7 +53,8 @@ int main(int argc, char *argv[]) {
     if (args.target[strlen(args.target) - 1] == PATHSEP)
         args.target[strlen(args.target) - 1] = 0;
 
-    if (args.source[0] == '-' || args.target[0] == '-')
+    if ((args.source[0] == '-' && strlen(args.source) > 1) ||
+            (args.target[0] == '-' && strlen(args.target) > 1))
         docopt(2, halp, 1, VERSION);
 
 
@@ -82,6 +84,8 @@ int main(int argc, char *argv[]) {
         return build();
     if (args.unpack)
         return unpack();
+    if (args.derapify)
+        return derapify();
 
 
     docopt(2, halp, 1, VERSION);

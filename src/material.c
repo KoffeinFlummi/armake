@@ -29,7 +29,7 @@
 #include "rapify.h"
 #include "preprocess.h"
 #include "utils.h"
-#include "model_config.h"
+#include "derapify.h"
 #include "material.h"
 
 

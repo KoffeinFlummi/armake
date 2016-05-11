@@ -90,20 +90,4 @@ struct skeleton {
 };
 
 
-int seek_config_path(FILE *f, char *config_path);
-
-int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize);
-
-int seek_definition(FILE *f, char *config_path);
-
-int read_string(FILE *f, char *config_path, char *buffer, size_t buffsize);
-
-int read_int(FILE *f, char *config_path, int32_t *result);
-
-int read_float(FILE *f, char *config_path, float *result);
-
-int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize);
-
-int read_classes(FILE *f, char *config_path, char *array, int size, size_t buffsize);
-
 int read_model_config(char *path, struct skeleton *skeleton);

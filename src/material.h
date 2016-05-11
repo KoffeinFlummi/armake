@@ -22,8 +22,6 @@
 #define MATERIALTYPE 11
 #define MAXSTAGES 16
 
-#define TYPE_ROTATION      0
-
 
 #include "utils.h"
 

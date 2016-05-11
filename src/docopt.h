@@ -41,9 +41,11 @@ typedef struct {
     /* commands */
     int binarize;
     int build;
+    int derapify;
     int unpack;
     /* arguments */
     char *includefolder;
+    char *indentation;
     char *keyfile;
     char *source;
     char *target;
@@ -54,6 +56,7 @@ typedef struct {
     int force;
     int help;
     int include;
+    int indent;
     int key;
     int packonly;
     int version;

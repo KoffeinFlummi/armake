@@ -40,13 +40,15 @@ const char help_message[] =
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
 "    armake unpack [-f] <source> <target>\n"
+"    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
 "Commands:\n"
-"    binarize     Binarize a file\n"
-"    build        Pack a folder into a PBO\n"
-"    unpack       Unpack a PBO into a folder\n"
+"    binarize     Binarize a file.\n"
+"    build        Pack a folder into a PBO.\n"
+"    unpack       Unpack a PBO into a folder.\n"
+"    derapify     Derapify a config. You can pass - as the target to print to stdout.\n"
 "\n"
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
@@ -55,6 +57,7 @@ const char help_message[] =
 "    -i --include    Folder to search for includes, defaults to CWD (repeatable)\n"
 "    -x --exclude    Glob patterns to exclude from PBO (repeatable)\n"
 "    -k --key        Keyfile to use for signing the PBO\n"
+"    -d --indent     String to use for indentation. \"    \" (4 spaces) by default.\n"
 "    -h --help       Show usage information and exit\n"
 "    -v --version    Print the version number and exit\n"
 "\n"
@@ -71,6 +74,7 @@ const char usage_pattern[] =
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>\n"
 "    armake unpack [-f] <source> <target>\n"
+"    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)";
 
@@ -265,6 +269,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->help = option->value;
         } else if (!strcmp(option->olong, "--include")) {
             args->include = option->value;
+        } else if (!strcmp(option->olong, "--indent")) {
+            args->indent = option->value;
         } else if (!strcmp(option->olong, "--key")) {
             args->key = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
@@ -282,6 +288,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->binarize = command->value;
         } else if (!strcmp(command->name, "build")) {
             args->build = command->value;
+        } else if (!strcmp(command->name, "derapify")) {
+            args->derapify = command->value;
         } else if (!strcmp(command->name, "unpack")) {
             args->unpack = command->value;
         }
@@ -291,6 +299,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
         argument = &elements->arguments[i];
         if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
+        } else if (!strcmp(argument->name, "<indentation>")) {
+            args->indentation = argument->value;
         } else if (!strcmp(argument->name, "<keyfile>")) {
             args->keyfile = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
@@ -313,17 +323,20 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0,
+        0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
     Command commands[] = {
         {"binarize", 0},
         {"build", 0},
+        {"derapify", 0},
         {"unpack", 0}
     };
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
+        {"<indentation>", NULL, NULL},
         {"<keyfile>", NULL, NULL},
         {"<source>", NULL, NULL},
         {"<target>", NULL, NULL},
@@ -335,12 +348,13 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
+        {"-d", "--indent", 0, 0, NULL},
         {"-k", "--key", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {3, 6, 8, commands, arguments, options};
+    Elements elements = {4, 7, 9, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

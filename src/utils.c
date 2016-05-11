@@ -62,6 +62,8 @@ void warningf(char *format, ...) {
         fprintf(stderr, "    (encountered while reading %s)\n", filename);
     else if (current_operation == OP_UNPACK)
         fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
+    else if (current_operation == OP_DERAPIFY)
+        fprintf(stderr, "    (encountered while derapifying %s)\n", filename);
 }
 
 
@@ -352,6 +354,38 @@ int skip_whitespace(FILE *f) {
 
     fseek(f, -1, SEEK_CUR);
     return 0;
+}
+
+
+void escape_string(char *buffer, size_t buffsize) {
+    char *tmp;
+    char *ptr;
+    char tmp_array[3];
+
+    tmp = malloc(buffsize * 2);
+    tmp[0] = 0;
+    tmp_array[2] = 0;
+
+    for (ptr = buffer; *ptr != 0; ptr++) {
+        tmp_array[0] = '\\';
+        if (*ptr == '\t') {
+            tmp_array[1] = 't';
+        } else if (*ptr == '\r') {
+            tmp_array[1] = 'r';
+        } else if (*ptr == '\n') {
+            tmp_array[1] = 'n';
+        } else if (*ptr == '"') {
+            tmp_array[1] = '"';
+        } else {
+            tmp_array[0] = *ptr;
+            tmp_array[1] = 0;
+        }
+        strcat(tmp, tmp_array);
+    }
+
+    strncpy(buffer, tmp, buffsize);
+
+    free(tmp);
 }
 
 

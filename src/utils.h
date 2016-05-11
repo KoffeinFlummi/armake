@@ -37,6 +37,7 @@
 #define OP_MODELCONFIG 5
 #define OP_MATERIAL 6
 #define OP_UNPACK 7
+#define OP_DERAPIFY 8
 
 
 #include "docopt.h"
@@ -84,6 +85,8 @@ char lookahead_c(FILE *f);
 int lookahead_word(FILE *f, char *buffer, size_t buffsize);
 
 int skip_whitespace(FILE *f);
+
+void escape_string(char *buffer, size_t buffsize);
 
 void unescape_string(char *buffer, size_t buffsize);
 
