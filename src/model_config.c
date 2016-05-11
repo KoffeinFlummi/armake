@@ -807,6 +807,9 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         goto clean_up;
     }
 
+    if (strchr(model_name, '_') == NULL)
+        nwarningf("model-without-tag", "Model has a model config entry but doesn't seem to have a prefix (missing _).\n");
+
     // Read name
     sprintf(config_path, "CfgModels >> %s >> skeletonName", model_name);
     success = read_string(f, config_path, skeleton->name, sizeof(skeleton->name));
