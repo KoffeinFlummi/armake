@@ -394,10 +394,13 @@ void unescape_string(char *buffer, size_t buffsize) {
     char *ptr;
     char tmp_array[2];
     char current;
+    char quote;
 
     tmp = malloc(buffsize);
     tmp[0] = 0;
     tmp_array[1] = 0;
+
+    quote = buffer[0];
 
     buffer[strlen(buffer) - 1] = 0;
     for (ptr = buffer + 1; *ptr != 0; ptr++) {
@@ -411,9 +414,7 @@ void unescape_string(char *buffer, size_t buffsize) {
         } else if (*ptr == '\\' && *(ptr + 1) == '\'') {
             current = '\'';
             ptr++;
-        } else if (*ptr == '"' && *(ptr + 1) == '"') {
-            ptr++;
-        } else if (*ptr == '\'' && *(ptr + 1) == '\'') {
+        } else if (*ptr == quote && *(ptr + 1) == quote) {
             ptr++;
         }
 
