@@ -724,7 +724,6 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
                 return success;
             }
             fputs(buffer, f_target);
-            printf("%s", buffer);
         }
         free(buffer);
     }
