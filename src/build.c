@@ -282,7 +282,7 @@ int build() {
         if (traverse_directory(tempfolder, binarize_file_callback, "")) {
             current_operation = OP_BUILD;
             strcpy(current_target, args.source);
-            errorf("Failed to preprocess some files.\n");
+            errorf("Failed to binarize some files.\n");
             return 4;
         }
 
