@@ -19,7 +19,7 @@
 #pragma once
 
 
-#define MAXCLASSES 512
+#define MAXCLASSES 4096
 
 
 int rapify_token(FILE *f_source, FILE *f_target, char *name);
