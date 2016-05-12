@@ -95,7 +95,6 @@ void nwarningf(char *name, char *format, ...) {
 void errorf(char *format, ...) {
     extern int current_operation;
     extern char current_target[2048];
-    char filename[2048];
     char buffer[4096];
     va_list argptr;
 
@@ -104,26 +103,6 @@ void errorf(char *format, ...) {
     va_end(argptr);
 
     fprintf(stderr, "%serror:%s %s", COLOR_RED, COLOR_RESET, buffer);
-
-    if (strchr(current_target, PATHSEP) == NULL)
-        strcpy(filename, current_target);
-    else
-        strcpy(filename, strrchr(current_target, PATHSEP) + 1);
-
-    if (current_operation == OP_BUILD)
-        fprintf(stderr, "    (encountered while building %s)\n", filename);
-    else if (current_operation == OP_PREPROCESS)
-        fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
-    else if (current_operation == OP_RAPIFY)
-        fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
-    else if (current_operation == OP_P3D)
-        fprintf(stderr, "    (encountered while converting %s)\n", filename);
-    else if (current_operation == OP_MODELCONFIG)
-        fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
-    else if (current_operation == OP_MATERIAL)
-        fprintf(stderr, "    (encountered while reading %s)\n", filename);
-    else if (current_operation == OP_UNPACK)
-        fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
 }
 
 
