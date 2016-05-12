@@ -562,9 +562,7 @@ int derapify_array(FILE *f_source, FILE *f_target) {
 
             escape_string(buffer, sizeof(buffer));
 
-            fputs("\"", f_target);
-            fputs(buffer, f_target);
-            fputs("\"", f_target);
+            fprintf(f_target, "\"%s\"", buffer);
         } else if (type == 1) {
             fread(&float_value, sizeof(float_value), 1, f_source);
             fprintf(f_target, "%f", float_value);
@@ -667,21 +665,16 @@ int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
             fgets(buffer, sizeof(buffer), f_source);
             fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
 
-            fputs(indentation, f_target);
-            fputs(buffer, f_target);
-            fputs(" = ", f_target);
+            fprintf(f_target, "%s%s = ", indentation, buffer);
 
             if (type == 0) {
-                fputs("\"", f_target);
-
                 fp_tmp = ftell(f_source);
                 fgets(buffer, sizeof(buffer), f_source);
                 fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
 
                 escape_string(buffer, sizeof(buffer));
 
-                fputs(buffer, f_target);
-                fputs("\"", f_target);
+                fprintf(f_target, "\"%s\"", buffer);
             } else if (type == 1) {
                 fread(&float_value, sizeof(float_value), 1, f_source);
                 fprintf(f_target, "%f", float_value);
@@ -701,29 +694,23 @@ int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
             fgets(buffer, sizeof(buffer), f_source);
             fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
 
-            fputs(indentation, f_target);
-            fputs(buffer, f_target);
             if (type == 2)
-                fputs("[] = {", f_target);
+                fprintf(f_target, "%s%s[] = {", indentation, buffer);
             else
-                fputs("[] += {", f_target);
+                fprintf(f_target, "%s%s[] += {", indentation, buffer);
 
             success = derapify_array(f_source, f_target);
 
             fputs("};\n", f_target);
         } else if (type == 3 || type == 4) {
-            fputs(indentation, f_target);
-            if (type == 3)
-                fputs("class ", f_target);
-            else
-                fputs("delete ", f_target);
-
             fp_tmp = ftell(f_source);
             fgets(buffer, sizeof(buffer), f_source);
             fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
 
-            fputs(buffer, f_target);
-            fputs(";\n", f_target);
+            if (type == 3)
+                fprintf(f_target, "%sclass %s;\n", indentation, buffer);
+            else
+                fprintf(f_target, "%sdelete %s;\n", indentation, buffer);
         } else {
             errorf("Unknown class entry type %i.\n", type);
             return 2;
