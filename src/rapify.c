@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -406,6 +407,16 @@ int rapify_class(FILE *f_source, FILE *f_target) {
 
     // SECOND ITERATION: write entries and class headers to file
     while (true) {
+        current = fgetc(f_source);
+        if (current == EOF)
+            break;
+        if (current != ' ' && current != '\t' && current != '\r' && current != '\n' && current != '}' &&
+                (current < 'a' || current > 'z') && (current < 'A' || current > 'Z')) {
+            errorf("Unexpected symbol after semi-colon: \"%c\".\n", current);
+            return 1;
+        }
+        fseek(f_source, -1, SEEK_CUR);
+
         if (skip_whitespace(f_source))
             break;
 
@@ -683,7 +694,10 @@ int rapify_file(char *source, char *target) {
     FILE *f_temp;
     FILE *f_target;
     int i;
+    int datasize;
     int success;
+    char dump_name[2048];
+    char buffer[4096];
     uint32_t enum_offset = 0;
     struct constant *constants;
 
@@ -743,7 +757,23 @@ int rapify_file(char *source, char *target) {
 
     success = rapify_class(f_temp, f_target);
     if (success) {
-        errorf("Failed to rapify %s.\n", source);
+        sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
+        errorf("Failed to rapify %s,\n       dumping preprocessed config to %s.\n", source, dump_name);
+
+        fclose(f_target);
+
+        f_target = fopen(dump_name, "w");
+
+        fseek(f_temp, 0, SEEK_END);
+        datasize = ftell(f_temp);
+
+        fseek(f_temp, 0, SEEK_SET);
+        for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+            fread(buffer, sizeof(buffer), 1, f_temp);
+            fwrite(buffer, sizeof(buffer), 1, f_target);
+        }
+        fread(buffer, datasize - i, 1, f_temp);
+        fwrite(buffer, datasize - i, 1, f_target);
 
         fclose(f_temp);
         fclose(f_target);
