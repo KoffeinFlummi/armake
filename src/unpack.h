@@ -19,11 +19,11 @@
 #pragma once
 
 
-#define MAXFILES 1024
+#define MAXFILES 4096
 
 
 struct header {
-    char name[2048];
+    char name[512];
     uint32_t packing_method;
     uint32_t original_size;
     uint32_t data_size;

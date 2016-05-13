@@ -19,7 +19,7 @@
 #pragma once
 
 
-#define MAXCONSTS 1024
+#define MAXCONSTS 4096
 #define MAXARGS 32
 #define LINEBUFFSIZE 131072
 

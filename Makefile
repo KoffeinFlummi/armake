@@ -33,7 +33,11 @@ test: $(BIN)/armake FORCE
 
 install: all
 	mkdir -p $(DESTDIR)/usr/bin
+	mkdir -p $(DESTDIR)/usr/share/bash-completion/completions
+	mkdir -p $(DESTDIR)/etc/bash_completion.d
 	install -m 0755 $(BIN)/armake $(DESTDIR)/usr/bin
+	install -m 0644 completions/armake $(DESTDIR)/usr/share/bash-completion/completions
+	install -m 0644 completions/armake $(DESTDIR)/etc/bash_completion.d
 
 uninstall:
 	rm $(DESTDIR)/usr/bin/armake
@@ -70,6 +74,14 @@ docopt:
 	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
 	rm -rf tmp
+
+# Use https://github.com/Infinidat/infi.docopt_completion
+docopt-completion: $(BIN)/armake
+	mkdir -p completions
+	docopt-completion ./$(BIN)/armake --manual-bash
+	mv armake.sh completions/armake
+	docopt-completion ./$(BIN)/armake --manual-zsh
+	mv _armake completions/_armake
 
 debian: clean FORCE
 	tar -czf ../armake_$(VERSION).orig.tar.gz .

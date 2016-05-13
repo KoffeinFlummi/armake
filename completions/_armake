@@ -1,0 +1,154 @@
+#compdef armake
+
+_message_next_arg()
+{
+    argcount=0
+    for word in "${words[@][2,-1]}"
+    do
+        if [[ $word != -* ]] ; then
+            ((argcount++))
+        fi
+    done
+    if [[ $argcount -le ${#myargs[@]} ]] ; then
+        _message -r $myargs[$argcount]
+        if [[ $myargs[$argcount] =~ ".*file.*" || $myargs[$argcount] =~ ".*path.*" ]] ; then
+            _files
+        fi
+    fi
+}
+
+_armake ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    _arguments -C \
+        ':command:->command' \
+		'(-h)-h[Show usage information and exit]' \
+		'(--help)--help[Show usage information and exit]' \
+		'(-h)-h[Show usage information and exit]' \
+		'(--help)--help[Show usage information and exit]' \
+		'(-v)-v[Print the version number and exit]' \
+		'(--version)--version[Print the version number and exit]' \
+		'(-v)-v[Print the version number and exit]' \
+		'(--version)--version[Print the version number and exit]' \
+        '*::options:->options'
+
+    case $state in
+        (command)
+            local -a subcommands
+            subcommands=(
+				'binarize[Binarize a file.]'
+				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
+				'unpack[Unpack a PBO into a folder.]'
+				'build[Pack a folder into a PBO.]'
+            )
+            _values 'armake' $subcommands
+        ;;
+
+        (options)
+            case $line[1] in
+                binarize)
+                    _armake-binarize
+                ;;
+                derapify)
+                    _armake-derapify
+                ;;
+                unpack)
+                    _armake-unpack
+                ;;
+                build)
+                    _armake-build
+                ;;
+            esac
+        ;;
+    esac
+
+}
+
+_armake-binarize ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-w)-w[Warning to disable (repeatable)]' \
+		'(--warning)--warning[Warning to disable (repeatable)]' \
+		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable)]' \
+		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable)]' \
+
+    else
+        myargs=('<wname>' '<includefolder>' '<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-derapify ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-d)-d[String to use for indentation. "    " (4 spaces) by default.]' \
+		'(--indent)--indent[String to use for indentation. "    " (4 spaces) by default.]' \
+
+    else
+        myargs=('<indentation>' '<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-unpack ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+
+    else
+        myargs=('<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-build ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-p)-p[Don'\''t binarize models, configs etc.]' \
+		'(--packonly)--packonly[Don'\''t binarize models, configs etc.]' \
+		'(-w)-w[Warning to disable (repeatable)]' \
+		'(--warning)--warning[Warning to disable (repeatable)]' \
+		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable)]' \
+		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable)]' \
+		'(-x)-x[Glob patterns to exclude from PBO (repeatable)]' \
+		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable)]' \
+		'(-k)-k[Keyfile to use for signing the PBO]' \
+		'(--key)--key[Keyfile to use for signing the PBO]' \
+
+    else
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<keyfile>' '<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+
+_armake "$@"
