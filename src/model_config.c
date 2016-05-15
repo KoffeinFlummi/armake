@@ -402,6 +402,9 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return success;
     }
 
+    if (strlen(skeleton->name) == 0 && skeleton->num_animations > 0)
+        warningf("animated-without-skeleton", "Model doesn't have a skeleton but is animated.\n");
+
     // Read thermal stuff
     sprintf(config_path, "CfgModels >> %s >> htMin", model_name);
     read_float(f, config_path, &skeleton->ht_min);
