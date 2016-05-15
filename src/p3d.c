@@ -51,6 +51,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     int j;
     int fp_tmp;
     int fp_taggs;
+    bool empty;
     uint32_t tagg_len;
 
     fseek(f_source, 12, SEEK_SET);
@@ -66,9 +67,20 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
         fread(&mlod_lods[i].num_faces, 4, 1, f_source);
         fseek(f_source, 4, SEEK_CUR);
 
-        mlod_lods[i].points = (struct point *)malloc(sizeof(struct point) * mlod_lods[i].num_points);
-        for (j = 0; j < mlod_lods[i].num_points; j++)
-            fread(&mlod_lods[i].points[j], sizeof(struct point), 1, f_source);
+        empty = mlod_lods[i].num_points == 0;
+
+        if (empty) {
+            mlod_lods[i].num_points = 1;
+            mlod_lods[i].points = (struct point *)malloc(sizeof(struct point));
+            mlod_lods[i].points[0].x = 0.0f;
+            mlod_lods[i].points[0].y = 0.0f;
+            mlod_lods[i].points[0].z = 0.0f;
+            mlod_lods[i].points[0].point_flags = 0;
+        } else {
+            mlod_lods[i].points = (struct point *)malloc(sizeof(struct point) * mlod_lods[i].num_points);
+            for (j = 0; j < mlod_lods[i].num_points; j++)
+                fread(&mlod_lods[i].points[j], sizeof(struct point), 1, f_source);
+        }
 
         mlod_lods[i].facenormals = (struct triplet *)malloc(sizeof(struct triplet) * mlod_lods[i].num_facenormals);
         for (j = 0; j < mlod_lods[i].num_facenormals; j++)
@@ -154,16 +166,26 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
 
                 strcpy(mlod_lods[i].selections[j].name, buffer);
 
-                mlod_lods[i].selections[j].points = (uint8_t *)malloc(mlod_lods[i].num_points);
-                mlod_lods[i].selections[j].faces = (uint8_t *)malloc(mlod_lods[i].num_faces);
+                if (empty) {
+                    mlod_lods[i].selections[j].points = (uint8_t *)malloc(1);
+                    mlod_lods[i].selections[j].points[0] = 0;
+                } else {
+                    mlod_lods[i].selections[j].points = (uint8_t *)malloc(mlod_lods[i].num_points);
+                    fread(mlod_lods[i].selections[j].points, mlod_lods[i].num_points, 1, f_source);
+                }
 
-                fread(mlod_lods[i].selections[j].points, mlod_lods[i].num_points, 1, f_source);
+                mlod_lods[i].selections[j].faces = (uint8_t *)malloc(mlod_lods[i].num_faces);
                 fread(mlod_lods[i].selections[j].faces, mlod_lods[i].num_faces, 1, f_source);
             }
 
             if (strcmp(buffer, "#Mass#") == 0) {
-                mlod_lods[i].mass = (float *)malloc(sizeof(float) * mlod_lods[i].num_points);
-                fread(mlod_lods[i].mass, sizeof(float) * mlod_lods[i].num_points, 1, f_source);
+                if (empty) {
+                    mlod_lods[i].mass = (float *)malloc(sizeof(float));
+                    mlod_lods[i].mass[0] = 0.0f;
+                } else {
+                    mlod_lods[i].mass = (float *)malloc(sizeof(float) * mlod_lods[i].num_points);
+                    fread(mlod_lods[i].mass, sizeof(float) * mlod_lods[i].num_points, 1, f_source);
+                }
             }
 
             if (strcmp(buffer, "#SharpEdges#") == 0) {
