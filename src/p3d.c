@@ -33,9 +33,9 @@
 #include "utils.h"
 #include "model_config.h"
 #include "material.h"
-#include "p3d.h"
 #include "vector.h"
 #include "matrix.h"
+#include "p3d.h"
 
 
 int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
@@ -770,7 +770,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     }
 
     if (mlod_lod->num_faces > 1) {
-        // @todo: sort by face flags
+        sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_FLAGS, 0, mlod_lod->num_faces - 1);
         sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_SECTIONS, 0, mlod_lod->num_faces - 1);
         //sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_MATERIALS, 0, mlod_lod->num_faces - 1);
         sort_faces(mlod_lod->faces, odol_lod->face_lookup, SORT_TEXTURES, 0, mlod_lod->num_faces - 1);
