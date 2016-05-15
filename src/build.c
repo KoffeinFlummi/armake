@@ -278,7 +278,10 @@ int build() {
     }
 
     // preprocess and binarize stuff if required
-    if (!args.packonly) {
+    char nobinpath[1024];
+    strcpy(nobinpath, prefixpath);
+    strcpy(nobinpath + strlen(nobinpath) - 11, "$NOBIN$");
+    if (!args.packonly && access(nobinpath, F_OK) == -1) {
         if (traverse_directory(tempfolder, binarize_file_callback, "")) {
             current_operation = OP_BUILD;
             strcpy(current_target, args.source);
