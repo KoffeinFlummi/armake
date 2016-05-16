@@ -21,6 +21,7 @@
 
 #define MAXCONSTS 4096
 #define MAXARGS 32
+#define MAXINCLUDES 16
 #define LINEBUFFSIZE 131072
 
 
@@ -29,6 +30,9 @@ struct constant {
     char arguments[MAXARGS][512];
     char *value;
 };
+
+
+char include_stack[MAXINCLUDES][1024];
 
 
 bool matches_includepath(char *path, char *includepath, char *includefolder);

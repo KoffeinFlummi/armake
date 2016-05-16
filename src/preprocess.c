@@ -438,6 +438,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
 
     extern int current_operation;
     extern char current_target[2048];
+    extern char include_stack[MAXINCLUDES][1024];
     int line = 0;
     int i = 0;
     int j = 0;
@@ -459,6 +460,26 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
 
     current_operation = OP_PREPROCESS;
     strcpy(current_target, source);
+
+    for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++) {
+        if (strcmp(source, include_stack[i]) == 0) {
+            errorf("Circular dependency detected, printing include stack:\n", source);
+            printf("    !!! %s\n", source);
+            for (j = MAXINCLUDES - 1; j >= 0; j--) {
+                if (include_stack[j][0] == 0)
+                    continue;
+                printf("        %s\n", include_stack[j]);
+            }
+            return 1;
+        }
+    }
+
+    if (i == MAXINCLUDES) {
+        errorf("Too many nested includes.\n");
+        return 1;
+    }
+
+    strcpy(include_stack[i], source);
 
     f_source = fopen(source, "r");
     if (!f_source) {
@@ -714,6 +735,10 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
             success = preprocess(actualpath, f_target, constants);
             if (success)
                 return success;
+
+            for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++);
+            include_stack[i - 1][0] = 0;
+
             continue;
         }
 
