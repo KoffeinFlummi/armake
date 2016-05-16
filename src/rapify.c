@@ -691,6 +691,7 @@ int rapify_file(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern char include_stack[MAXINCLUDES][1024];
     FILE *f_temp;
     FILE *f_target;
     int i;
@@ -727,6 +728,9 @@ int rapify_file(char *source, char *target) {
         constants[i].arguments[0][0] = 0;
         constants[i].value = 0;
     }
+
+    for (i = 0; i < MAXINCLUDES; i++)
+        include_stack[i][0] = 0;
 
     success = preprocess(source, f_temp, constants);
 
