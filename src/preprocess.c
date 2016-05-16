@@ -464,11 +464,11 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
     for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++) {
         if (strcmp(source, include_stack[i]) == 0) {
             errorf("Circular dependency detected, printing include stack:\n", source);
-            printf("    !!! %s\n", source);
+            fprintf(stderr, "    !!! %s\n", source);
             for (j = MAXINCLUDES - 1; j >= 0; j--) {
                 if (include_stack[j][0] == 0)
                     continue;
-                printf("        %s\n", include_stack[j]);
+                fprintf(stderr, "        %s\n", include_stack[j]);
             }
             return 1;
         }
