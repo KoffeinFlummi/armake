@@ -57,21 +57,21 @@ docopt:
 	head -n 19 src/main.c > tmp/license
 	python2 ./tmp/docopt.c/docopt_c.py -o tmp/docopt src/usage
 	cat tmp/license > src/docopt.h
-	echo -e "#pragma once\n\n" >> src/docopt.h
+	printf "#pragma once\n\n\n" >> src/docopt.h
 	grep -A 2 "#" tmp/docopt >> src/docopt.h
-	echo "#define MAXEXCLUDEFILES 32" >> src/docopt.h
-	echo "#define MAXINCLUDEFOLDERS 32" >> src/docopt.h
-	echo -e "#define MAXWARNINGS 32\n\n" >> src/docopt.h
+	printf "#define MAXEXCLUDEFILES 32\n" >> src/docopt.h
+	printf "#define MAXINCLUDEFOLDERS 32\n" >> src/docopt.h
+	printf "#define MAXWARNINGS 32\n\n\n" >> src/docopt.h
 	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n\n" tmp/docopt >> src/docopt.h
 	sed -ie 's/\x0//g' src/docopt.h # I don't know why I suddenly need this
-	echo -e "\nDocoptArgs args;" >> src/docopt.h
-	echo "char exclude_files[MAXEXCLUDEFILES][512];" >> src/docopt.h
-	echo "char include_folders[MAXINCLUDEFOLDERS][512];" >> src/docopt.h
-	echo -e "char muted_warnings[MAXWARNINGS][512];\n\n" >> src/docopt.h
+	printf "\nDocoptArgs args;\n" >> src/docopt.h
+	printf "char exclude_files[MAXEXCLUDEFILES][512];\n" >> src/docopt.h
+	printf "char include_folders[MAXINCLUDEFOLDERS][512];\n" >> src/docopt.h
+	printf "char muted_warnings[MAXWARNINGS][512];\n\n\n" >> src/docopt.h
 	grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
 	sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
 	cat tmp/license > src/docopt.c
-	echo -e "#include \"docopt.h\"\n\n" >> src/docopt.c
+	printf "#include \"docopt.h\"\n\n\n" >> src/docopt.c
 	sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
 	rm -rf tmp
 
