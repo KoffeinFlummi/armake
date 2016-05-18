@@ -63,7 +63,7 @@ docopt:
 	printf "#define MAXINCLUDEFOLDERS 32\n" >> src/docopt.h
 	printf "#define MAXWARNINGS 32\n\n\n" >> src/docopt.h
 	grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n\n" tmp/docopt >> src/docopt.h
-	sed -ie 's/\x0//g' src/docopt.h # I don't know why I suddenly need this
+	sed -e 's/\x0//g' -i src/docopt.h # I don't know why I suddenly need this
 	printf "\nDocoptArgs args;\n" >> src/docopt.h
 	printf "char exclude_files[MAXEXCLUDEFILES][512];\n" >> src/docopt.h
 	printf "char include_folders[MAXINCLUDEFOLDERS][512];\n" >> src/docopt.h
