@@ -19,15 +19,15 @@ Commands:
     sign         Sign a PBO with the given private key.
 
 Options:
-    -f --force      Overwrite the target file/folder if it already exists
+    -f --force      Overwrite the target file/folder if it already exists.
     -p --packonly   Don't binarize models, configs etc.
-    -w --warning    Warning to disable (repeatable)
-    -i --include    Folder to search for includes, defaults to CWD (repeatable)
-    -x --exclude    Glob patterns to exclude from PBO (repeatable)
-    -k --key        Private key to use for signing the PBO
+    -w --warning    Warning to disable (repeatable).
+    -i --include    Folder to search for includes, defaults to CWD (repeatable).
+    -x --exclude    Glob patterns to exclude from PBO (repeatable).
+    -k --key        Private key to use for signing the PBO.
     -d --indent     String to use for indentation. "    " (4 spaces) by default.
-    -h --help       Show usage information and exit
-    -v --version    Print the version number and exit
+    -h --help       Show usage information and exit.
+    -v --version    Print the version number and exit.
 
 Warnings:
     By default, armake prints all warnings. You can mute trivial warnings
