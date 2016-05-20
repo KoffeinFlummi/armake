@@ -29,6 +29,7 @@
 #include "derapify.h"
 #include "filesystem.h"
 #include "keygen.h"
+#include "sign.h"
 
 
 int main(int argc, char *argv[]) {
@@ -93,6 +94,8 @@ int main(int argc, char *argv[]) {
         return derapify();
     if (args.keygen)
         return keygen();
+    if (args.sign)
+        return sign();
 
 
     docopt(2, halp, 1, VERSION);

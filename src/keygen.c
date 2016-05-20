@@ -31,24 +31,6 @@
 #include "keygen.h"
 
 
-void reverse_endianness(void *ptr, size_t buffsize) {
-    char *buffer;
-    char *temp;
-    int i;
-
-    buffer = (char *)ptr;
-    temp = malloc(buffsize);
-
-    for (i = 0; i < buffsize; i++) {
-        temp[(buffsize - 1) - i] = buffer[i];
-    }
-
-    memcpy(buffer, temp, buffsize);
-
-    free(temp);
-}
-
-
 int generate_keypair(char *name, char *path_private, char *path_public) {
     /*
      * Generates a BI key pair (.bikey and .biprivatekey) for the given paths
@@ -193,7 +175,5 @@ int keygen() {
         return 1;
     }
 
-    int success = generate_keypair(name, path_private, path_public);
-
-    return success;
+    return generate_keypair(name, path_private, path_public);
 }

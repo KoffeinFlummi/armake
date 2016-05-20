@@ -106,6 +106,24 @@ void errorf(char *format, ...) {
 }
 
 
+void reverse_endianness(void *ptr, size_t buffsize) {
+    char *buffer;
+    char *temp;
+    int i;
+
+    buffer = (char *)ptr;
+    temp = malloc(buffsize);
+
+    for (i = 0; i < buffsize; i++) {
+        temp[(buffsize - 1) - i] = buffer[i];
+    }
+
+    memcpy(buffer, temp, buffsize);
+
+    free(temp);
+}
+
+
 bool matches_glob(char *string, char *pattern) {
     char *ptr1 = string;
     char *ptr2 = pattern;
