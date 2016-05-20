@@ -74,8 +74,6 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     reverse_endianness(&exponent_be, sizeof(exponent_be));
     exponent = BN_bin2bn((unsigned char *)&exponent_be, sizeof(exponent_be), NULL);
 
-    puts(BN_bn2dec(exponent));
-
     // seed PRNG
 #ifdef _WIN32
     do {
@@ -148,7 +146,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(name, strlen(name) + 1, 1, f_public);
     temp = length / 8 + 20;
     fwrite(&temp, sizeof(temp), 1, f_public);
-    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_private);
+    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_public);
     fwrite("RSA1", 4, 1, f_public);
     fwrite(&length, sizeof(length), 1, f_public);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_public);
