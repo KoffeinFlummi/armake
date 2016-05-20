@@ -38,9 +38,11 @@ _armake ()
         (command)
             local -a subcommands
             subcommands=(
+				'sign[Sign a PBO with the given private key.]'
 				'binarize[Binarize a file.]'
-				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
 				'unpack[Unpack a PBO into a folder.]'
+				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
+				'keygen[Generate a keypair with the specified path (extensions are added).]'
 				'build[Pack a folder into a PBO.]'
             )
             _values 'armake' $subcommands
@@ -48,14 +50,20 @@ _armake ()
 
         (options)
             case $line[1] in
+                sign)
+                    _armake-sign
+                ;;
                 binarize)
                     _armake-binarize
+                ;;
+                unpack)
+                    _armake-unpack
                 ;;
                 derapify)
                     _armake-derapify
                 ;;
-                unpack)
-                    _armake-unpack
+                keygen)
+                    _armake-keygen
                 ;;
                 build)
                     _armake-build
@@ -64,6 +72,23 @@ _armake ()
         ;;
     esac
 
+}
+
+_armake-sign ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+
+    else
+        myargs=('<privatekey>' '<target>')
+        _message_next_arg
+    fi
 }
 
 _armake-binarize ()
@@ -87,6 +112,23 @@ _armake-binarize ()
     fi
 }
 
+_armake-unpack ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+
+    else
+        myargs=('<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
 _armake-derapify ()
 {
     local context state state_descr line
@@ -106,7 +148,7 @@ _armake-derapify ()
     fi
 }
 
-_armake-unpack ()
+_armake-keygen ()
 {
     local context state state_descr line
     typeset -A opt_args
@@ -118,7 +160,7 @@ _armake-unpack ()
 		'(--force)--force[Overwrite the target file/folder if it already exists]' \
 
     else
-        myargs=('<source>' '<target>')
+        myargs=('<target>')
         _message_next_arg
     fi
 }
@@ -141,11 +183,11 @@ _armake-build ()
 		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable)]' \
 		'(-x)-x[Glob patterns to exclude from PBO (repeatable)]' \
 		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable)]' \
-		'(-k)-k[Keyfile to use for signing the PBO]' \
-		'(--key)--key[Keyfile to use for signing the PBO]' \
+		'(-k)-k[Private key to use for signing the PBO]' \
+		'(--key)--key[Private key to use for signing the PBO]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<keyfile>' '<source>' '<target>')
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<source>' '<target>')
         _message_next_arg
     fi
 }
