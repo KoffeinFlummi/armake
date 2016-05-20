@@ -52,7 +52,7 @@ const char help_message[] =
 "    unpack       Unpack a PBO into a folder.\n"
 "    derapify     Derapify a config. You can pass - as the target to print to stdout.\n"
 "    keygen       Generate a keypair with the specified path (extensions are added).\n"
-"    sign         Sign a PBO with the given private key\n"
+"    sign         Sign a PBO with the given private key.\n"
 "\n"
 "Options:\n"
 "    -f --force      Overwrite the target file/folder if it already exists\n"
