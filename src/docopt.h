@@ -42,6 +42,7 @@ typedef struct {
     int binarize;
     int build;
     int derapify;
+    int keygen;
     int unpack;
     /* arguments */
     char *includefolder;

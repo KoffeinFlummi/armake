@@ -6,7 +6,7 @@ LIB = lib
 EXT = ""
 CC = gcc
 CFLAGS = -Wall -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
-CLIBS = -I$(LIB) -lm
+CLIBS = -I$(LIB) -lm -lcrypto
 
 $(BIN)/armake: \
 		$(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \

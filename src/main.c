@@ -28,6 +28,7 @@
 #include "unpack.h"
 #include "derapify.h"
 #include "filesystem.h"
+#include "keygen.h"
 
 
 int main(int argc, char *argv[]) {
@@ -42,19 +43,23 @@ int main(int argc, char *argv[]) {
     args = docopt(argc, argv, 1, VERSION);
 
     // Docopt doesn't yet support positional arguments
-    if (argc < 4)
+    if (argc < (args.keygen ? 3 : 4))
         docopt(2, halp, 1, VERSION);
 
-    args.source = argv[argc - 2];
-    if (args.source[strlen(args.source) - 1] == PATHSEP)
-        args.source[strlen(args.source) - 1] = 0;
+    if (!args.keygen) {
+        args.source = argv[argc - 2];
+        if (args.source[strlen(args.source) - 1] == PATHSEP)
+            args.source[strlen(args.source) - 1] = 0;
+
+        if (args.source[0] == '-' && strlen(args.source) > 1)
+            docopt(2, halp, 1, VERSION);
+    }
 
     args.target = argv[argc - 1];
     if (args.target[strlen(args.target) - 1] == PATHSEP)
         args.target[strlen(args.target) - 1] = 0;
 
-    if ((args.source[0] == '-' && strlen(args.source) > 1) ||
-            (args.target[0] == '-' && strlen(args.target) > 1))
+    if (args.target[0] == '-' && strlen(args.target) > 1)
         docopt(2, halp, 1, VERSION);
 
 
@@ -86,6 +91,8 @@ int main(int argc, char *argv[]) {
         return unpack();
     if (args.derapify)
         return derapify();
+    if (args.keygen)
+        return keygen();
 
 
     docopt(2, halp, 1, VERSION);

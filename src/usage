@@ -5,6 +5,7 @@ Usage:
     armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>
     armake unpack [-f] <source> <target>
     armake derapify [-f] [-d <indentation>] <source> <target>
+    armake keygen [-f] <target>
     armake (-h | --help)
     armake (-v | --version)
 
@@ -13,6 +14,7 @@ Commands:
     build        Pack a folder into a PBO.
     unpack       Unpack a PBO into a folder.
     derapify     Derapify a config. You can pass - as the target to print to stdout.
+    keygen       Generate a keypair with the specified path (extensions are added).
 
 Options:
     -f --force      Overwrite the target file/folder if it already exists
