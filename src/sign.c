@@ -138,7 +138,8 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         if (temp == 0)
             continue;
 
-        if (strcmp(strrchr(buffer, '.'), ".paa") == 0 ||
+        if (strchr(buffer, '.') != NULL && (
+                strcmp(strrchr(buffer, '.'), ".paa") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".jpg") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".p3d") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".tga") == 0 ||
@@ -150,7 +151,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
                 strcmp(strrchr(buffer, '.'), ".rtm") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".pac") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".fxy") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".wrp") == 0) {
+                strcmp(strrchr(buffer, '.'), ".wrp") == 0)) {
             fp_body += temp;
             continue;
         }
