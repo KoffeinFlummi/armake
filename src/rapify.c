@@ -472,7 +472,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                 fputc(0, f_target);
 
                 ptr = buffer;
-                while (*ptr != ' ' && *ptr != '\t' && *ptr != '{' && *ptr != ':')
+                while (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n' && *ptr != '{' && *ptr != ':')
                     ptr++;
                 *ptr = 0;
                 fwrite(buffer, strlen(buffer) + 1, 1, f_target);
