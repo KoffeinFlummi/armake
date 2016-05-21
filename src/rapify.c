@@ -526,6 +526,11 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         if (strcmp(buffer, "delete") == 0) {
             fputc(4, f_target);
 
+            fseek(f_source, 6, SEEK_CUR);
+
+            if (skip_whitespace(f_source))
+                return 2;
+
             if (lookahead_word(f_source, buffer, sizeof(buffer)))
                 return 2;
 
