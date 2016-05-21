@@ -57,6 +57,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     BIGNUM *sig3;
     BIGNUM *exp;
     BIGNUM *modulus;
+    bool nothing;
     long i;
     long fp_header;
     long fp_body;
@@ -123,6 +124,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     // calculate file hash
     SHA1Reset(&sha);
+    nothing = true;
     while (true) {
         fseek(f_pbo, fp_header, SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
@@ -156,6 +158,8 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
             continue;
         }
 
+        nothing = false;
+
         fseek(f_pbo, fp_body, SEEK_SET);
 
         for (i = 0; temp - i >= sizeof(buffer); i += sizeof(buffer)) {
@@ -167,6 +171,9 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
         fp_body += temp;
     }
+
+    if (nothing)
+        SHA1Input(&sha, (unsigned char *)"nothing", strlen("nothing"));
 
     fseek(f_pbo, 0, SEEK_END);
 
