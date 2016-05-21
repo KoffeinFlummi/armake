@@ -565,7 +565,7 @@ int derapify_array(FILE *f_source, FILE *f_target) {
             fprintf(f_target, "\"%s\"", buffer);
         } else if (type == 1) {
             fread(&float_value, sizeof(float_value), 1, f_source);
-            fprintf(f_target, "%f", float_value);
+            fprintf(f_target, "%g", float_value);
         } else if (type == 2) {
             fread(&long_value, sizeof(long_value), 1, f_source);
             fprintf(f_target, "%i", long_value);
@@ -677,7 +677,7 @@ int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
                 fprintf(f_target, "\"%s\"", buffer);
             } else if (type == 1) {
                 fread(&float_value, sizeof(float_value), 1, f_source);
-                fprintf(f_target, "%f", float_value);
+                fprintf(f_target, "%g", float_value);
             } else if (type == 2) {
                 fread(&long_value, sizeof(long_value), 1, f_source);
                 fprintf(f_target, "%i", long_value);

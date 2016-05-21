@@ -2,7 +2,7 @@ class CfgPatches {
     class ace_frag {
         units[] = {};
         weapons[] = {};
-        requiredVersion = 1.560000;
+        requiredVersion = 1.56;
         requiredAddons[] = {"ace_common"};
         author[] = {"Nou"};
         version = "3.5.0.0";
@@ -34,8 +34,8 @@ class CfgAmmo {
         ace_frag_charge = 87000;
         ace_frag_gurney_c = 2320;
         ace_frag_gurney_k = "1/2";
-        sideAirFriction = 0.040000;
-        airFriction = 0.040000;
+        sideAirFriction = 0.04;
+        airFriction = 0.04;
         laserLock = 0;
     };
     class GrenadeBase;
@@ -185,13 +185,13 @@ class CfgAmmo {
     };
     class ACE_frag_tiny: ACE_frag_base {
         hit = 6;
-        airFriction = -0.010000;
-        caliber = 0.750000;
+        airFriction = -0.01;
+        caliber = 0.75;
     };
     class ACE_frag_tiny_HD: ACE_frag_base {
         hit = 6;
         airFriction = "(-0.01*5)";
-        caliber = 0.750000;
+        caliber = 0.75;
     };
     class ACE_frag_small: ACE_frag_base {
         hit = 12;
@@ -204,17 +204,17 @@ class CfgAmmo {
     class ACE_frag_medium: ACE_frag_base {
         hit = 14;
         airFriction = "-0.01*0.75";
-        caliber = 1.200000;
+        caliber = 1.2;
     };
     class ACE_frag_medium_HD: ACE_frag_base {
         hit = 14;
         airFriction = "(-0.01*5)*0.75";
-        caliber = 1.200000;
+        caliber = 1.2;
     };
     class ACE_frag_large: ACE_frag_base {
         hit = 28;
         indirectHit = 2;
-        indirectHitRange = 0.250000;
+        indirectHitRange = 0.25;
         airFriction = "-0.01*0.65";
         caliber = 2;
         explosive = 0;
@@ -222,35 +222,35 @@ class CfgAmmo {
     class ACE_frag_large_HD: ACE_frag_large {
         hit = 28;
         indirectHit = 2;
-        indirectHitRange = 0.250000;
+        indirectHitRange = 0.25;
         airFriction = "(-0.01*5)*0.65";
         caliber = 2;
     };
     class ACE_frag_huge: ACE_frag_large {
         hit = 40;
         indirectHit = 4;
-        indirectHitRange = 0.500000;
+        indirectHitRange = 0.5;
         airFriction = "-0.01*0.5";
-        caliber = 2.800000;
+        caliber = 2.8;
     };
     class ACE_frag_huge_HD: ACE_frag_large {
         hit = 40;
         indirectHit = 4;
-        indirectHitRange = 0.500000;
+        indirectHitRange = 0.5;
         airFriction = "(-0.01*5)*0.5";
-        caliber = 2.800000;
+        caliber = 2.8;
     };
     class ACE_frag_spall_small: ACE_frag_small {
-        timeToLive = 0.100000;
+        timeToLive = 0.1;
     };
     class ACE_frag_spall_medium: ACE_frag_medium {
-        timeToLive = 0.150000;
+        timeToLive = 0.15;
     };
     class ACE_frag_spall_large: ACE_frag_large {
-        timeToLive = 0.250000;
+        timeToLive = 0.25;
     };
     class ACE_frag_spall_huge: ACE_frag_huge {
-        timeToLive = 0.300000;
+        timeToLive = 0.3;
     };
     class ace_explosion_reflection_base: Sh_120mm_HE {
         CraterWaterEffects = "";
@@ -262,7 +262,7 @@ class CfgAmmo {
             hitWater = "";
         };
         multiSoundHit[] = {};
-        explosionTime = 0.000100;
+        explosionTime = 0.0001;
         explosive = 1;
         soundFakeFall[] = {};
         typicalSpeed = 0;
