@@ -274,6 +274,11 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
         if (strstr(string, constants[i].name) == NULL)
             continue;
 
+        if (strcmp(constants[i].name, "__EVAL") == 0 || strcmp(constants[i].name, "__EXEC") == 0) {
+            warningf("__EVAL and __EXEC macros are not supported.\n");
+            continue;
+        }
+
         ptr = string;
         while (true) {
             ptr = strstr(ptr, constants[i].name);
@@ -500,6 +505,14 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         constants[0].value = (char *)malloc(1024);
     snprintf(constants[0].value, 1024, "\"%s\"", source);
 
+    strcpy(constants[1].name, "__LINE__");
+
+    strcpy(constants[2].name, "__EXEC");
+    constants[2].value = (char *)malloc(1);
+
+    strcpy(constants[3].name, "__EVAL");
+    constants[3].value = (char *)malloc(1);
+
     while (true) {
         // get line
         line++;
@@ -585,7 +598,6 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         }
 
         // second constant is line number
-        strcpy(constants[1].name, "__LINE__");
         if (constants[1].value == 0)
             constants[1].value = (char *)malloc(16);
         sprintf(constants[1].value, "%i", line);
