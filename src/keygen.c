@@ -149,10 +149,10 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
 
 int keygen() {
     extern DocoptArgs args;
-
     char name[512];
     char path_private[2048];
     char path_public[2048];
+    int success;
 
     if (strchr(args.target, PATHSEP) == NULL)
         strcpy(name, args.target);
@@ -175,5 +175,10 @@ int keygen() {
         return 1;
     }
 
-    return generate_keypair(name, path_private, path_public);
+    success = generate_keypair(name, path_private, path_public);
+
+    if (success)
+        errorf("Failed to generate key pair.\n");
+
+    return success;
 }

@@ -81,6 +81,8 @@ int main(int argc, char *argv[]) {
             for (j = 0; j < MAXWARNINGS && muted_warnings[j][0] != 0; j++);
             strncpy(muted_warnings[j], argv[i + 1], sizeof(muted_warnings[j]));
         }
+        if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--key") == 0)
+            args.privatekey = argv[i + 1];
     }
 
 

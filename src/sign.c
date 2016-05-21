@@ -321,6 +321,7 @@ int sign() {
     extern DocoptArgs args;
     char keyname[512];
     char path_signature[2048];
+    int success;
 
     if (strcmp(strrchr(args.source, '.'), ".biprivatekey") != 0) {
         errorf("File %s doesn't seem to be a valid private key.\n", args.source);
@@ -344,5 +345,10 @@ int sign() {
         return 1;
     }
 
-    return sign_pbo(args.target, args.source, path_signature);
+    success = sign_pbo(args.target, args.source, path_signature);
+
+    if (success)
+        errorf("Failed to sign file.\n");
+
+    return success;
 }

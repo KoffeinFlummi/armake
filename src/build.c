@@ -32,6 +32,7 @@
 #include "binarize.h"
 #include "filesystem.h"
 #include "utils.h"
+#include "sign.h"
 #include "build.h"
 
 
@@ -359,6 +360,39 @@ int build() {
     if (remove_temp_folder()) {
         errorf("Failed to remove temp folder.\n");
         return 10;
+    }
+
+    // sign pbo
+    if (args.key) {
+        char keyname[512];
+        char path_signature[2048];
+
+        if (strcmp(strrchr(args.privatekey, '.'), ".biprivatekey") != 0) {
+            errorf("File %s doesn't seem to be a valid private key.\n", args.source);
+            return 1;
+        }
+
+        if (strchr(args.privatekey, '/') == NULL)
+            strcpy(keyname, args.privatekey);
+        else
+            strcpy(keyname, strrchr(args.privatekey, '/') + 1);
+        *strrchr(keyname, '.') = 0;
+
+        strcpy(path_signature, args.target);
+        strcat(path_signature, ".");
+        strcat(path_signature, keyname);
+        strcat(path_signature, ".bisign");
+
+        // check if target already exists
+        if (access(path_signature, F_OK) != -1 && !args.force) {
+            errorf("File %s already exists and --force was not set.\n", path_signature);
+            return 1;
+        }
+
+        if (sign_pbo(args.target, args.privatekey, path_signature)) {
+            errorf("Failed to sign file.\n");
+            return 2;
+        }
     }
 
     return 0;
