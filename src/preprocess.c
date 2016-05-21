@@ -487,6 +487,12 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         return 1;
     }
 
+    // Skip byte order mark if it exists
+    if (fgetc(f_source) == 0xef)
+        fseek(f_source, 3, SEEK_SET);
+    else
+        fseek(f_source, 0, SEEK_SET);
+
     // first constant is file name
     // @todo: what form?
     strcpy(constants[0].name, "__FILE__");
