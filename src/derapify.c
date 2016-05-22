@@ -753,7 +753,7 @@ int derapify_file(char *source, char *target) {
 
 #ifdef _WIN32
     char temp_name[2048];
-    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
+    if (!GetTempFileName(".", "amk", 0, temp_name)) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
@@ -764,6 +764,9 @@ int derapify_file(char *source, char *target) {
 
     if (!f_temp) {
         errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 1;
     }
 
@@ -771,12 +774,20 @@ int derapify_file(char *source, char *target) {
     f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open source file.\n");
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 2;
     }
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "\0raP", 4) != 0) {
         errorf("Source file is not a rapified config.\n");
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return -3;
     }
 
@@ -785,7 +796,10 @@ int derapify_file(char *source, char *target) {
     fclose(f_source);
 
     if (success) {
-        fclose(f_temp);   
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         errorf("Failed to derapify root class.\n");
         return 1;
     }
@@ -799,6 +813,10 @@ int derapify_file(char *source, char *target) {
     } else {
         f_target = fopen(target, "wb");
         if (!f_target) {
+            fclose(f_temp);
+#ifdef _WIN32
+            DeleteFile(temp_name);
+#endif
             errorf("Failed to open target file.\n");
             return 2;
         }

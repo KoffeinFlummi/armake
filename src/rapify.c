@@ -712,7 +712,7 @@ int rapify_file(char *source, char *target) {
 
 #ifdef _WIN32
     char temp_name[2048];
-    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
+    if (!GetTempFileName(".", "amk", 0, temp_name)) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
@@ -723,6 +723,9 @@ int rapify_file(char *source, char *target) {
 
     if (!f_temp) {
         errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 1;
     }
 
@@ -749,6 +752,9 @@ int rapify_file(char *source, char *target) {
     if (success) {
         errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return success;
     }
 
