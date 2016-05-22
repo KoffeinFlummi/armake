@@ -228,6 +228,13 @@ int build() {
     if (args.source[strlen(args.source) - 1] == PATHSEP)
         args.source[strlen(args.source) - 1] = 0;
 
+    f_target = fopen(args.target, "wb");
+    if (!f_target) {
+        errorf("Failed to open %s.\n", args.target);
+        return 2;
+    }
+    fclose(f_target);
+
     // get addon prefix
     char prefixpath[1024];
     char addonprefix[512];
