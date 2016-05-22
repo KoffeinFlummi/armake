@@ -256,6 +256,8 @@ int build() {
     }
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
         addonprefix[strlen(addonprefix) - 1] = '\0';
+    if (addonprefix[strlen(addonprefix) - 1] == '\r')
+        addonprefix[strlen(addonprefix) - 1] = '\0';
 
     // replace pathseps on linux
 #ifndef _WIN32

@@ -74,6 +74,8 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
 
         if (prefixedpath[strlen(prefixedpath) - 1] == '\n')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
+        if (prefixedpath[strlen(prefixedpath) - 1] == '\r')
+            prefixedpath[strlen(prefixedpath) - 1] = 0;
         if (prefixedpath[strlen(prefixedpath) - 1] == '\\')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
 

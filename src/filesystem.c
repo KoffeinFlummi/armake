@@ -129,7 +129,7 @@ int create_folders(char *path) {
      * failure and 0 on success.
      */
 
-    char tmp[256];
+    char tmp[2048];
     char *p = NULL;
     int success;
     size_t len;
