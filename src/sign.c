@@ -77,7 +77,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     FILE *f_privatekey;
     FILE *f_signature;
 
-    f_pbo = fopen(path_pbo, "r");
+    f_pbo = fopen(path_pbo, "rb");
     if (!f_pbo)
         return 1;
 
@@ -220,7 +220,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     memcpy(hash3, &sha.Message_Digest[0], 20);
 
     // read private key data
-    f_privatekey = fopen(path_privatekey, "r");
+    f_privatekey = fopen(path_privatekey, "rb");
     if (!f_privatekey)
         return 1;
 
@@ -267,7 +267,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     BN_mod_exp(sig3, hash3_padded, exp, modulus, bignum_context);
 
     // write to file
-    f_signature = fopen(path_signature, "w");
+    f_signature = fopen(path_signature, "wb");
     if (!f_signature)
         return 1;
 

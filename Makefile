@@ -46,10 +46,10 @@ clean:
 	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
 
 win32:
-	make CC=i686-w64-mingw32-gcc EXT=.exe
+	make CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=.exe
 
 win64:
-	make CC=x86_64-w64-mingw32-gcc EXT=.exe
+	make CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=.exe
 
 docopt:
 	mkdir tmp || rm -rf tmp/*

@@ -279,7 +279,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     lower_case(model_name);
 
     // Open rapified file
-    f = fopen(rapified_path, "r");
+    f = fopen(rapified_path, "rb");
     if (!f) {
         errorf("Failed to open model config.\n");
         return 2;

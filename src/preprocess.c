@@ -65,7 +65,7 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
         prefixpath[strlen(prefixpath)] = PATHSEP;
         strcat(prefixpath, "$PBOPREFIX$");
 
-        f_prefix = fopen(prefixpath, "r");
+        f_prefix = fopen(prefixpath, "rb");
         if (!f_prefix)
             continue;
 
@@ -138,7 +138,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
 
 #ifdef _WIN32
     if (cwd == NULL)
-        return find_file(includepath, origin, includefolder, actualpath, includefolder);
+        return find_file_helper(includepath, origin, includefolder, actualpath, includefolder);
 
     WIN32_FIND_DATA file;
     HANDLE handle = NULL;
@@ -160,7 +160,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         GetFullPathName(cwd, 2048, mask, NULL);
         sprintf(mask, "%s\\%s", mask, file.cFileName);
         if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (!find_file(includepath, origin, includefolder, actualpath, mask))
+            if (!find_file_helper(includepath, origin, includefolder, actualpath, mask))
                 return 0;
         } else {
             if (strcmp(filename, file.cFileName) == 0 && matches_includepath(mask, includepath, includefolder)) {
@@ -486,7 +486,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
 
     strcpy(include_stack[i], source);
 
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open %s.\n", source);
         return 1;

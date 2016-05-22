@@ -24,6 +24,10 @@
 #include <unistd.h>
 #include <math.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "filesystem.h"
 #include "rapify.h"
 #include "utils.h"
@@ -753,7 +757,7 @@ int derapify_file(char *source, char *target) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+    f_temp = fopen(temp_name, "w+b");
 #else
     f_temp = tmpfile();
 #endif
@@ -764,7 +768,7 @@ int derapify_file(char *source, char *target) {
     }
 
     // Open source and read LODs
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open source file.\n");
         return 2;
@@ -793,7 +797,7 @@ int derapify_file(char *source, char *target) {
     if (strcmp(target, "-") == 0) {
         f_target = stdout;
     } else {
-        f_target = fopen(target, "w");
+        f_target = fopen(target, "wb");
         if (!f_target) {
             errorf("Failed to open target file.\n");
             return 2;

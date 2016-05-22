@@ -83,7 +83,7 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     if (!file_allowed(filename))
         return 0;
 
-    f_target = fopen(target, "a");
+    f_target = fopen(target, "ab");
     if (!f_target)
         return -1;
 
@@ -98,7 +98,7 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     header.reserved = 0;
     header.timestamp = 0;
 
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         fclose(f_target);
         return -2;
@@ -142,13 +142,13 @@ int write_data_to_pbo(char *root, char *source, char *target) {
     if (!file_allowed(filename))
         return 0;
 
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source)
         return -1;
     fseek(f_source, 0, SEEK_END);
     datasize = ftell(f_source);
 
-    f_target = fopen(target, "a");
+    f_target = fopen(target, "ab");
     if (!f_target)
         return -2;
 
@@ -176,7 +176,7 @@ int hash_file(char *path, unsigned char *hash) {
 
     SHA1Reset(&sha);
 
-    file = fopen(path, "r");
+    file = fopen(path, "rb");
     if (!file)
         return -1;
 
@@ -237,7 +237,7 @@ int build() {
     prefixpath[strlen(prefixpath) + 1] = 0;
     prefixpath[strlen(prefixpath)] = PATHSEP;
     strcat(prefixpath, "$PBOPREFIX$");
-    f_prefix = fopen(prefixpath, "r");
+    f_prefix = fopen(prefixpath, "rb");
     if (!f_prefix) {
         if (strrchr(args.source, '/') == NULL)
             strncpy(addonprefix, args.source, sizeof(addonprefix));
@@ -313,7 +313,7 @@ int build() {
     strcpy(current_target, args.source);
 
     // write header extension
-    f_target = fopen(args.target, "w");
+    f_target = fopen(args.target, "wb");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     // write addonprefix with windows pathseps
     for (i = 0; i <= strlen(addonprefix); i++) {
@@ -332,7 +332,7 @@ int build() {
     }
 
     // header boundary
-    f_target = fopen(args.target, "a");
+    f_target = fopen(args.target, "ab");
     if (!f_target) {
         errorf("Failed to write header boundary to PBO.\n");
         return 7;
@@ -350,7 +350,7 @@ int build() {
     // write checksum to file
     unsigned char checksum[20];
     hash_file(args.target, checksum);
-    f_target = fopen(args.target, "a");
+    f_target = fopen(args.target, "ab");
     if (!f_target) {
         errorf("Failed to write checksum to file.\n");
         return 9;

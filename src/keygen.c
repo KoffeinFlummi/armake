@@ -64,7 +64,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
 #else
     char rand_buffer[256];
     FILE *f_random;
-    f_random = fopen("/dev/urandom", "r");
+    f_random = fopen("/dev/urandom", "rb");
     do {
         fread(rand_buffer, sizeof(rand_buffer), 1, f_random);
         RAND_seed(rand_buffer, sizeof(rand_buffer));
@@ -78,7 +78,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
         return 1;
 
     // write privatekey
-    f_private = fopen(path_private, "w");
+    f_private = fopen(path_private, "wb");
     if (!f_private)
         return 2;
 
@@ -121,7 +121,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fclose(f_private);
 
     // write publickey
-    f_public = fopen(path_public, "w");
+    f_public = fopen(path_public, "wb");
     if (!f_public)
         return 2;
 

@@ -1619,7 +1619,7 @@ int mlod2odol(char *source, char *target) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+    f_temp = fopen(temp_name, "w+b");
 #else
     f_temp = tmpfile();
 #endif
@@ -1630,7 +1630,7 @@ int mlod2odol(char *source, char *target) {
     }
 
     // Open source and read LODs
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open source file.\n");
         return 2;
@@ -1749,7 +1749,7 @@ int mlod2odol(char *source, char *target) {
     fseek(f_temp, 0, SEEK_END);
     datasize = ftell(f_temp);
 
-    f_target = fopen(target, "w");
+    f_target = fopen(target, "wb");
     if (!f_target) {
         errorf("Failed to open target file.\n");
         return 5;

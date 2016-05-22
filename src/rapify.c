@@ -716,7 +716,7 @@ int rapify_file(char *source, char *target) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+    f_temp = fopen(temp_name, "w+b");
 #else
     f_temp = tmpfile();
 #endif
@@ -754,7 +754,7 @@ int rapify_file(char *source, char *target) {
 
     // Rapify file
     fseek(f_temp, 0, SEEK_SET);
-    f_target = fopen(target, "w");
+    f_target = fopen(target, "wb");
     if (!f_target) {
         errorf("Failed to open %s.\n", target);
         fclose(f_temp);
@@ -771,7 +771,7 @@ int rapify_file(char *source, char *target) {
 
         fclose(f_target);
 
-        f_target = fopen(dump_name, "w");
+        f_target = fopen(dump_name, "wb");
 
         fseek(f_temp, 0, SEEK_END);
         datasize = ftell(f_temp);
