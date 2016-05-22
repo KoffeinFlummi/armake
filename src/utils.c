@@ -347,9 +347,7 @@ void escape_string(char *buffer, size_t buffsize) {
 
     for (ptr = buffer; *ptr != 0; ptr++) {
         tmp_array[0] = '\\';
-        if (*ptr == '\t') {
-            tmp_array[1] = 't';
-        } else if (*ptr == '\r') {
+        if (*ptr == '\r') {
             tmp_array[1] = 'r';
         } else if (*ptr == '\n') {
             tmp_array[1] = 'n';
