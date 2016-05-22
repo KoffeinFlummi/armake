@@ -35,3 +35,7 @@ vgcore.*
 
 # Tmp
 tmp/*
+
+# Testing files except when in test folder
+test.*
+!test/**/test.*

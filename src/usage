@@ -2,28 +2,32 @@ armake
 
 Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
-    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <keyfile>] <source> <target>
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>
     armake unpack [-f] <source> <target>
     armake derapify [-f] [-d <indentation>] <source> <target>
+    armake keygen [-f] <target>
+    armake sign [-f] <privatekey> <target>
     armake (-h | --help)
     armake (-v | --version)
 
 Commands:
-    binarize     Binarize a file.
-    build        Pack a folder into a PBO.
-    unpack       Unpack a PBO into a folder.
-    derapify     Derapify a config. You can pass - as the target to print to stdout.
+    binarize    Binarize a file.
+    build       Pack a folder into a PBO.
+    unpack      Unpack a PBO into a folder.
+    derapify    Derapify a config. You can pass - as the target to print to stdout.
+    keygen      Generate a keypair with the specified path (extensions are added).
+    sign        Sign a PBO with the given private key.
 
 Options:
-    -f --force      Overwrite the target file/folder if it already exists
+    -f --force      Overwrite the target file/folder if it already exists.
     -p --packonly   Don't binarize models, configs etc.
-    -w --warning    Warning to disable (repeatable)
-    -i --include    Folder to search for includes, defaults to CWD (repeatable)
-    -x --exclude    Glob patterns to exclude from PBO (repeatable)
-    -k --key        Keyfile to use for signing the PBO
+    -w --warning    Warning to disable (repeatable).
+    -i --include    Folder to search for includes, defaults to CWD (repeatable).
+    -x --exclude    Glob patterns to exclude from PBO (repeatable).
+    -k --key        Private key to use for signing the PBO.
     -d --indent     String to use for indentation. "    " (4 spaces) by default.
-    -h --help       Show usage information and exit
-    -v --version    Print the version number and exit
+    -h --help       Show usage information and exit.
+    -v --version    Print the version number and exit.
 
 Warnings:
     By default, armake prints all warnings. You can mute trivial warnings

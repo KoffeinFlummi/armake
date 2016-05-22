@@ -66,7 +66,7 @@ int read_material(struct material *material) {
     strcpy(current_target, material->path);
 
     // Open rapified file
-    f = fopen(rapified_path, "r");
+    f = fopen(rapified_path, "rb");
     if (!f) {
         errorf("Failed to open rapified material.\n");
         return 3;

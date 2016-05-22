@@ -16,7 +16,9 @@ $ make
 $ sudo make install
 ```
 
-There are no dependencies other than a C lib with an fts library (like glibc) on \*nix systems.
+Dependencies:
+- An FTS library (glibc has one)
+- OpenSSL
 
 #### Arch Linux
 
@@ -55,6 +57,7 @@ See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blo
 - [jonpas](https://github.com/jonpas) for all kinds of help with development and testing.
 - [kju](https://forums.bistudio.com/user/768005-kju/) for some pointers and "PR work".
 - [Glowbal](https://github.com/Glowbal) for the name.
+- [4d4a5852](https://github.com/4d4a5852) for his work with [a3lib](https://github.com/4d4a5852/a3lib.py).
 
 
 ### Used Libraries

@@ -52,7 +52,7 @@ int unpack() {
         args.target[strlen(args.target) - 1] = 0;
 
     // open file
-    f_source = fopen(args.source, "r");
+    f_source = fopen(args.source, "rb");
     if (!f_source) {
         errorf("Failed to open %s.\n", args.source);
         return 1;
@@ -139,7 +139,7 @@ int unpack() {
             errorf("File %s already exists and --force was not set.\n", full_path);
             return 6;
         }
-        f_target = fopen(full_path, "w");
+        f_target = fopen(full_path, "wb");
         if (!f_target) {
             errorf("Failed to open file %s.\n", full_path);
             return 7;
@@ -166,7 +166,7 @@ int unpack() {
     full_path[strlen(full_path) - 1] = PATHSEP;
     strcat(full_path, "$PBOPREFIX$");
     if (access(full_path, F_OK) == -1 && strlen(prefix) > 0) {
-        f_target = fopen(full_path, "w");
+        f_target = fopen(full_path, "wb");
         if (!f_target) {
             errorf("Failed to open file %s.\n", full_path);
             return 8;

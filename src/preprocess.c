@@ -65,7 +65,7 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
         prefixpath[strlen(prefixpath)] = PATHSEP;
         strcat(prefixpath, "$PBOPREFIX$");
 
-        f_prefix = fopen(prefixpath, "r");
+        f_prefix = fopen(prefixpath, "rb");
         if (!f_prefix)
             continue;
 
@@ -73,6 +73,8 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
         fclose(f_prefix);
 
         if (prefixedpath[strlen(prefixedpath) - 1] == '\n')
+            prefixedpath[strlen(prefixedpath) - 1] = 0;
+        if (prefixedpath[strlen(prefixedpath) - 1] == '\r')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
         if (prefixedpath[strlen(prefixedpath) - 1] == '\\')
             prefixedpath[strlen(prefixedpath) - 1] = 0;
@@ -138,7 +140,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
 
 #ifdef _WIN32
     if (cwd == NULL)
-        return find_file(includepath, origin, includefolder, actualpath, includefolder);
+        return find_file_helper(includepath, origin, includefolder, actualpath, includefolder);
 
     WIN32_FIND_DATA file;
     HANDLE handle = NULL;
@@ -160,7 +162,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         GetFullPathName(cwd, 2048, mask, NULL);
         sprintf(mask, "%s\\%s", mask, file.cFileName);
         if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (!find_file(includepath, origin, includefolder, actualpath, mask))
+            if (!find_file_helper(includepath, origin, includefolder, actualpath, mask))
                 return 0;
         } else {
             if (strcmp(filename, file.cFileName) == 0 && matches_includepath(mask, includepath, includefolder)) {
@@ -273,6 +275,11 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
             continue;
         if (strstr(string, constants[i].name) == NULL)
             continue;
+
+        if (strcmp(constants[i].name, "__EVAL") == 0 || strcmp(constants[i].name, "__EXEC") == 0) {
+            warningf("__EVAL and __EXEC macros are not supported.\n");
+            continue;
+        }
 
         ptr = string;
         while (true) {
@@ -481,11 +488,17 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
 
     strcpy(include_stack[i], source);
 
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open %s.\n", source);
         return 1;
     }
+
+    // Skip byte order mark if it exists
+    if (fgetc(f_source) == 0xef)
+        fseek(f_source, 3, SEEK_SET);
+    else
+        fseek(f_source, 0, SEEK_SET);
 
     // first constant is file name
     // @todo: what form?
@@ -493,6 +506,14 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
     if (constants[0].value == 0)
         constants[0].value = (char *)malloc(1024);
     snprintf(constants[0].value, 1024, "\"%s\"", source);
+
+    strcpy(constants[1].name, "__LINE__");
+
+    strcpy(constants[2].name, "__EXEC");
+    constants[2].value = (char *)malloc(1);
+
+    strcpy(constants[3].name, "__EVAL");
+    constants[3].value = (char *)malloc(1);
 
     while (true) {
         // get line
@@ -579,7 +600,6 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         }
 
         // second constant is line number
-        strcpy(constants[1].name, "__LINE__");
         if (constants[1].value == 0)
             constants[1].value = (char *)malloc(16);
         sprintf(constants[1].value, "%i", line);

@@ -305,7 +305,7 @@ void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_i
     matrix inertia;
     matrix r_tilda;
     struct mlod_lod *mass_lod;
-    
+
     // mass is primarily stored in geometry
     for (i = 0; i < num_lods; i++) {
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
@@ -319,7 +319,7 @@ void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_i
                 break;
         }
     }
-    
+
     // mass data available?
     if (i >= num_lods || mlod_lods[i].num_points == 0) {
         model_info->mass = 0;
@@ -468,7 +468,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->armor = 200.0f; // @todo
     model_info->inv_armor = 0.005f; // @todo
 
-    //the real indices to the lods are calculated by the engine when the model is loaded 
+    //the real indices to the lods are calculated by the engine when the model is loaded
     strncpy((char*)&model_info->special_lod_indices,
         "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff",
         sizeof(struct lod_indices));
@@ -743,7 +743,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     // Sort faces by texture, material and bone
     for (i = 0; i < model_info->skeleton->num_sections; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name, 
+            if (strcmp(mlod_lod->selections[j].name,
                     model_info->skeleton->sections[i]) == 0)
                 break;
         }
@@ -1615,30 +1615,42 @@ int mlod2odol(char *source, char *target) {
 
 #ifdef _WIN32
     char temp_name[2048];
-    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
+    if (!GetTempFileName(".", "amk", 0, temp_name)) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+    f_temp = fopen(temp_name, "wb+");
 #else
     f_temp = tmpfile();
 #endif
 
     if (!f_temp) {
         errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 1;
     }
 
     // Open source and read LODs
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source) {
         errorf("Failed to open source file.\n");
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 2;
     }
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "MLOD", 4) != 0) {
         errorf("Source file is not MLOD.\n");
+        fclose(f_temp);
+        fclose(f_source);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return -3;
     }
 
@@ -1647,6 +1659,11 @@ int mlod2odol(char *source, char *target) {
     mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
     if (read_lods(f_source, mlod_lods, num_lods)) {
         errorf("Failed to read LODs.\n");
+        fclose(f_temp);
+        fclose(f_source);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 4;
     }
 
@@ -1667,8 +1684,14 @@ int mlod2odol(char *source, char *target) {
     // Write model info
     build_model_info(mlod_lods, num_lods, &model_info);
     success = read_model_config(source, model_info.skeleton);
-    if (success > 0)
+    if (success > 0) {
+        errorf("Failed to read model config.\n");
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return success;
+    }
 
     current_operation = OP_P3D;
     strcpy(current_target, source);
@@ -1749,9 +1772,13 @@ int mlod2odol(char *source, char *target) {
     fseek(f_temp, 0, SEEK_END);
     datasize = ftell(f_temp);
 
-    f_target = fopen(target, "w");
+    f_target = fopen(target, "wb");
     if (!f_target) {
         errorf("Failed to open target file.\n");
+        fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 5;
     }
 

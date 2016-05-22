@@ -129,7 +129,7 @@ int create_folders(char *path) {
      * failure and 0 on success.
      */
 
-    char tmp[256];
+    char tmp[2048];
     char *p = NULL;
     int success;
     size_t len;
@@ -142,7 +142,7 @@ int create_folders(char *path) {
         tmp[len - 1] = 0;
 
     for (p = tmp + 1; *p; p++) {
-        if (*p == PATHSEP) {
+        if (*p == PATHSEP && *(p-1) != ':') {
             *p = 0;
             success = create_folder(tmp);
             if (success != -2 && success != 0)
@@ -390,7 +390,7 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
     int i;
     int n;
     int success;
-    
+
     n = scandir(cwd, &namelist, NULL, alphasort_ci);
     if (n < 0)
         return 1;
@@ -426,7 +426,7 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
     free(namelist);
 
 #endif
-    
+
      return 0;
 }
 

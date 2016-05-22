@@ -472,7 +472,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                 fputc(0, f_target);
 
                 ptr = buffer;
-                while (*ptr != ' ' && *ptr != '\t' && *ptr != '{' && *ptr != ':')
+                while (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n' && *ptr != '{' && *ptr != ':')
                     ptr++;
                 *ptr = 0;
                 fwrite(buffer, strlen(buffer) + 1, 1, f_target);
@@ -525,6 +525,11 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         // delete statement
         if (strcmp(buffer, "delete") == 0) {
             fputc(4, f_target);
+
+            fseek(f_source, 6, SEEK_CUR);
+
+            if (skip_whitespace(f_source))
+                return 2;
 
             if (lookahead_word(f_source, buffer, sizeof(buffer)))
                 return 2;
@@ -707,17 +712,20 @@ int rapify_file(char *source, char *target) {
 
 #ifdef _WIN32
     char temp_name[2048];
-    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
+    if (!GetTempFileName(".", "amk", 0, temp_name)) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+    f_temp = fopen(temp_name, "wb+");
 #else
     f_temp = tmpfile();
 #endif
 
     if (!f_temp) {
         errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 1;
     }
 
@@ -744,12 +752,15 @@ int rapify_file(char *source, char *target) {
     if (success) {
         errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return success;
     }
 
     // Rapify file
     fseek(f_temp, 0, SEEK_SET);
-    f_target = fopen(target, "w");
+    f_target = fopen(target, "wb");
     if (!f_target) {
         errorf("Failed to open %s.\n", target);
         fclose(f_temp);
@@ -766,7 +777,7 @@ int rapify_file(char *source, char *target) {
 
         fclose(f_target);
 
-        f_target = fopen(dump_name, "w");
+        f_target = fopen(dump_name, "wb");
 
         fseek(f_temp, 0, SEEK_END);
         datasize = ftell(f_temp);

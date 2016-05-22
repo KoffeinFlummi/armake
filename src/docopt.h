@@ -42,11 +42,13 @@ typedef struct {
     int binarize;
     int build;
     int derapify;
+    int keygen;
+    int sign;
     int unpack;
     /* arguments */
     char *includefolder;
     char *indentation;
-    char *keyfile;
+    char *privatekey;
     char *source;
     char *target;
     char *wname;

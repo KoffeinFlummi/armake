@@ -60,6 +60,8 @@ void nwarningf(char *name, char *format, ...);
 
 void errorf(char *format, ...);
 
+void reverse_endianness(void *ptr, size_t buffsize);
+
 bool matches_glob(char *string, char *pattern);
 
 #ifndef _WIN32

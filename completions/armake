@@ -5,9 +5,12 @@ _armake()
     cur="${COMP_WORDS[COMP_CWORD]}"
 
     if [ $COMP_CWORD -eq 1 ]; then
-        COMPREPLY=( $( compgen -W '-h --help -h --help -v --version -v --version unpack derapify binarize build' -- $cur) )
+        COMPREPLY=( $( compgen -W '-h --help -h --help -v --version -v --version build unpack derapify binarize keygen sign' -- $cur) )
     else
         case ${COMP_WORDS[1]} in
+            build)
+            _armake_build
+        ;;
             unpack)
             _armake_unpack
         ;;
@@ -17,11 +20,24 @@ _armake()
             binarize)
             _armake_binarize
         ;;
-            build)
-            _armake_build
+            keygen)
+            _armake_keygen
+        ;;
+            sign)
+            _armake_sign
         ;;
         esac
 
+    fi
+}
+
+_armake_build()
+{
+    local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ $COMP_CWORD -ge 2 ]; then
+        COMPREPLY=( $( compgen -fW '-f --force -p --packonly -w --warning -i --include -x --exclude -k --key ' -- $cur) )
     fi
 }
 
@@ -55,13 +71,23 @@ _armake_binarize()
     fi
 }
 
-_armake_build()
+_armake_keygen()
 {
     local cur
     cur="${COMP_WORDS[COMP_CWORD]}"
 
     if [ $COMP_CWORD -ge 2 ]; then
-        COMPREPLY=( $( compgen -fW '-f --force -p --packonly -w --warning -i --include -x --exclude -k --key ' -- $cur) )
+        COMPREPLY=( $( compgen -fW '-f --force ' -- $cur) )
+    fi
+}
+
+_armake_sign()
+{
+    local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ $COMP_CWORD -ge 2 ]; then
+        COMPREPLY=( $( compgen -fW '-f --force ' -- $cur) )
     fi
 }
 
