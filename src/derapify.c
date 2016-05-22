@@ -757,7 +757,7 @@ int derapify_file(char *source, char *target) {
         errorf("Failed to get temp file name (system error %i).\n", GetLastError());
         return 1;
     }
-    f_temp = fopen(temp_name, "w+b");
+    f_temp = fopen(temp_name, "wb+");
 #else
     f_temp = tmpfile();
 #endif
