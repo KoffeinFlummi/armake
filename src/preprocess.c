@@ -510,10 +510,12 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
     strcpy(constants[1].name, "__LINE__");
 
     strcpy(constants[2].name, "__EXEC");
-    constants[2].value = (char *)malloc(1);
+    if (constants[2].value == 0)
+        constants[2].value = (char *)malloc(1);
 
     strcpy(constants[3].name, "__EVAL");
-    constants[3].value = (char *)malloc(1);
+    if (constants[3].value == 0)
+        constants[3].value = (char *)malloc(1);
 
     while (true) {
         // get line

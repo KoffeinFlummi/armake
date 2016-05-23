@@ -173,6 +173,11 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
     strcat(temp, "armake\\");
 #endif
 
+    if (access(temp, F_OK) != -1) {
+        if (remove_folder(temp))
+            return -1;
+    }
+
     if (strlen(temp) + strlen(addon) + 1 > bufsize)
         return -1;
 
@@ -252,7 +257,7 @@ int copy_file(char *source, char *target) {
      */
 
     // Create the containing folder
-    char containing[strlen(target)];
+    char containing[strlen(target) + 1];
     int lastsep = 0;
     int i;
     for (i = 0; i < strlen(target); i++) {
@@ -383,6 +388,8 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
 
     FindClose(handle);
 
+     return 0;
+
 #else
 
     struct dirent **namelist;
@@ -395,12 +402,11 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
     if (n < 0)
         return 1;
 
+    success = 0;
     for (i = 0; i < n; i++) {
         if (strcmp(namelist[i]->d_name, "..") == 0 ||
-                strcmp(namelist[i]->d_name, ".") == 0) {
-            free(namelist[i]);
+                strcmp(namelist[i]->d_name, ".") == 0)
             continue;
-        }
 
         strcpy(next, cwd);
         strcat(next, "/");
@@ -410,24 +416,25 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
             case DT_DIR:
                 success = traverse_directory_recursive(root, next, callback, third_arg);
                 if (success)
-                    return success;
+                    goto cleanup;
                 break;
 
             case DT_REG:
                 success = callback(root, next, third_arg);
                 if (success)
-                    return success;
+                    goto cleanup;
                 break;
         }
-
-        free(namelist[i]);
     }
 
+cleanup:
+    for (i = 0; i < n; i++)
+        free(namelist[i]);
     free(namelist);
 
-#endif
+    return success;
 
-     return 0;
+#endif
 }
 
 
