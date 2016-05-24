@@ -280,10 +280,13 @@ int build() {
     char tempfolder[1024];
     if (create_temp_folder(addonprefix, tempfolder, sizeof(tempfolder))) {
         errorf("Failed to create temp folder.\n");
+        remove_file(args.target);
         return 2;
     }
     if (copy_directory(args.source, tempfolder)) {
         errorf("Failed to copy to temp folder.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 3;
     }
 
@@ -299,6 +302,8 @@ int build() {
             current_operation = OP_BUILD;
             strcpy(current_target, args.source);
             errorf("Failed to binarize some files.\n");
+            remove_file(args.target);
+            remove_folder(tempfolder);
             return 4;
         }
 
@@ -309,12 +314,14 @@ int build() {
 
         if (access(configpath, F_OK) != -1) {
 #ifdef _WIN32
-            if (!DeleteFile(configpath))
-                return 5;
+            if (!DeleteFile(configpath)) {
 #else
-            if (remove(configpath))
-                return 5;
+            if (remove(configpath)) {
 #endif
+                remove_file(args.target);
+                remove_folder(tempfolder);
+                return 5;
+            }
         }
     }
 
@@ -337,6 +344,8 @@ int build() {
     // write headers to file
     if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {
         errorf("Failed to write some file header(s) to PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 6;
     }
 
@@ -344,6 +353,8 @@ int build() {
     f_target = fopen(args.target, "ab");
     if (!f_target) {
         errorf("Failed to write header boundary to PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 7;
     }
     for (i = 0; i < 21; i++)
@@ -353,6 +364,8 @@ int build() {
     // write contents to file
     if (traverse_directory(tempfolder, write_data_to_pbo, args.target)) {
         errorf("Failed to pack some file(s) into the PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 8;
     }
 
@@ -362,6 +375,8 @@ int build() {
     f_target = fopen(args.target, "ab");
     if (!f_target) {
         errorf("Failed to write checksum to file.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 9;
     }
     fputc(0, f_target);
@@ -369,7 +384,7 @@ int build() {
     fclose(f_target);
 
     // remove temp folder
-    if (remove_temp_folder()) {
+    if (remove_folder(tempfolder)) {
         errorf("Failed to remove temp folder.\n");
         return 10;
     }

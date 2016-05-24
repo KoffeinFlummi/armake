@@ -17,6 +17,7 @@
  */
 
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -166,30 +167,35 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
      */
 
     char temp[2048] = TEMPPATH;
+    char addon_sanitized[2048];
+    int i;
+
 #ifdef _WIN32
     temp[0] = 0;
     GetTempPath(sizeof(temp), temp);
     strcat(temp, "armake\\");
 #endif
 
-    if (access(temp, F_OK) != -1) {
-        if (remove_folder(temp))
-            return -1;
+    temp[strlen(temp) - 1] = 0;
+
+    for (i = 0; i < strlen(addon); i++) {
+        if (addon[i] == '\\' || addon[i] == '/')
+            addon_sanitized[i] = '_';
+        else
+            addon_sanitized[i] = addon[i];
     }
 
-    if (strlen(temp) + strlen(addon) + 1 > bufsize)
+    // find a free one
+    for (i = 0; i < 1024; i++) {
+        snprintf(temp_folder, bufsize, "%s_%s_%i%c", temp, addon_sanitized, i, PATHSEP);
+        if (access(temp_folder, F_OK) == -1)
+            break;
+    }
+
+    if (i == 1024)
         return -1;
 
-    temp_folder[0] = 0;
-    strcat(temp_folder, temp);
-    strcat(temp_folder, addon);
-
-    int success = create_folders(temp_folder);
-
-    if (success == -2) // already exists
-        return 0;
-
-    return success;
+    return create_folders(temp_folder);
 }
 
 
@@ -235,16 +241,6 @@ int remove_folder(char *folder) {
 #endif
 
     return 0;
-}
-
-
-int remove_temp_folder() {
-    char tempfolder[2048] = TEMPPATH;
-#ifdef _WIN32
-    GetTempPath(sizeof(tempfolder), tempfolder);
-    strcat(tempfolder, "armake\\");
-#endif
-    return remove_folder(tempfolder);
 }
 
 

@@ -42,8 +42,6 @@ int remove_file(char *path);
 
 int remove_folder(char *folder);
 
-int remove_temp_folder();
-
 int copy_file(char *source, char *target);
 
 int traverse_directory(char *root, int (*callback)(char *, char *, char *),
