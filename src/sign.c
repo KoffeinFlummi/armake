@@ -28,6 +28,7 @@
 #include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
+#include "keygen.h"
 #include "sign.h"
 
 
@@ -279,15 +280,13 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     fwrite(&keylength, sizeof(keylength), 1, f_signature);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature);
 
-    BN_bn2bin(modulus, (unsigned char *)buffer);
-    reverse_endianness(buffer, keylength / 8);
+    custom_bn2lebinpad(modulus, (unsigned char *)buffer, keylength / 8);
     fwrite(buffer, keylength / 8, 1, f_signature);
 
     temp = keylength / 8;
     fwrite(&temp, sizeof(temp), 1, f_signature);
 
-    BN_bn2bin(sig1, (unsigned char *)buffer);
-    reverse_endianness(buffer, keylength / 8);
+    custom_bn2lebinpad(sig1, (unsigned char *)buffer, keylength / 8);
     fwrite(buffer, keylength / 8, 1, f_signature);
 
     temp = 2;
@@ -296,15 +295,13 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     temp = keylength / 8;
     fwrite(&temp, sizeof(temp), 1, f_signature);
 
-    BN_bn2bin(sig2, (unsigned char *)buffer);
-    reverse_endianness(buffer, keylength / 8);
+    custom_bn2lebinpad(sig2, (unsigned char *)buffer, keylength / 8);
     fwrite(buffer, keylength / 8, 1, f_signature);
 
     temp = keylength / 8;
     fwrite(&temp, sizeof(temp), 1, f_signature);
 
-    BN_bn2bin(sig3, (unsigned char *)buffer);
-    reverse_endianness(buffer, keylength / 8);
+    custom_bn2lebinpad(sig3, (unsigned char *)buffer, keylength / 8);
     fwrite(buffer, keylength / 8, 1, f_signature);
 
     // clean up

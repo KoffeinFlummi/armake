@@ -26,7 +26,6 @@
 #include <windows.h>
 #include <wchar.h>
 #else
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <err.h>

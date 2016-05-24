@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <openssl/bn.h>
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
 
@@ -29,6 +30,27 @@
 #include "filesystem.h"
 #include "utils.h"
 #include "keygen.h"
+
+
+int custom_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen) {
+    int len;
+    int result;
+    char *hexstring;
+
+    hexstring = BN_bn2hex(a);
+
+    len = strlen(hexstring) / 2;
+
+    if (len < tolen)
+        memset(to, 0, tolen - len);
+
+    result = BN_bn2bin(a, to + (tolen - len));
+    reverse_endianness(to, tolen);
+
+    free(hexstring);
+
+    return result;
+}
 
 
 int generate_keypair(char *name, char *path_private, char *path_public) {
@@ -90,32 +112,25 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(&length, sizeof(length), 1, f_private);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_private);
 
-    BN_bn2bin(rsa->n, buffer);
-    reverse_endianness(buffer, length / 8);
+    custom_bn2lebinpad(rsa->n, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_private);
 
-    BN_bn2bin(rsa->p, buffer);
-    reverse_endianness(buffer, length / 16);
+    custom_bn2lebinpad(rsa->p, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    BN_bn2bin(rsa->q, buffer);
-    reverse_endianness(buffer, length / 16);
+    custom_bn2lebinpad(rsa->q, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    BN_bn2bin(rsa->dmp1, buffer);
-    reverse_endianness(buffer, length / 16);
+    custom_bn2lebinpad(rsa->dmp1, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    BN_bn2bin(rsa->dmq1, buffer);
-    reverse_endianness(buffer, length / 16);
+    custom_bn2lebinpad(rsa->dmq1, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    BN_bn2bin(rsa->iqmp, buffer);
-    reverse_endianness(buffer, length / 16);
+    custom_bn2lebinpad(rsa->iqmp, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    BN_bn2bin(rsa->d, buffer);
-    reverse_endianness(buffer, length / 8);
+    custom_bn2lebinpad(rsa->d, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_private);
 
     fclose(f_private);
@@ -133,8 +148,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(&length, sizeof(length), 1, f_public);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_public);
 
-    BN_bn2bin(rsa->n, buffer);
-    reverse_endianness(buffer, length / 8);
+    custom_bn2lebinpad(rsa->n, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_public);
 
     fclose(f_public);
@@ -142,6 +156,8 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     // clean up
     BN_free(exponent);
     RSA_free(rsa);
+
+    CRYPTO_cleanup_all_ex_data();
 
     return 0;
 }
