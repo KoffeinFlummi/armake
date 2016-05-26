@@ -41,7 +41,11 @@ void warningf(char *format, ...) {
     vsprintf(buffer, format, argptr);
     va_end(argptr);
 
+#ifdef _WIN32
+    fprintf(stderr, "warning: %s", buffer);
+#else
     fprintf(stderr, "%swarning:%s %s", COLOR_YELLOW, COLOR_RESET, buffer);
+#endif
 
     if (strchr(current_target, PATHSEP) == NULL)
         strcpy(filename, current_target);
@@ -102,7 +106,11 @@ void errorf(char *format, ...) {
     vsprintf(buffer, format, argptr);
     va_end(argptr);
 
+#ifdef _WIN32
+    fprintf(stderr, "error: %s", buffer);
+#else
     fprintf(stderr, "%serror:%s %s", COLOR_RED, COLOR_RESET, buffer);
+#endif
 }
 
 
