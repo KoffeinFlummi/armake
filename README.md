@@ -1,7 +1,11 @@
 armake
 ======
 
-[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg)](https://travis-ci.org/KoffeinFlummi/armake) [![](https://img.shields.io/github/license/KoffeinFlummi/armake.svg)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE) [![](https://img.shields.io/badge/PPA-koffeinflummi%2Farmake-orange.svg)](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake) [![](https://img.shields.io/aur/version/armake.svg)](https://aur.archlinux.org/packages/armake)
+[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg?style=flat-square)](https://travis-ci.org/KoffeinFlummi/armake)
+[![](https://img.shields.io/badge/license-GPLv2-red.svg?style=flat-square)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE)
+[![](https://img.shields.io/github/tag/KoffeinFlummi/armake.svg?style=flat-square)](https://github.com/KoffeinFlummi/armake/releases)
+[![](https://img.shields.io/badge/AUR-armake-blue.svg?style=flat-square)](https://aur.archlinux.org/packages/armake)
+[![](https://img.shields.io/badge/PPA-koffeinflummi%2Farmake-orange.svg?style=flat-square)](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
 
 
 A C implementation of Arma modding tools (PAA conversion, binarization/rapification, PBO packing). (WIP)
@@ -16,7 +20,7 @@ $ make
 $ sudo make install
 ```
 
-Dependencies:
+**Dependencies:**
 - An FTS library (glibc has one)
 - OpenSSL
 
