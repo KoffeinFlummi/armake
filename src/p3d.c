@@ -585,7 +585,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     unsigned long face;
     unsigned long face_start;
     unsigned long face_end;
-    bool first;
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
@@ -626,7 +625,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         k++;
     }
 
-
     odol_lod->num_points_mlod = mlod_lod->num_points;
 
     odol_lod->face_area = 0;
@@ -636,19 +634,18 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->min_pos = empty_vector;
     odol_lod->max_pos = empty_vector;
 
-    first = false;
     for (i = 0; i < mlod_lod->num_points; i++) {
-        if (first || mlod_lod->points[i].x < odol_lod->min_pos.x)
+        if (i == 0 || mlod_lod->points[i].x < odol_lod->min_pos.x)
             odol_lod->min_pos.x = mlod_lod->points[i].x;
-        if (first || mlod_lod->points[i].y < odol_lod->min_pos.y)
+        if (i == 0 || mlod_lod->points[i].y < odol_lod->min_pos.y)
             odol_lod->min_pos.y = mlod_lod->points[i].y;
-        if (first || mlod_lod->points[i].z < odol_lod->min_pos.z)
+        if (i == 0 || mlod_lod->points[i].z < odol_lod->min_pos.z)
             odol_lod->min_pos.z = mlod_lod->points[i].z;
-        if (first || mlod_lod->points[i].x > odol_lod->max_pos.x)
+        if (i == 0 || mlod_lod->points[i].x > odol_lod->max_pos.x)
             odol_lod->max_pos.x = mlod_lod->points[i].x;
-        if (first || mlod_lod->points[i].y > odol_lod->max_pos.y)
+        if (i == 0 || mlod_lod->points[i].y > odol_lod->max_pos.y)
             odol_lod->max_pos.y = mlod_lod->points[i].y;
-        if (first || mlod_lod->points[i].z > odol_lod->max_pos.z)
+        if (i == 0 || mlod_lod->points[i].z > odol_lod->max_pos.z)
             odol_lod->max_pos.z = mlod_lod->points[i].z;
     }
 
