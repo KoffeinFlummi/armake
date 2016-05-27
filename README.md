@@ -26,15 +26,9 @@ $ sudo make install
 
 #### Arch Linux
 
-[PKGBUILD](https://aur.archlinux.org/packages/armake/)
+[PKGBUILD](https://aur.archlinux.org/packages/armake/) or [PKGBUILD (development)](https://aur.archlinux.org/packages/armake-git/)
 ```
 $ pacaur -S armake      # or use yaourt or whatever AUR helper you use
-```
-
-or
-
-[PKGBUILD (development)](https://aur.archlinux.org/packages/armake-git/)
-```
 $ pacaur -S armake-git
 ```
 
