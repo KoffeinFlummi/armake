@@ -26,8 +26,6 @@ $(LIB)/%.o: $(LIB)/%.c
 	@echo "  CC  $<"
 	@$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
-all: $(BIN)/armake
-
 test: $(BIN)/armake
 	@./test/runall.sh
 
