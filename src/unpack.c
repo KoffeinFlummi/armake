@@ -102,6 +102,9 @@ int unpack() {
         fread(&headers[num_files].original_size, sizeof(uint32_t), 1, f_source);
         fseek(f_source, sizeof(uint32_t) * 2, SEEK_CUR);
         fread(&headers[num_files].data_size, sizeof(uint32_t), 1, f_source);
+
+        if (headers[num_files].data_size != headers[num_files].original_size)
+            warningf("%s is compressed and decompression has not been implemented yet. File will be written compressed.\n");
     }
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
