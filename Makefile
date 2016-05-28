@@ -1,9 +1,9 @@
 VERSION = 0.2.1
-DESTDIR = ""
+DESTDIR =
 BIN = bin
 SRC = src
 LIB = lib
-EXT = ""
+EXT =
 CC = gcc
 CFLAGS = -Wall -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm -lcrypto
