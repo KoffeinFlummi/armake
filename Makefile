@@ -28,7 +28,7 @@ $(LIB)/%.o: $(LIB)/%.c
 
 all: $(BIN)/armake
 
-test: $(BIN)/armake FORCE
+test: $(BIN)/armake
 	@./test/runall.sh
 
 install: all
@@ -88,4 +88,4 @@ debian: clean FORCE
 	debuild -S -sa
 	dput ppa:koffeinflummi/armake ../armake_*_source.changes
 
-FORCE:
+.PHONY: test
