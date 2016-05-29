@@ -47,9 +47,6 @@ int binarize_file(char *source, char *target) {
      *
      * If the file type is not recognized, -1 is returned. 0 is returned on
      * success and a positive integer on error.
-     *
-     * The include folder argument is the path to be searched for file
-     * inclusions.
      */
 
     char fileext[64];
