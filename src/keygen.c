@@ -170,10 +170,10 @@ int keygen() {
     char path_public[2048];
     int success;
 
-    if (strchr(args.target, PATHSEP) == NULL)
+    if (strrchr(args.target, PATHSEP) == NULL)
         strcpy(name, args.target);
     else
-        strcpy(name, strchr(args.target, PATHSEP) + 1);
+        strcpy(name, strrchr(args.target, PATHSEP) + 1);
 
     strcpy(path_private, args.target);
     strcat(path_private, ".biprivatekey");

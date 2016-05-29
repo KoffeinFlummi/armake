@@ -1,9 +1,9 @@
 VERSION = 0.2.1
-DESTDIR = ""
+DESTDIR =
 BIN = bin
 SRC = src
 LIB = lib
-EXT = ""
+EXT =
 CC = gcc
 CFLAGS = -Wall -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm -lcrypto
@@ -26,9 +26,7 @@ $(LIB)/%.o: $(LIB)/%.c
 	@echo "  CC  $<"
 	@$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
-all: $(BIN)/armake
-
-test: $(BIN)/armake FORCE
+test: $(BIN)/armake
 	@./test/runall.sh
 
 install: all
@@ -88,4 +86,4 @@ debian: clean FORCE
 	debuild -S -sa
 	dput ppa:koffeinflummi/armake ../armake_*_source.changes
 
-FORCE:
+.PHONY: test

@@ -333,10 +333,10 @@ int sign() {
         return 1;
     }
 
-    if (strchr(args.source, '/') == NULL)
+    if (strchr(args.source, PATHSEP) == NULL)
         strcpy(keyname, args.source);
     else
-        strcpy(keyname, strrchr(args.source, '/') + 1);
+        strcpy(keyname, strrchr(args.source, PATHSEP) + 1);
     *strrchr(keyname, '.') = 0;
 
     strcpy(path_signature, args.target);
