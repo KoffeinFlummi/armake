@@ -29,6 +29,32 @@
 #include "unpack.h"
 
 
+bool is_garbage(struct header *header) {
+    int i;
+    char c;
+
+    if (header->packing_method != 0)
+        return true;
+
+    for (i = 0; i < strlen(header->name); i++) {
+        c = header->name[i];
+        if (c <= 31)
+            return true;
+        if (c == '"' ||
+                c == '*' ||
+                c == ':' ||
+                c == '<' ||
+                c == '>' ||
+                c == '?' ||
+                c == '/' ||
+                c == '|')
+            return true;
+    }
+
+    return false;
+}
+
+
 int unpack() {
     extern DocoptArgs args;
     extern int current_operation;
@@ -102,9 +128,6 @@ int unpack() {
         fread(&headers[num_files].original_size, sizeof(uint32_t), 1, f_source);
         fseek(f_source, sizeof(uint32_t) * 2, SEEK_CUR);
         fread(&headers[num_files].data_size, sizeof(uint32_t), 1, f_source);
-
-        if (headers[num_files].data_size != headers[num_files].original_size)
-            warningf("%s is compressed and decompression has not been implemented yet. File will be written compressed.\n");
     }
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
@@ -113,6 +136,12 @@ int unpack() {
 
     // read files
     for (i = 0; i < num_files; i++) {
+        // check for garbage
+        if (is_garbage(&headers[i])) {
+            fseek(f_source, headers[i].data_size, SEEK_CUR);
+            continue;
+        }
+
         // replace pathseps on linux
 #ifndef _WIN32
         for (j = 0; j < strlen(headers[i].name); j++) {
