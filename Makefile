@@ -41,13 +41,13 @@ uninstall:
 	rm $(DESTDIR)/usr/bin/armake
 
 clean:
-	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o
+	rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o armake_*
 
 win32:
-	"$(MAKE)" $(MAKEFLAGS) CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w32.exe
+	"$(MAKE)" CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w32.exe
 
 win64:
-	"$(MAKE)" $(MAKEFLAGS) CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w64.exe
+	"$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w64.exe
 
 docopt:
 	mkdir tmp || rm -rf tmp/*
@@ -81,9 +81,21 @@ docopt-completion: $(BIN)/armake
 	docopt-completion ./$(BIN)/armake --manual-zsh
 	mv _armake completions/_armake
 
-debian: clean FORCE
+debian: clean
 	tar -czf ../armake_$(VERSION).orig.tar.gz .
 	debuild -S -sa
 	dput ppa:koffeinflummi/armake ../armake_*_source.changes
 
-.PHONY: test
+release:
+	"$(MAKE)" clean
+	mkdir armake_v$(VERSION)
+	"$(MAKE)"
+	rm */*.o
+	"$(MAKE)" win32
+	rm */*.o
+	"$(MAKE)" win64
+	rm */*.o
+	mv bin/* armake_v$(VERSION)/
+	zip -r armake_v$(VERSION).zip armake_v$(VERSION)
+
+.PHONY: test debian release
