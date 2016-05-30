@@ -39,3 +39,5 @@ tmp/*
 # Testing files except when in test folder
 test.*
 !test/**/test.*
+
+armake_*
