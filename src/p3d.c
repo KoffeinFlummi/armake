@@ -445,22 +445,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->shadow_offset = 1.0f; //@todo
 
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
-    model_info->skeleton->name[0] = 0;
-    model_info->skeleton->num_bones = 0;
-    model_info->skeleton->num_sections = 0;
-    model_info->skeleton->num_animations = 0;
-    model_info->skeleton->ht_min = 0;
-    model_info->skeleton->ht_max = 0;
-    model_info->skeleton->af_max = 0;
-    model_info->skeleton->mf_max = 0;
-    model_info->skeleton->mf_act = 0;
-    model_info->skeleton->t_body = 0;
-    for (i = 0; i < MAXBONES; i++)
-        model_info->skeleton->bones[i].name[0] = 0;
-    for (i = 0; i < MAXSECTIONS; i++)
-        model_info->skeleton->sections[i][0] = 0;
-    for (i = 0; i < MAXANIMS; i++)
-        model_info->skeleton->animations[i].name[0] = 0;
+    memset(&model_info->skeleton, 0, sizeof(struct skeleton));
 
     model_info->map_type = 0; //@todo
     model_info->n_floats = 0;
