@@ -29,7 +29,7 @@ $(LIB)/%.o: $(LIB)/%.c
 test: $(BIN)/armake
 	@./test/runall.sh
 
-install: all
+install: $(BIN)/armake
 	mkdir -p $(DESTDIR)/usr/bin
 	mkdir -p $(DESTDIR)/usr/share/bash-completion/completions
 	mkdir -p $(DESTDIR)/etc/bash_completion.d
