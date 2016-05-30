@@ -656,6 +656,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     for (i = 0; i < MAXTEXTURES; i++)
         textures[i][0] = 0;
 
+    // Textures & Materials
     odol_lod->num_textures = 0;
     odol_lod->num_materials = 0;
     odol_lod->materials = (struct material *)malloc(sizeof(struct material) * MAXMATERIALS);
@@ -711,14 +712,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->always_0 = 0;
 
     odol_lod->faces = (struct odol_face *)malloc(sizeof(struct odol_face) * odol_lod->num_faces);
-    for (i = 0; i < odol_lod->num_faces; i++) {
-        odol_lod->faces[i].face_type = 0;
-        // shut up, valgrind
-        odol_lod->faces[i].table[0] = 0;
-        odol_lod->faces[i].table[1] = 0;
-        odol_lod->faces[i].table[2] = 0;
-        odol_lod->faces[i].table[3] = 0;
-    }
+    memset(odol_lod->faces, 0, sizeof(struct odol_face) * odol_lod->num_faces);
 
     odol_lod->num_points = 0;
 
