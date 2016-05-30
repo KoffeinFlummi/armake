@@ -241,8 +241,7 @@ int build() {
     FILE *f_prefix;
     prefixpath[0] = 0;
     strcat(prefixpath, args.source);
-    prefixpath[strlen(prefixpath) + 1] = 0;
-    prefixpath[strlen(prefixpath)] = PATHSEP;
+    strcat(prefixpath, PATHSEP_STR);
     strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "rb");
     if (!f_prefix) {

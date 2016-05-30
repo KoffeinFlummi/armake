@@ -21,9 +21,11 @@
 
 #ifdef _WIN32
 #define PATHSEP '\\'
+#define PATHSEP_STR "\\"
 #define TEMPPATH "C:\\Windows\\Temp\\armake\\"
 #else
 #define PATHSEP '/'
+#define PATHSEP_STR "/"
 #define TEMPPATH "/tmp/armake/"
 #endif
 

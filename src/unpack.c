@@ -152,8 +152,7 @@ int unpack() {
 
         // get full path
         strcpy(full_path, args.target);
-        strcat(full_path, "?");
-        full_path[strlen(full_path) - 1] = PATHSEP;
+        strcat(full_path, PATHSEP_STR);
         strcat(full_path, headers[i].name);
 
         // create containing folder
@@ -194,8 +193,7 @@ int unpack() {
 
     // if prefix file wasn't included but there is a prefix, create one
     strcpy(full_path, args.target);
-    strcat(full_path, "?");
-    full_path[strlen(full_path) - 1] = PATHSEP;
+    strcat(full_path, PATHSEP_STR);
     strcat(full_path, "$PBOPREFIX$");
     if (access(full_path, F_OK) == -1 && strlen(prefix) > 0) {
         f_target = fopen(full_path, "wb");

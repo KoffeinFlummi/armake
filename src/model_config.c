@@ -246,12 +246,10 @@ int read_model_config(char *path, struct skeleton *skeleton) {
 
     // Extract model.cfg path
     strncpy(model_config_path, path, sizeof(model_config_path));
-    if (strrchr(model_config_path, PATHSEP) != NULL) {
-        strcpy(strrchr(model_config_path, PATHSEP), "?model.cfg");
-        *strrchr(model_config_path, '?') = PATHSEP;
-    } else {
+    if (strrchr(model_config_path, PATHSEP) != NULL)
+        strcpy(strrchr(model_config_path, PATHSEP) + 1, "model.cfg");
+    else
         strcpy(model_config_path, "model.cfg");
-    }
 
     strcpy(rapified_path, model_config_path);
     strcat(rapified_path, ".armake.bin"); // it is assumed that this doesn't exist

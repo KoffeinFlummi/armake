@@ -61,8 +61,7 @@ bool matches_includepath(char *path, char *includepath, char *includefolder) {
         *ptr = 0;
 
         strncpy(prefixpath, cwd, 2048);
-        prefixpath[strlen(prefixpath) + 2] = 0;
-        prefixpath[strlen(prefixpath)] = PATHSEP;
+        strcat(prefixpath, PATHSEP_STR);
         strcat(prefixpath, "$PBOPREFIX$");
 
         f_prefix = fopen(prefixpath, "rb");
