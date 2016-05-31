@@ -35,8 +35,8 @@
 #define TYPE_HIDE 	   9
 
 #define SOURCE_CLAMP  0
-#define SOURCE_MIRROR 1
-#define SOURCE_LOOP   2
+#define SOURCE_LOOP   1
+#define SOURCE_MIRROR 2
 
 
 #include "vector.h"
