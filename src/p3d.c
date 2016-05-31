@@ -271,7 +271,7 @@ void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
 }
 
 
-float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
+float get_sphere(struct mlod_lod *mlod_lod, vector center) {
     /*
      * Calculate and return the bounding sphere for the given LOD.
      */
@@ -284,7 +284,7 @@ float get_sphere(struct mlod_lod *mlod_lod, struct model_info *model_info) {
     sphere = 0;
     for (i = 0; i < mlod_lod->num_points; i++) {
         point = *((vector*)&mlod_lod->points[i].x);
-        dist = (model_info->autocenter) ? vector_length(vector_sub(point, model_info->centre_of_mass)) : vector_length(point);
+        dist = vector_length(vector_sub(point, center));
         if (dist > sphere)
             sphere = dist;
     }
@@ -419,7 +419,11 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->bounding_sphere = 0.0f;
     model_info->geo_lod_sphere = 0.0f;
     for (i = 0; i < num_lods; i++) {
-        sphere = get_sphere(&mlod_lods[i], model_info);
+        if (model_info->autocenter)
+            sphere = get_sphere(&mlod_lods[i], model_info->centre_of_mass);
+        else
+            sphere = get_sphere(&mlod_lods[i], empty_vector);
+
         if (sphere > model_info->bounding_sphere)
             model_info->bounding_sphere = sphere;
         if (float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01))
@@ -628,7 +632,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->autocenter_pos = vector_mult_scalar(0.5, vector_add(odol_lod->min_pos, odol_lod->max_pos));
 
-    odol_lod->sphere = get_sphere(mlod_lod, model_info);
+    odol_lod->sphere = get_sphere(mlod_lod, odol_lod->autocenter_pos);
 
     for (i = 0; i < MAXTEXTURES; i++)
         textures[i][0] = 0;
