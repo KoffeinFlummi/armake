@@ -1640,6 +1640,7 @@ int mlod2odol(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern DocoptArgs args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f_source;
@@ -1692,7 +1693,8 @@ int mlod2odol(char *source, char *target) {
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "MLOD", 4) != 0) {
-        errorf("Source file is not MLOD.\n");
+        if (args.binarize)
+            errorf("Source file is not MLOD.\n");
         fclose(f_temp);
         fclose(f_source);
 #ifdef _WIN32
