@@ -233,12 +233,8 @@ void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
     int i;
     int j;
 
-    bbox_min->x = 0;
-    bbox_min->y = 0;
-    bbox_min->z = 0;
-    bbox_max->x = 0;
-    bbox_max->y = 0;
-    bbox_max->z = 0;
+    memset(bbox_min, 0, sizeof(struct triplet));
+    memset(bbox_max, 0, sizeof(struct triplet));
 
     first = true;
 
@@ -430,9 +426,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
             model_info->geo_lod_sphere = sphere;
     }
 
-    model_info->point_flags[0] = 0;
-    model_info->point_flags[1] = 0;
-    model_info->point_flags[2] = 0;
+    memset(model_info->point_flags, 0, sizeof(model_info->point_flags));
 
     model_info->map_icon_color = 0xff9d8254;
     model_info->map_selected_color = 0xff9d8254;
@@ -445,7 +439,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->shadow_offset = 1.0f; //@todo
 
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
-    memset(&model_info->skeleton, 0, sizeof(struct skeleton));
+    memset(model_info->skeleton, 0, sizeof(struct skeleton));
 
     model_info->map_type = 0; //@todo
     model_info->n_floats = 0;
@@ -454,9 +448,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->inv_armor = 0.005f; // @todo
 
     //the real indices to the lods are calculated by the engine when the model is loaded
-    strncpy((char*)&model_info->special_lod_indices,
-        "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff",
-        sizeof(struct lod_indices));
+    memset(&model_info->special_lod_indices, 255, sizeof(struct lod_indices));
 
     //according to BIS: first LOD that can be used for shadowing
     model_info->min_shadow = num_lods; // @todo
@@ -645,8 +637,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->num_textures = 0;
     odol_lod->num_materials = 0;
     odol_lod->materials = (struct material *)malloc(sizeof(struct material) * MAXMATERIALS);
-    for (i = 0; i < MAXMATERIALS; i++)
-        odol_lod->materials[i].path[0] = 0;
+    memset(odol_lod->materials, 0, sizeof(struct material) * MAXMATERIALS);
 
     size = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
