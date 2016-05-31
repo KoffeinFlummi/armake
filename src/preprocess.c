@@ -390,6 +390,8 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
                             strncpy(args[j], ptr_args + 1, ptr_arg_end - ptr_args - 1);
                             args[j][ptr_arg_end - ptr_args - 1] = 0;
 
+                            trim(args[j], sizeof(args[j]));
+
                             success = resolve_macros(args[j], sizeof(args[j]), constants);
                             if (success)
                                 return success;
