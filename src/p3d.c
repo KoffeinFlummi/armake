@@ -1492,25 +1492,24 @@ void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *
                     }
                 }
             }
-        } else {
-            if (stricmp(mlod_lods[i].selections[j].name, anim->axis) == 0) {
-                for (k = 0; k < mlod_lods[i].num_points; k++) {
-                    if (mlod_lods[i].selections[j].points[k] > 0) {
-                        memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
-                        break;
-                    }
+        } else if (stricmp(mlod_lods[i].selections[j].name, anim->axis) == 0) {
+            for (k = 0; k < mlod_lods[i].num_points; k++) {
+                if (mlod_lods[i].selections[j].points[k] > 0) {
+                    memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
+                    break;
                 }
-                for (k = k + 1; k < mlod_lods[i].num_points; k++) {
-                    if (mlod_lods[i].selections[j].points[k] > 0) {
-                        memcpy(&anim->axis_dir, &mlod_lods[i].points[k], sizeof(struct triplet));
-                        break;
-                    }
+            }
+            for (k = k + 1; k < mlod_lods[i].num_points; k++) {
+                if (mlod_lods[i].selections[j].points[k] > 0) {
+                    memcpy(&anim->axis_dir, &mlod_lods[i].points[k], sizeof(struct triplet));
+                    break;
                 }
             }
         }
     }
 
     anim->axis_dir = vector_sub(anim->axis_dir, anim->axis_pos);
+    anim->axis_dir = vector_normalize(anim->axis_dir);
 }
 
 
