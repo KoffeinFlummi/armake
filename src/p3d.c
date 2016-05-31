@@ -571,7 +571,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->num_items = 0;
     for (i = 0; i < model_info->skeleton->num_bones; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
+            if (stricmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
                 break;
         }
 
@@ -587,7 +587,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     k = 0;
     for (i = 0; i < model_info->skeleton->num_bones; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
+            if (stricmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
                 break;
         }
 

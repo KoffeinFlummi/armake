@@ -343,6 +343,8 @@ int read_model_config(char *path, struct skeleton *skeleton) {
                 break;
             strcpy(skeleton->bones[i / 2].name, bones[i]);
             strcpy(skeleton->bones[i / 2].parent, bones[i + 1]);
+            lower_case(skeleton->bones[i / 2].name);
+            lower_case(skeleton->bones[i / 2].parent);
             skeleton->num_bones++;
         }
     }
