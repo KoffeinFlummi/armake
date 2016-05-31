@@ -1487,7 +1487,7 @@ void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *
             if (stricmp(mlod_lods[i].selections[j].name, anim->end) == 0) {
                 for (k = 0; k < mlod_lods[i].num_points; k++) {
                     if (mlod_lods[i].selections[j].points[k] > 0) {
-                        memcpy(&anim->axis_pos, &mlod_lods[i].points[k], sizeof(struct triplet));
+                        memcpy(&anim->axis_dir, &mlod_lods[i].points[k], sizeof(struct triplet));
                         break;
                     }
                 }
