@@ -880,8 +880,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].face_end = i;
             odol_lod->sections[k].face_index_start = face_start;
             odol_lod->sections[k].face_index_end = face_start;
-            odol_lod->sections[k].min_bone_index = 0; // @todo
-            odol_lod->sections[k].bones_count = 0; // @todo
+            odol_lod->sections[k].min_bone_index = 0;
+            odol_lod->sections[k].bones_count = odol_lod->num_items;
             odol_lod->sections[k].mat_dummy = 0;
             odol_lod->sections[k].common_texture_index = (j < odol_lod->num_textures) ? j : -1;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup_reverse[i]].face_flags;
