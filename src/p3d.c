@@ -1531,8 +1531,10 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
         fwrite( anim->source, strlen(anim->source) + 1, 1, f_target);
         fwrite(&anim->min_value, sizeof(float), 1, f_target);
         fwrite(&anim->max_value, sizeof(float), 1, f_target);
-        fwrite(&anim->min_phase, sizeof(float), 1, f_target);
-        fwrite(&anim->max_phase, sizeof(float), 1, f_target);
+        fwrite(&anim->min_value, sizeof(float), 1, f_target);
+        fwrite(&anim->max_value, sizeof(float), 1, f_target);
+        //fwrite(&anim->min_phase, sizeof(float), 1, f_target);
+        //fwrite(&anim->max_phase, sizeof(float), 1, f_target);
         fwrite(&anim->junk, sizeof(uint32_t), 1, f_target);
         fwrite(&anim->always_0, sizeof(uint32_t), 1, f_target);
         fwrite(&anim->source_address, sizeof(uint32_t), 1, f_target);
