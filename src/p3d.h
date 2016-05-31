@@ -179,6 +179,11 @@ struct odol_selection {
 struct odol_frame {
 };
 
+struct odol_vertexboneref {
+    uint32_t num_bones;
+    uint8_t weights[4][2];
+};
+
 struct odol_lod {
     uint32_t num_proxies;
     struct odol_proxy *proxies;
@@ -217,11 +222,12 @@ struct odol_lod {
     uint32_t icon_color;
     uint32_t selected_color;
     uint32_t flags;
-    bool vertex_bone_ref_is_simple;
+    bool vertexboneref_is_simple;
     float uv_scale[4];
     struct uv_pair *uv_coords;
     struct triplet *points;
     struct triplet *normals;
+    struct odol_vertexboneref *vertexboneref;
 };
 
 struct lod_indices {

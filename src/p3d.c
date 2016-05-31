@@ -464,9 +464,11 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
 }
 
 
-uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
+uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct model_info *model_info,
         uint32_t point_index_mlod, struct triplet *normal, struct uv_pair *uv_coords) {
     uint32_t i;
+    uint32_t j;
+    uint32_t weight_index;
 
     // Check if there already is a vertex that satisfies the requirements
     for (i = 0; i < odol_lod->num_points; i++) {
@@ -492,6 +494,41 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod,
     memcpy(&odol_lod->points[odol_lod->num_points], &mlod_lod->points[point_index_mlod], sizeof(struct triplet));
     memcpy(&odol_lod->normals[odol_lod->num_points], normal, sizeof(struct triplet));
     memcpy(&odol_lod->uv_coords[odol_lod->num_points], uv_coords, sizeof(struct uv_pair));
+
+    if (odol_lod->vertexboneref != 0) {
+        memset(&odol_lod->vertexboneref[odol_lod->num_points], 0, sizeof(struct odol_vertexboneref));
+
+        for (i = 0; i < model_info->skeleton->num_bones; i++) {
+            for (j = 0; j < mlod_lod->num_selections; j++) {
+                if (stricmp(model_info->skeleton->bones[i].name,
+                        mlod_lod->selections[j].name) == 0)
+                    break;
+            }
+
+            if (j == mlod_lod->num_selections)
+                continue;
+
+            if (mlod_lod->selections[j].points[point_index_mlod] == 0)
+                continue;
+
+            if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 4) {
+                warningf("LOD %f vertex %u is part of more than 4 bones.\n", mlod_lod->resolution, point_index_mlod);
+                continue;
+            }
+
+            weight_index = odol_lod->vertexboneref[odol_lod->num_points].num_bones;
+            odol_lod->vertexboneref[odol_lod->num_points].num_bones++;
+
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->bonelinks[i].links[0];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[j].points[point_index_mlod];
+
+            // convert weight
+            if (odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] == 0x01)
+                odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = 0xff;
+            else
+                odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1]--;
+        }
+    }
 
     odol_lod->vertex_to_point[odol_lod->num_points] = point_index_mlod;
     odol_lod->point_to_vertex[point_index_mlod] = odol_lod->num_points;
@@ -711,6 +748,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
     odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
+    odol_lod->vertexboneref = 0;
+    if (model_info->skeleton->num_bones > 0)
+        odol_lod->vertexboneref = (struct odol_vertexboneref *)malloc(sizeof(struct odol_vertexboneref) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+
     // Sort faces by texture, material and bone
     for (i = 0; i < model_info->skeleton->num_sections; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
@@ -776,7 +817,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             else
                 k = 2 + (1 - (j - 2));
 
-            odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod,
+            odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod, model_info,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
         face_end += 2 + 2 * odol_lod->faces[odol_lod->face_lookup[i]].face_type;
@@ -794,7 +835,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         uv_coords.u = 0.0f;
         uv_coords.v = 0.0f;
 
-        odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod,
+        odol_lod->point_to_vertex[i] = add_point(odol_lod, mlod_lod, model_info,
             i, &normal, &uv_coords);
     }
 
@@ -1047,12 +1088,33 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->selected_color = 0xff9d8254;
 
     odol_lod->flags = 0;
-    odol_lod->vertex_bone_ref_is_simple = 0;
 
     odol_lod->uv_scale[0] = 0;
     odol_lod->uv_scale[1] = 0;
     odol_lod->uv_scale[2] = 1;
     odol_lod->uv_scale[3] = 1;
+
+    odol_lod->vertexboneref_is_simple = 1;
+
+    if (odol_lod->vertexboneref != 0) {
+        for (i = 0; i < odol_lod->num_points; i++) {
+            if (i == 0)
+                continue;
+            if (odol_lod->vertexboneref[i - 1].num_bones != odol_lod->vertexboneref[i].num_bones)
+                break;
+            for (j = 0; j < 4; j++) {
+                if (odol_lod->vertexboneref[i - 1].weights[j][0] != odol_lod->vertexboneref[i].weights[j][0])
+                    break;
+                if (odol_lod->vertexboneref[i - 1].weights[j][1] != odol_lod->vertexboneref[i].weights[j][1])
+                    break;
+            }
+            if (j < 4)
+                break;
+        }
+
+        if (i < odol_lod->num_points)
+            odol_lod->vertexboneref_is_simple = 0;
+    }
 }
 
 
@@ -1311,7 +1373,7 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite(&odol_lod->icon_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->selected_color, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->flags, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->vertex_bone_ref_is_simple, sizeof(bool), 1, f_target);
+    fwrite(&odol_lod->vertexboneref_is_simple, sizeof(bool), 1, f_target);
 
     fp_vertextable_size = ftell(f_target);
     fwrite("\0\0\0\0", 4, 1, f_target);
@@ -1366,7 +1428,21 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         }
     }
 
-    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0", 12, 1, f_target);
+    // ST coordinates
+    fwrite("\0\0\0\0", 4, 1, f_target);
+
+    // vertex bone ref
+    if (odol_lod->vertexboneref == 0 || odol_lod->num_points == 0) {
+        fwrite("\0\0\0\0", 4, 1, f_target);
+    } else {
+        fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
+        fputc(0, f_target);
+        fwrite(odol_lod->vertexboneref, sizeof(struct odol_vertexboneref), odol_lod->num_points, f_target);
+    }
+
+    // neighbor bone ref
+    fwrite("\0\0\0\0", 4, 1, f_target);
+
 
     temp = ftell(f_target) - fp_vertextable_size;
     fseek(f_target, fp_vertextable_size, SEEK_SET);
