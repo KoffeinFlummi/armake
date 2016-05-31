@@ -1236,9 +1236,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
         fwrite(odol_selection->vertices, sizeof(point_index) * odol_selection->num_vertices, 1, f_target);
     }
 
-    odol_selection->num_vertex_weights = 0;
     fwrite(&odol_selection->num_vertex_weights, sizeof(uint32_t), 1, f_target);
-    return;
     if (odol_selection->num_vertex_weights > 0) {
         fputc(0, f_target);
         fwrite(odol_selection->vertex_weights, sizeof(uint8_t) * odol_selection->num_vertex_weights, 1, f_target);
