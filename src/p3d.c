@@ -1586,7 +1586,7 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
             num = 0;
             for (k = 0; k < model_info->skeleton->num_animations; k++) {
                 anim = &model_info->skeleton->animations[k];
-                if (strcmp(anim->selection, model_info->skeleton->bones[j].name) == 0)
+                if (stricmp(anim->selection, model_info->skeleton->bones[j].name) == 0)
                     num++;
             }
 
@@ -1801,6 +1801,7 @@ int mlod2odol(char *source, char *target) {
         free(odol_lod.points);
         free(odol_lod.normals);
         free(odol_lod.sections);
+        free(odol_lod.vertexboneref);
 
         for (j = 0; j < odol_lod.num_selections; j++) {
             free(odol_lod.selections[j].faces);
