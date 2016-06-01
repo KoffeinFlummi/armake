@@ -1509,7 +1509,16 @@ void calculate_axis(struct animation *anim, uint32_t num_lods, struct mlod_lod *
     }
 
     anim->axis_dir = vector_sub(anim->axis_dir, anim->axis_pos);
-    anim->axis_dir = vector_normalize(anim->axis_dir);
+
+    if (anim->type < TYPE_TRANSLATION)
+        anim->axis_dir = vector_normalize(anim->axis_dir);
+    else
+        anim->axis_pos = empty_vector;
+
+    if (anim->type >= TYPE_ROTATION_X && anim->type <= TYPE_ROTATION_Z) {
+        anim->axis_dir = empty_vector;
+        anim->axis_dir.x = 1.0f;
+    }
 }
 
 
