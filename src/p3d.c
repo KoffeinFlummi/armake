@@ -498,29 +498,29 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct 
     if (odol_lod->vertexboneref != 0) {
         memset(&odol_lod->vertexboneref[odol_lod->num_points], 0, sizeof(struct odol_vertexboneref));
 
-        for (i = 0; i < model_info->skeleton->num_bones; i++) {
-            for (j = 0; j < mlod_lod->num_selections; j++) {
-                if (stricmp(model_info->skeleton->bones[i].name,
-                        mlod_lod->selections[j].name) == 0)
+        for (i = 0; i < mlod_lod->num_selections; i++) {
+            if (mlod_lod->selections[i].points[point_index_mlod] == 0)
+                continue;
+
+            for (j = 0; j < model_info->skeleton->num_bones; j++) {
+                if (stricmp(model_info->skeleton->bones[j].name,
+                        mlod_lod->selections[i].name) == 0)
                     break;
             }
 
-            if (j == mlod_lod->num_selections)
-                continue;
-
-            if (mlod_lod->selections[j].points[point_index_mlod] == 0)
+            if (j == model_info->skeleton->num_bones)
                 continue;
 
             if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 4) {
-                warningf("LOD %f vertex %u is part of more than 4 bones.\n", mlod_lod->resolution, point_index_mlod);
+                warningf("Vertex %u of LOD %f is part of more than 4 bones.\n", mlod_lod->resolution, point_index_mlod);
                 continue;
             }
 
             weight_index = odol_lod->vertexboneref[odol_lod->num_points].num_bones;
             odol_lod->vertexboneref[odol_lod->num_points].num_bones++;
 
-            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->bonelinks[i].links[0];
-            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[j].points[point_index_mlod];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->bonelinks[j].links[0];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[i].points[point_index_mlod];
 
             // convert weight
             if (odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] == 0x01)
