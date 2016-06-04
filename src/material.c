@@ -104,7 +104,6 @@ int read_material(struct material *material) {
     char config_path[2048];
     char temp[2048];
     char shader[2048];
-    int success;
     int i;
     struct color default_color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
