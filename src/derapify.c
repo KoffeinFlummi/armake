@@ -245,6 +245,10 @@ int seek_definition(FILE *f, char *config_path) {
     if (success >= 0)
         return success;
 
+    // No containing class
+    if (strchr(config_path, '>') == NULL)
+        return 1;
+
     // Try to find the definition
     int i;
     char containing[2048];
@@ -406,12 +410,108 @@ int read_float(FILE *f, char *config_path, float *result) {
 }
 
 
-int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize) {
+int read_long_array(FILE *f, char *config_path, int32_t *array, int size) {
     /*
      * Reads the given array from config. size should be the maximum number of
      * elements in the array, buffsize the length of the individual buffers.
      *
-     * At the moment, only one-dimensional string arrays are supported.
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
+     */
+
+    int i;
+    int success;
+    uint8_t temp;
+    uint32_t num_entries;
+    float float_value;
+
+    success = seek_definition(f, config_path);
+    if (success != 0)
+        return success;
+
+    temp = fgetc(f);
+    if (temp != 2)
+        return 1;
+
+    while (fgetc(f) != 0);
+
+    num_entries = read_compressed_int(f);
+
+    for (i = 0; i < num_entries; i++) {
+        // Array is full
+        if (i == size)
+            return 2;
+
+        temp = fgetc(f);
+        if (temp != 1 && temp != 2)
+            return 3;
+
+        if (fread(&array[i], sizeof(int32_t), 1, f) != 1)
+            return 3;
+
+        if (temp == 1) {
+            memcpy(&float_value, &array[i], sizeof(int32_t));
+            array[i] = (int32_t)float_value;
+        }
+    }
+
+    return 0;
+}
+
+
+int read_float_array(FILE *f, char *config_path, float *array, int size) {
+    /*
+     * Reads the given array from config. size should be the maximum number of
+     * elements in the array, buffsize the length of the individual buffers.
+     *
+     * Returns -1 if the value could not be found, 0 on success
+     * and a positive integer on failure.
+     */
+
+    int i;
+    int success;
+    uint8_t temp;
+    uint32_t num_entries;
+    uint32_t long_value;
+
+    success = seek_definition(f, config_path);
+    if (success != 0)
+        return success;
+
+    temp = fgetc(f);
+    if (temp != 2)
+        return 1;
+
+    while (fgetc(f) != 0);
+
+    num_entries = read_compressed_int(f);
+
+    for (i = 0; i < num_entries; i++) {
+        // Array is full
+        if (i == size)
+            return 2;
+
+        temp = fgetc(f);
+        if (temp != 1 && temp != 2)
+            return 3;
+
+        if (fread(&array[i], sizeof(float), 1, f) != 1)
+            return 3;
+
+        if (temp == 2) {
+            memcpy(&long_value, &array[i], sizeof(float));
+            array[i] = (float)long_value;
+        }
+    }
+
+    return 0;
+}
+
+
+int read_string_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize) {
+    /*
+     * Reads the given array from config. size should be the maximum number of
+     * elements in the array, buffsize the length of the individual buffers.
      *
      * Returns -1 if the value could not be found, 0 on success
      * and a positive integer on failure.

@@ -319,7 +319,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         i = 0;
         if (strlen(buffer) > 0) {
             sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", buffer);
-            success = read_array(f, config_path, (char *)bones, MAXBONES * 2, 512);
+            success = read_string_array(f, config_path, (char *)bones, MAXBONES * 2, 512);
             if (success > 0) {
                 errorf("Failed to read bones.\n");
                 return success;
@@ -332,7 +332,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         }
 
         sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", skeleton->name);
-        success = read_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
+        success = read_string_array(f, config_path, (char *)bones + i * 512, MAXBONES * 2 - i, 512);
         if (success > 0) {
             errorf("Failed to read bones.\n");
             return success;
@@ -360,7 +360,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     i = 0;
     if (strlen(buffer) > 0) {
         sprintf(config_path, "CfgModels >> %s >> sections", buffer);
-        success = read_array(f, config_path, (char *)skeleton->sections, MAXSECTIONS, 512);
+        success = read_string_array(f, config_path, (char *)skeleton->sections, MAXSECTIONS, 512);
         if (success > 0) {
             errorf("Failed to read sections.\n");
             return success;
@@ -373,7 +373,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     }
 
     sprintf(config_path, "CfgModels >> %s >> sections", model_name);
-    success = read_array(f, config_path, (char *)skeleton->sections + i * 512, MAXSECTIONS - i, 512);
+    success = read_string_array(f, config_path, (char *)skeleton->sections + i * 512, MAXSECTIONS - i, 512);
     if (success > 0) {
         errorf("Failed to read sections.\n");
         return success;
