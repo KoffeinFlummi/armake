@@ -30,6 +30,7 @@
 #include "preprocess.h"
 #include "utils.h"
 #include "derapify.h"
+#include "matrix.h"
 #include "material.h"
 
 
@@ -220,18 +221,8 @@ int read_material(struct material *material) {
         material->textures[i].type11_bool = 0;
 
         material->transforms[i].uv_source = 1;
-        material->transforms[i].transform[0][0] = 1.0f;
-        material->transforms[i].transform[0][1] = 0.0f;
-        material->transforms[i].transform[0][2] = 0.0f;
-        material->transforms[i].transform[1][0] = 0.0f;
-        material->transforms[i].transform[1][1] = 1.0f;
-        material->transforms[i].transform[1][2] = 0.0f;
-        material->transforms[i].transform[2][0] = 0.0f;
-        material->transforms[i].transform[2][1] = 0.0f;
-        material->transforms[i].transform[2][2] = 1.0f;
-        material->transforms[i].transform[3][0] = 0.0f;
-        material->transforms[i].transform[3][1] = 0.0f;
-        material->transforms[i].transform[3][2] = 0.0f;
+        memset(material->transforms[i].transform, 0, 12 * sizeof(float));
+        memcpy(material->transforms[i].transform, &identity_matrix, sizeof(identity_matrix));
 
         if (i != 0) {
             snprintf(config_path, sizeof(config_path), "Stage%i >> uvTransform >> aside", i + 1);
