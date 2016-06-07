@@ -118,6 +118,40 @@ int read_material(struct material *material) {
     current_operation = OP_MATERIAL;
     strcpy(current_target, temp);
 
+    // Write default values
+    material->type = MATERIALTYPE;
+    material->depr_1 = 1;
+    material->depr_2 = 1;
+    material->depr_3 = 1;
+    material->emissive = default_color;
+    material->ambient = default_color;
+    material->diffuse = default_color;
+    material->forced_diffuse = default_color;
+    material->specular = default_color;
+    material->specular2 = default_color;
+    material->specular_power = 1.0f;
+    material->pixelshader_id = 0;
+    material->vertexshader_id = 0;
+    material->num_textures = 1;
+    material->num_transforms = 1;
+
+    material->textures = (struct stage_texture *)malloc(sizeof(struct stage_texture) * material->num_textures);
+    material->transforms = (struct stage_transform *)malloc(sizeof(struct stage_transform) * material->num_transforms);
+
+    material->textures[0].path[0] = 0;
+    material->textures[0].texture_filter = 3;
+    material->textures[0].transform_index = 0;
+    material->textures[0].type11_bool = 0;
+
+    material->transforms[0].uv_source = 1;
+    memset(material->transforms[0].transform, 0, 12 * sizeof(float));
+    memcpy(material->transforms[0].transform, &identity_matrix, sizeof(identity_matrix));
+
+    material->dummy_texture.path[0] = 0;
+    material->dummy_texture.texture_filter = 3;
+    material->dummy_texture.transform_index = 0;
+    material->dummy_texture.type11_bool = 0;
+
     if (find_file(temp, "", actual_path, NULL)) {
         errorf("Failed to find material %s.\n", material->path);
         return 1;
@@ -142,33 +176,17 @@ int read_material(struct material *material) {
         return 3;
     }
 
-    material->type = MATERIALTYPE;
-    material->depr_1 = 1;
-    material->depr_2 = 1;
-    material->depr_3 = 1;
-
     // Read colors
-    material->emissive = default_color;
     read_float_array(f, "emmisive", (float *)&material->emissive, 4); // "Did you mean: emissive?"
-
-    material->ambient = default_color;
     read_float_array(f, "ambient", (float *)&material->ambient, 4);
-
-    material->diffuse = default_color;
     read_float_array(f, "diffuse", (float *)&material->diffuse, 4);
-
-    material->forced_diffuse = default_color;
     read_float_array(f, "forcedDiffuse", (float *)&material->forced_diffuse, 4);
-
-    material->specular = default_color;
     read_float_array(f, "specular", (float *)&material->specular, 4);
     material->specular2 = material->specular;
 
-    material->specular_power = 1.0f;
     read_float(f, "specularPower", &material->specular_power);
 
     // Read shaders
-    material->pixelshader_id = 0;
     if (!read_string(f, "PixelShaderID", shader, sizeof(shader))) {
         for (i = 0; i < sizeof(pixelshaders) / sizeof(struct shader_ref); i++) {
             if (stricmp((char *)pixelshaders[i].name, shader) == 0)
@@ -181,7 +199,6 @@ int read_material(struct material *material) {
         material->pixelshader_id = pixelshaders[i].id;
     }
 
-    material->vertexshader_id = 0;
     if (!read_string(f, "VertexShaderID", shader, sizeof(shader))) {
         for (i = 0; i < sizeof(vertexshaders) / sizeof(struct shader_ref); i++) {
             if (stricmp((char *)vertexshaders[i].name, shader) == 0)
@@ -195,8 +212,6 @@ int read_material(struct material *material) {
     }
 
     // Read stages
-    material->num_textures = 1;
-    material->num_transforms = 1;
     for (i = 1; i < MAXSTAGES; i++) {
         snprintf(config_path, sizeof(config_path), "Stage%i >> texture", i);
         if (read_string(f, config_path, temp, sizeof(temp)))
@@ -205,6 +220,8 @@ int read_material(struct material *material) {
         material->num_transforms++;
     }
 
+    free(material->textures);
+    free(material->transforms);
     material->textures = (struct stage_texture *)malloc(sizeof(struct stage_texture) * material->num_textures);
     material->transforms = (struct stage_transform *)malloc(sizeof(struct stage_transform) * material->num_transforms);
 
@@ -239,10 +256,6 @@ int read_material(struct material *material) {
         }
     }
 
-    material->dummy_texture.path[0] = 0;
-    material->dummy_texture.texture_filter = 3;
-    material->dummy_texture.transform_index = 0;
-    material->dummy_texture.type11_bool = 0;
     read_string(f, "StageTI >> texture", material->dummy_texture.path, sizeof(material->dummy_texture.path));
 
     // Clean up
