@@ -206,7 +206,6 @@ struct odol_lod {
     point_index *point_to_vertex;
     point_index *vertex_to_point;
     point_index *face_lookup;
-    point_index *face_lookup_reverse;
     uint32_t num_faces;
     uint32_t offset_sections;
     uint16_t always_0;
