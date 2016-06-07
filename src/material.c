@@ -153,7 +153,7 @@ int read_material(struct material *material) {
     material->dummy_texture.type11_bool = 0;
 
     if (find_file(temp, "", actual_path, NULL)) {
-        errorf("Failed to find material %s.\n", material->path);
+        warningf("Failed to find material %s.\n", material->path);
         return 1;
     }
 
@@ -162,7 +162,7 @@ int read_material(struct material *material) {
 
     // Rapify file
     if (rapify_file(actual_path, rapified_path)) {
-        errorf("Failed to rapify %s.\n", actual_path);
+        warningf("Failed to rapify %s.\n", actual_path);
         return 2;
     }
 
@@ -172,7 +172,7 @@ int read_material(struct material *material) {
     // Open rapified file
     f = fopen(rapified_path, "rb");
     if (!f) {
-        errorf("Failed to open rapified material.\n");
+        warningf("Failed to open rapified material.\n");
         return 3;
     }
 
@@ -261,7 +261,7 @@ int read_material(struct material *material) {
     // Clean up
     fclose(f);
     if (remove_file(rapified_path)) {
-        errorf("Failed to remove temporary material.\n");
+        warningf("Failed to remove temporary material.\n");
         return 4;
     }
 
