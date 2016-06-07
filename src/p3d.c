@@ -844,11 +844,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         face_end = 0;
         k = 0;
         for (i = 0; i < odol_lod->num_faces;) {
-            for (j = 0; j < MAXTEXTURES; j++) {
-                if (strcmp(textures[j], mlod_lod->faces[odol_lod->face_lookup[i]].texture_name) == 0)
-                    break;
-            }
-
             odol_lod->sections[k].face_start = i;
             odol_lod->sections[k].face_end = i;
             odol_lod->sections[k].face_index_start = face_start;
@@ -856,7 +851,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].min_bone_index = 0;
             odol_lod->sections[k].bones_count = odol_lod->num_items;
             odol_lod->sections[k].mat_dummy = 0;
-            odol_lod->sections[k].common_texture_index = (j < odol_lod->num_textures) ? j : -1;
+            odol_lod->sections[k].common_texture_index = -1;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup[i]].face_flags;
             odol_lod->sections[k].material_index = -1;
             odol_lod->sections[k].num_stages = 2;
@@ -864,6 +859,20 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].area_over_tex[0] = 1.0f; // @todo
             odol_lod->sections[k].area_over_tex[1] = 1.0f; // @todo
             odol_lod->sections[k].unknown_long = 0;
+
+            for (j = 0; j < odol_lod->num_textures; j++) {
+                if (strcmp(textures[j], mlod_lod->faces[odol_lod->face_lookup[i]].texture_name) == 0) {
+                    odol_lod->sections[k].common_texture_index = j;
+                    break;
+                }
+            }
+
+            for (j = 0; j < odol_lod->num_materials; j++) {
+                if (strcmp(odol_lod->materials[j].path, mlod_lod->faces[odol_lod->face_lookup[i]].material_name) == 0) {
+                    odol_lod->sections[k].material_index = j;
+                    break;
+                }
+            }
 
             for (j = i; j < odol_lod->num_faces; j++) {
                 if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].texture_name,
