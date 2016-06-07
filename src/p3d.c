@@ -685,12 +685,12 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             break;
         }
 
-        if (odol_lod->materials[j].path[0] == 0 && mlod_lod->faces[i].material_name[0] != 0) {
-            strcpy(odol_lod->materials[j].path, mlod_lod->faces[i].material_name);
-            odol_lod->num_materials++;
-            odol_lod->materials[j].type = 11; // @todo
-            //read_material(&odol_lod->materials[j]);
-        }
+        if (odol_lod->materials[j].path[0] != 0 || mlod_lod->faces[i].material_name[0] == 0)
+            continue;
+
+        strcpy(odol_lod->materials[j].path, mlod_lod->faces[i].material_name);
+        odol_lod->num_materials++;
+        read_material(&odol_lod->materials[j]);
     }
 
     odol_lod->textures = (char *)malloc(size);
@@ -1229,35 +1229,29 @@ void write_material(FILE *f_target, struct material *material) {
     fwrite(&material->specular, sizeof(struct color), 1, f_target);
     fwrite(&material->specular2, sizeof(struct color), 1, f_target);
     fwrite(&material->specular_power, sizeof(float), 1, f_target);
-    fwrite(&material->pixel_shader_id, sizeof(uint32_t), 1, f_target);
-    fwrite(&material->vertex_shader_id, sizeof(uint32_t), 1, f_target);
-    material->depr_1 = 256;
+    fwrite(&material->pixelshader_id, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->vertexshader_id, sizeof(uint32_t), 1, f_target);
     fwrite(&material->depr_1, sizeof(uint32_t), 1, f_target);
-    material->depr_2 = 512;
     fwrite(&material->depr_2, sizeof(uint32_t), 1, f_target);
     fwrite( material->surface, strlen(material->surface) + 1, 1, f_target);
-    material->depr_3 = 1024;
     fwrite(&material->depr_3, sizeof(uint32_t), 1, f_target);
     fwrite(&material->render_flags, sizeof(uint32_t), 1, f_target);
-    material->num_textures = 0; // @todo
     fwrite(&material->num_textures, sizeof(uint32_t), 1, f_target);
-    fwrite(&material->num_textures, sizeof(uint32_t), 1, f_target);
+    fwrite(&material->num_transforms, sizeof(uint32_t), 1, f_target);
 
     for (i = 0; i < material->num_textures; i++) {
         fwrite(&material->textures[i].texture_filter, sizeof(uint32_t), 1, f_target);
         fwrite( material->textures[i].path, strlen(material->textures[i].path) + 1, 1, f_target);
         fwrite(&material->textures[i].transform_index, sizeof(uint32_t), 1, f_target);
-        if (material->type >= 11)
-            fwrite(&material->textures[i].type11_bool, sizeof(bool), 1, f_target);
+        fwrite(&material->dummy_texture.type11_bool, sizeof(bool), 1, f_target);
     }
 
-    fwrite( material->transforms, sizeof(struct stage_transform) * material->num_textures, 1, f_target);
+    fwrite( material->transforms, sizeof(struct stage_transform), material->num_transforms, f_target);
 
     fwrite(&material->dummy_texture.texture_filter, sizeof(uint32_t), 1, f_target);
     fwrite( material->dummy_texture.path, strlen(material->dummy_texture.path) + 1, 1, f_target);
     fwrite(&material->dummy_texture.transform_index, sizeof(uint32_t), 1, f_target);
-    if (material->type >= 11)
-        fwrite(&material->dummy_texture.type11_bool, sizeof(bool), 1, f_target);
+    fwrite(&material->dummy_texture.type11_bool, sizeof(bool), 1, f_target);
 }
 
 
@@ -1305,7 +1299,6 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         ptr += strlen(ptr) + 1;
     fwrite( odol_lod->textures, ptr - odol_lod->textures, 1, f_target);
 
-    odol_lod->num_materials = 0;
     fwrite(&odol_lod->num_materials, sizeof(uint32_t), 1, f_target);
     for (i = 0; i < odol_lod->num_materials; i++)
         write_material(f_target, &odol_lod->materials[i]);
@@ -1764,7 +1757,6 @@ int mlod2odol(char *source, char *target) {
         free(odol_lod.items);
         free(odol_lod.bonelinks);
         free(odol_lod.textures);
-        free(odol_lod.materials);
         free(odol_lod.point_to_vertex);
         free(odol_lod.vertex_to_point);
         free(odol_lod.face_lookup);
@@ -1774,6 +1766,13 @@ int mlod2odol(char *source, char *target) {
         free(odol_lod.normals);
         free(odol_lod.sections);
         free(odol_lod.vertexboneref);
+
+        for (j = 0; j < odol_lod.num_materials; j++) {
+            free(odol_lod.materials[j].textures);
+            free(odol_lod.materials[j].transforms);
+        }
+
+        free(odol_lod.materials);
 
         for (j = 0; j < odol_lod.num_selections; j++) {
             free(odol_lod.selections[j].faces);

@@ -26,6 +26,11 @@
 #include "utils.h"
 
 
+struct shader_ref {
+    uint32_t id;
+    char name[512];
+};
+
 struct color {
     float r;
     float g;
@@ -55,14 +60,15 @@ struct material {
     struct color specular;
     struct color specular2;
     float specular_power;
-    uint32_t pixel_shader_id;
-    uint32_t vertex_shader_id;
+    uint32_t pixelshader_id;
+    uint32_t vertexshader_id;
     uint32_t depr_1;
     uint32_t depr_2;
     char surface[2048];
     uint32_t depr_3;
     uint32_t render_flags;
     uint32_t num_textures;
+    uint32_t num_transforms;
     struct stage_texture *textures;
     struct stage_transform *transforms;
     struct stage_texture dummy_texture;

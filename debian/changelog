@@ -1,3 +1,11 @@
+armake (0.4-1) precise; urgency=low
+
+  * Various fixes (especially in regards to animations/sections)
+  * Add support for materials
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 05 Jun 2016 03:01:00 +0200
+
+
 armake (0.3-1) precise; urgency=low
 
   * Various fixes

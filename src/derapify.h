@@ -31,7 +31,11 @@ int read_int(FILE *f, char *config_path, int32_t *result);
 
 int read_float(FILE *f, char *config_path, float *result);
 
-int read_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize);
+int read_long_array(FILE *f, char *config_path, int32_t *array, int size);
+
+int read_float_array(FILE *f, char *config_path, float *array, int size);
+
+int read_string_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize);
 
 int read_classes(FILE *f, char *config_path, char *array, int size, size_t buffsize);
 
