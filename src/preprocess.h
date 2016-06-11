@@ -37,7 +37,7 @@ char include_stack[MAXINCLUDES][1024];
 
 bool matches_includepath(char *path, char *includepath, char *includefolder);
 
-int find_file(char *includepath, char *origin, char *actualpath, char *cwd);
+int find_file(char *includepath, char *origin, char *actualpath);
 
 int resolve_macros(char *string, size_t buffsize, struct constant *constants);
 

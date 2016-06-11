@@ -222,7 +222,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
 }
 
 
-int find_file(char *includepath, char *origin, char *actualpath, char *cwd) {
+int find_file(char *includepath, char *origin, char *actualpath) {
     /*
      * Finds the file referenced in includepath in the includefolder. origin
      * describes the file in which the include is used (used for relative
@@ -240,7 +240,7 @@ int find_file(char *includepath, char *origin, char *actualpath, char *cwd) {
     extern char include_folders[MAXINCLUDEFOLDERS][512];
 
     for (i = 0; i < MAXINCLUDEFOLDERS && include_folders[i][0] != 0; i++) {
-        success = find_file_helper(includepath, origin, include_folders[i], actualpath, cwd);
+        success = find_file_helper(includepath, origin, include_folders[i], actualpath, NULL);
 
         if (success != 2)
             return success;
@@ -750,7 +750,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
                 return 6;
             }
             *strchr(includepath, '"') = 0;
-            if (find_file(includepath, source, actualpath, NULL)) {
+            if (find_file(includepath, source, actualpath)) {
                 errorf("Failed to find %s.\n", includepath);
                 return 7;
             }
