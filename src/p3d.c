@@ -574,6 +574,8 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
 
 void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         struct model_info *model_info) {
+    extern int current_operation;
+    extern char current_target[2048];
     unsigned long i;
     unsigned long j;
     unsigned long k;
@@ -583,6 +585,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
+    char temp[2048];
     struct triplet normal;
     struct uv_pair uv_coords;
 
@@ -686,9 +689,14 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         if (odol_lod->materials[j].path[0] != 0 || mlod_lod->faces[i].material_name[0] == 0)
             continue;
 
+        strcpy(temp, current_target);
+
         strcpy(odol_lod->materials[j].path, mlod_lod->faces[i].material_name);
         odol_lod->num_materials++;
         read_material(&odol_lod->materials[j]);
+
+        current_operation = OP_P3D;
+        strcpy(current_target, temp);
     }
 
     odol_lod->textures = (char *)malloc(size);
