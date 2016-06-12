@@ -648,18 +648,16 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->sphere = get_sphere(mlod_lod, odol_lod->autocenter_pos);
 
-    for (i = 0; i < MAXTEXTURES; i++)
-        textures[i][0] = 0;
-
     // Textures & Materials
     odol_lod->num_textures = 0;
     odol_lod->num_materials = 0;
     odol_lod->materials = (struct material *)malloc(sizeof(struct material) * MAXMATERIALS);
+    memset(textures, 0, sizeof(textures));
     memset(odol_lod->materials, 0, sizeof(struct material) * MAXMATERIALS);
 
     size = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
-        for (j = 0; j < MAXTEXTURES && textures[j][0] != 0; j++) {
+        for (j = 0; j < odol_lod->num_textures; j++) {
             if (strcmp(mlod_lod->faces[i].texture_name, textures[j]) == 0)
                 break;
         }
@@ -669,10 +667,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             break;
         }
 
-        if (textures[j][0] == 0 && mlod_lod->faces[i].texture_name[0] != 0) {
+        if (j >= odol_lod->num_textures) {
             strcpy(textures[j], mlod_lod->faces[i].texture_name);
-            odol_lod->num_textures++;
             size += strlen(textures[j]) + 1;
+            odol_lod->num_textures++;
         }
 
         for (j = 0; j < MAXMATERIALS && odol_lod->materials[j].path[0] != 0; j++) {
@@ -695,7 +693,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->textures = (char *)malloc(size);
     ptr = odol_lod->textures;
-    for (i = 0; i < MAXTEXTURES && textures[i][0] != 0; i++) {
+    for (i = 0; i < odol_lod->num_textures; i++) {
         strncpy(ptr, textures[i], strlen(textures[i]) + 1);
         ptr += strlen(textures[i]) + 1;
     }
