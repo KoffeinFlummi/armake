@@ -641,6 +641,9 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
                 return 3;
             }
 
+            if (constants[i].name[0] != 0)
+                nwarningf("redefinition-wo-undef", "Constant \"%s\" is being redefined without an #undef in line %i.\n", definition, line);
+
             ptr = buffer + strlen(definition) + 8;
             while (*ptr != ' ' && *ptr != '\t' && *ptr != '(' && *ptr != '\n')
                 ptr++;
@@ -758,6 +761,9 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
             success = preprocess(actualpath, f_target, constants);
             if (success)
                 return success;
+
+            current_operation = OP_PREPROCESS;
+            strcpy(current_target, source);
 
             for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++);
             include_stack[i - 1][0] = 0;
