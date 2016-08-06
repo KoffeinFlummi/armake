@@ -710,6 +710,40 @@ int rapify_file(char *source, char *target) {
     current_operation = OP_RAPIFY;
     strcpy(current_target, source);
 
+    // Check if the file is already rapified
+    f_temp = fopen(source, "rb");
+    if (!f_temp) {
+        errorf("Failed to open %s.\n", source);
+        return 1;
+    }
+
+    fread(buffer, 4, 1, f_temp);
+    if (strncmp(buffer, "\0raP", 4) == 0) {
+        f_target = fopen(target, "wb");
+        if (!f_target) {
+            errorf("Failed to open %s.\n", target);
+            return 2;
+        }
+
+        fseek(f_temp, 0, SEEK_END);
+        datasize = ftell(f_temp);
+
+        fseek(f_temp, 0, SEEK_SET);
+        for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+            fread(buffer, sizeof(buffer), 1, f_temp);
+            fwrite(buffer, sizeof(buffer), 1, f_target);
+        }
+        fread(buffer, datasize - i, 1, f_temp);
+        fwrite(buffer, datasize - i, 1, f_target);
+
+        fclose(f_temp);
+        fclose(f_target);
+
+        return 0;
+    } else {
+        fclose(f_temp);
+    }
+
 #ifdef _WIN32
     char temp_name[2048];
     if (!GetTempFileName(".", "amk", 0, temp_name)) {
