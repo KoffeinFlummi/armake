@@ -57,6 +57,7 @@ int binarize_file(char *source, char *target) {
     strncpy(fileext, strrchr(source, '.'), 64);
 
     if (!strcmp(fileext, ".cpp") ||
+            !strcmp(fileext, ".rvmat") ||
             !strcmp(fileext, ".ext"))
         return rapify_file(source, target);
     if (!strcmp(fileext, ".p3d"))
