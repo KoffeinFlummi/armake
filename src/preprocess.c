@@ -605,7 +605,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         // second constant is line number
         if (constants[1].value == 0)
             constants[1].value = (char *)malloc(16);
-        sprintf(constants[1].value, "%i", line);
+        sprintf(constants[1].value, "%i", line - 1);
 
         // get the constant name
         if (strlen(buffer) >= 9 && (strncmp(buffer, "#define", 7) == 0 ||
