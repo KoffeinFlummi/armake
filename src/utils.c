@@ -378,6 +378,7 @@ void escape_string(char *buffer, size_t buffsize) {
         } else if (*ptr == '\n') {
             tmp_array[1] = 'n';
         } else if (*ptr == '"') {
+            tmp_array[0] = '"';
             tmp_array[1] = '"';
         } else {
             tmp_array[0] = *ptr;
