@@ -63,12 +63,14 @@ int unpack() {
     FILE *f_target;
     int num_files;
     long i;
+    long inc_i;
     long j;
     long fp_tmp;
     char prefix[2048] = { 0 };
     char full_path[2048];
     char buffer[2048];
     struct header headers[MAXFILES];
+    bool filtered_file_found;
 
     current_operation = OP_UNPACK;
     strcpy(current_target, args.source);
@@ -149,6 +151,18 @@ int unpack() {
                 headers[i].name[j] = PATHSEP;
         }
 #endif
+
+        if (args.include) {
+            filtered_file_found = false;
+            for (inc_i = 0; inc_i < MAXINCLUDEFOLDERS && include_folders[inc_i][0] != 0; inc_i++) {
+                if (strlen(include_folders[inc_i]) <= strlen(headers[i].name) && strncmp(headers[i].name, include_folders[inc_i], strlen(headers[i].name)) == 0) {
+                    filtered_file_found = true;
+                    break;
+                }
+            }
+            if(!filtered_file_found) 
+                continue;
+        }
 
         // get full path
         strcpy(full_path, args.target);
