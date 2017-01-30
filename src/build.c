@@ -31,10 +31,12 @@
 #include "docopt.h"
 #include "binarize.h"
 #include "filesystem.h"
+#include "utils.h"
+#include "sign.h"
 #include "build.h"
 
 
-int binarize_file_callback(char *root, char *source, char *includefolder) {
+int binarize_file_callback(char *root, char *source, char *junk) {
     int success;
     char target[2048];
 
@@ -45,7 +47,7 @@ int binarize_file_callback(char *root, char *source, char *includefolder) {
         strcpy(target + strlen(target) - 3, "bin");
     }
 
-    success = binarize_file(source, target, includefolder);
+    success = binarize_file(source, target);
 
     if (success > 0)
         return success * -1;
@@ -55,8 +57,16 @@ int binarize_file_callback(char *root, char *source, char *includefolder) {
 
 
 bool file_allowed(char *filename) {
+    int i;
+    extern char exclude_files[MAXEXCLUDEFILES][512];
+
     if (strcmp(filename, "$PBOPREFIX$") == 0)
         return false;
+
+    for (i = 0; i < MAXEXCLUDEFILES && exclude_files[i][0] != 0; i++) {
+        if (matches_glob(filename, exclude_files[i]))
+            return false;
+    }
 
     return true;
 }
@@ -67,15 +77,15 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     FILE *f_target;
     char filename[1024];
 
-    f_target = fopen(target, "a");
-    if (!f_target)
-        return -1;
-
     filename[0] = 0;
     strcat(filename, source + strlen(root) + 1);
 
     if (!file_allowed(filename))
         return 0;
+
+    f_target = fopen(target, "ab");
+    if (!f_target)
+        return -1;
 
     struct {
         uint32_t method;
@@ -88,9 +98,12 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     header.reserved = 0;
     header.timestamp = 0;
 
-    f_source = fopen(source, "r");
-    if (!f_source)
+    f_source = fopen(source, "rb");
+    if (!f_source) {
+        fclose(f_target);
         return -2;
+    }
+
     fseek(f_source, 0, SEEK_END);
     header.datasize = ftell(f_source);
     header.originalsize = header.datasize;
@@ -98,7 +111,8 @@ int write_header_to_pbo(char *root, char *source, char *target) {
 
     // replace pathseps on linux
 #ifndef _WIN32
-    for (int i = 0; i < strlen(filename); i++) {
+    int i;
+    for (i = 0; i < strlen(filename); i++) {
         if (filename[i] == '/')
             filename[i] = '\\';
     }
@@ -128,13 +142,13 @@ int write_data_to_pbo(char *root, char *source, char *target) {
     if (!file_allowed(filename))
         return 0;
 
-    f_source = fopen(source, "r");
+    f_source = fopen(source, "rb");
     if (!f_source)
         return -1;
     fseek(f_source, 0, SEEK_END);
     datasize = ftell(f_source);
 
-    f_target = fopen(target, "a");
+    f_target = fopen(target, "ab");
     if (!f_target)
         return -2;
 
@@ -162,7 +176,7 @@ int hash_file(char *path, unsigned char *hash) {
 
     SHA1Reset(&sha);
 
-    file = fopen(path, "r");
+    file = fopen(path, "rb");
     if (!file)
         return -1;
 
@@ -176,6 +190,8 @@ int hash_file(char *path, unsigned char *hash) {
     }
     fread(buffer, filesize - i, 1, file);
     SHA1Input(&sha, (const unsigned char *)buffer, filesize - i);
+
+    fclose(file);
 
     if (!SHA1Result(&sha))
         return -2;
@@ -192,13 +208,19 @@ int hash_file(char *path, unsigned char *hash) {
 }
 
 
-int build(DocoptArgs args) {
+int build() {
+    extern DocoptArgs args;
+    extern int current_operation;
+    extern char current_target[2048];
     int i;
+
+    current_operation = OP_BUILD;
+    strcpy(current_target, args.source);
 
     // check if target already exists
     FILE *f_target;
     if (access(args.target, F_OK) != -1 && !args.force) {
-        printf("File %s already exists and --force was not set.\n", args.target);
+        errorf("File %s already exists and --force was not set.\n", args.target);
         return 1;
     }
 
@@ -206,12 +228,12 @@ int build(DocoptArgs args) {
     if (args.source[strlen(args.source) - 1] == PATHSEP)
         args.source[strlen(args.source) - 1] = 0;
 
-    char *includefolder = ".";
-    if (args.include)
-        includefolder = args.includefolder;
-
-    if (includefolder[strlen(includefolder) - 1] == PATHSEP)
-        includefolder[strlen(includefolder) - 1] = 0;
+    f_target = fopen(args.target, "wb");
+    if (!f_target) {
+        errorf("Failed to open %s.\n", args.target);
+        return 2;
+    }
+    fclose(f_target);
 
     // get addon prefix
     char prefixpath[1024];
@@ -219,10 +241,9 @@ int build(DocoptArgs args) {
     FILE *f_prefix;
     prefixpath[0] = 0;
     strcat(prefixpath, args.source);
-    prefixpath[strlen(prefixpath) + 1] = 0;
-    prefixpath[strlen(prefixpath)] = PATHSEP;
+    strcat(prefixpath, PATHSEP_STR);
     strcat(prefixpath, "$PBOPREFIX$");
-    f_prefix = fopen(prefixpath, "r");
+    f_prefix = fopen(prefixpath, "rb");
     if (!f_prefix) {
         if (strrchr(args.source, '/') == NULL)
             strncpy(addonprefix, args.source, sizeof(addonprefix));
@@ -230,15 +251,17 @@ int build(DocoptArgs args) {
             strncpy(addonprefix, strrchr(args.source, '/') + 1, sizeof(addonprefix));
     } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
+        fclose(f_prefix);
     }
     if (addonprefix[strlen(addonprefix) - 1] == '\n')
+        addonprefix[strlen(addonprefix) - 1] = '\0';
+    if (addonprefix[strlen(addonprefix) - 1] == '\r')
         addonprefix[strlen(addonprefix) - 1] = '\0';
 
     // replace pathseps on linux
 #ifndef _WIN32
-    char tmp[512];
+    char tmp[512] = "";
     char *p = NULL;
-    tmp[0] = 0;
     for (p = addonprefix; *p; p++) {
         if (*p == '\\' && tmp[strlen(tmp) - 1] == '/')
             continue;
@@ -255,18 +278,31 @@ int build(DocoptArgs args) {
     // create and prepare temp folder
     char tempfolder[1024];
     if (create_temp_folder(addonprefix, tempfolder, sizeof(tempfolder))) {
-        printf("Failed to create temp folder.\n");
+        errorf("Failed to create temp folder.\n");
+        remove_file(args.target);
         return 2;
     }
     if (copy_directory(args.source, tempfolder)) {
-        printf("Failed to copy to temp folder.\n");
+        errorf("Failed to copy to temp folder.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 3;
     }
 
     // preprocess and binarize stuff if required
-    if (!args.packonly) {
-        if (traverse_directory(tempfolder, binarize_file_callback, includefolder)) {
-            printf("Failed to preprocess some files.\n");
+    char nobinpath[1024];
+    char notestpath[1024];
+    strcpy(nobinpath, prefixpath);
+    strcpy(notestpath, prefixpath);
+    strcpy(nobinpath + strlen(nobinpath) - 11, "$NOBIN$");
+    strcpy(notestpath + strlen(notestpath) - 11, "$NOBIN-NOTEST$");
+    if (!args.packonly && access(nobinpath, F_OK) == -1 && access(notestpath, F_OK) == -1) {
+        if (traverse_directory(tempfolder, binarize_file_callback, "")) {
+            current_operation = OP_BUILD;
+            strcpy(current_target, args.source);
+            errorf("Failed to binarize some files.\n");
+            remove_file(args.target);
+            remove_folder(tempfolder);
             return 4;
         }
 
@@ -277,17 +313,22 @@ int build(DocoptArgs args) {
 
         if (access(configpath, F_OK) != -1) {
 #ifdef _WIN32
-            if (!DeleteFile(configpath))
-                return 5;
+            if (!DeleteFile(configpath)) {
 #else
-            if (remove(configpath))
-                return 5;
+            if (remove(configpath)) {
 #endif
+                remove_file(args.target);
+                remove_folder(tempfolder);
+                return 5;
+            }
         }
     }
 
+    current_operation = OP_BUILD;
+    strcpy(current_target, args.source);
+
     // write header extension
-    f_target = fopen(args.target, "w");
+    f_target = fopen(args.target, "wb");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     // write addonprefix with windows pathseps
     for (i = 0; i <= strlen(addonprefix); i++) {
@@ -301,14 +342,18 @@ int build(DocoptArgs args) {
 
     // write headers to file
     if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {
-        printf("Failed to write some file header(s) to PBO.\n");
+        errorf("Failed to write some file header(s) to PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 6;
     }
 
     // header boundary
-    f_target = fopen(args.target, "a");
+    f_target = fopen(args.target, "ab");
     if (!f_target) {
-        printf("Failed to write header boundary to PBO.\n");
+        errorf("Failed to write header boundary to PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 7;
     }
     for (i = 0; i < 21; i++)
@@ -317,16 +362,20 @@ int build(DocoptArgs args) {
 
     // write contents to file
     if (traverse_directory(tempfolder, write_data_to_pbo, args.target)) {
-        printf("Failed to pack some file(s) into the PBO.\n");
+        errorf("Failed to pack some file(s) into the PBO.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 8;
     }
 
     // write checksum to file
     unsigned char checksum[20];
     hash_file(args.target, checksum);
-    f_target = fopen(args.target, "a");
+    f_target = fopen(args.target, "ab");
     if (!f_target) {
-        printf("Failed to write checksum to file.\n");
+        errorf("Failed to write checksum to file.\n");
+        remove_file(args.target);
+        remove_folder(tempfolder);
         return 9;
     }
     fputc(0, f_target);
@@ -334,9 +383,42 @@ int build(DocoptArgs args) {
     fclose(f_target);
 
     // remove temp folder
-    if (remove_temp_folder()) {
-        printf("Failed to remove temp folder.\n");
+    if (remove_folder(tempfolder)) {
+        errorf("Failed to remove temp folder.\n");
         return 10;
+    }
+
+    // sign pbo
+    if (args.key) {
+        char keyname[512];
+        char path_signature[2048];
+
+        if (strcmp(strrchr(args.privatekey, '.'), ".biprivatekey") != 0) {
+            errorf("File %s doesn't seem to be a valid private key.\n", args.source);
+            return 1;
+        }
+
+        if (strchr(args.privatekey, '/') == NULL)
+            strcpy(keyname, args.privatekey);
+        else
+            strcpy(keyname, strrchr(args.privatekey, '/') + 1);
+        *strrchr(keyname, '.') = 0;
+
+        strcpy(path_signature, args.target);
+        strcat(path_signature, ".");
+        strcat(path_signature, keyname);
+        strcat(path_signature, ".bisign");
+
+        // check if target already exists
+        if (access(path_signature, F_OK) != -1 && !args.force) {
+            errorf("File %s already exists and --force was not set.\n", path_signature);
+            return 1;
+        }
+
+        if (sign_pbo(args.target, args.privatekey, path_signature)) {
+            errorf("Failed to sign file.\n");
+            return 2;
+        }
     }
 
     return 0;

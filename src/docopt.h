@@ -32,25 +32,42 @@
 #endif
 
 
+#define MAXEXCLUDEFILES 32
+#define MAXINCLUDEFOLDERS 32
+#define MAXWARNINGS 32
+
+
 typedef struct {
     /* commands */
     int binarize;
     int build;
+    int derapify;
     int img2paa;
+    int keygen;
     int paa2img;
+    int sign;
+    int unpack;
     /* arguments */
     char *includefolder;
+    char *indentation;
     char *paatype;
+    char *privatekey;
     char *source;
     char *target;
+    char *wname;
+    char *xlist;
     /* options without arguments */
     int compress;
+    int exclude;
     int force;
     int help;
     int include;
+    int indent;
+    int key;
     int packonly;
     int type;
     int version;
+    int warning;
     /* special */
     const char *usage_pattern;
     const char *help_message;
@@ -90,6 +107,13 @@ typedef struct Tokens {
     int i;
     char *current;
 } Tokens;
+
+
+DocoptArgs args;
+char exclude_files[MAXEXCLUDEFILES][512];
+char include_folders[MAXINCLUDEFOLDERS][512];
+char muted_warnings[MAXWARNINGS][512];
+
 
 Tokens tokens_new(int argc, char **argv);
 

@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -128,6 +129,11 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
             return 3;
 
         unescape_string(buffer, sizeof(buffer));
+    } else if (buffer[0] != '"' && buffer[0] != '\'') {
+        if (name == NULL)
+            nwarningf("unquoted-string", "String in array is not quoted properly.\n");
+        else
+            nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", name);
     }
 
     fwrite(buffer, strlen(buffer) + 1, 1, f_target);
@@ -281,6 +287,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
     char last = 0;
     char buffer[4096];
     char tmp[4096];
+    char name[512];
     char *ptr;
     uint32_t fp_start;
     uint32_t fp_tmp;
@@ -299,13 +306,25 @@ int rapify_class(FILE *f_source, FILE *f_target) {
     } else {
         if (lookahead_word(f_source, buffer, sizeof(buffer)))
             return 1;
-        if (strcmp(buffer, "class") != 0)
+        if (strcmp(buffer, "class") != 0) {
+            errorf("Expected \"class\", got \"%s\".\n", buffer);
             return 2;
+        }
 
         fseek(f_source, 6, SEEK_CUR);
         fp_tmp = ftell(f_source);
         if (fgets(buffer, sizeof(buffer), f_source) == NULL)
             return 3;
+
+        strncpy(name, buffer, sizeof(name));
+        trim_leading(name, sizeof(name));
+        for (ptr = name; *name != 0; ptr++) {
+            if (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n' ||
+                    *ptr == ':' || *ptr == '{') {
+                *ptr = 0;
+                break;
+            }
+        }
 
         while (strchr(buffer, '{') == NULL &&
                 strlen(buffer) < sizeof(buffer) - 1) {
@@ -314,12 +333,14 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                 return 4;
         }
 
+        if (strchr(buffer, '{') == NULL) {
+            errorf("Failed to find { for class \"%s\".\n", name);
+            return 5;
+        }
+
         if (strchr(buffer, ':') == NULL || strchr(buffer, '{') < strchr(buffer, ':')) {
             fputc(0, f_target);
         } else {
-            if (strchr(buffer, ':') > strchr(buffer, '{'))
-                return 5;
-
             ptr = strchr(buffer, ':') + 1;
             while (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
                 ptr++;
@@ -341,10 +362,12 @@ int rapify_class(FILE *f_source, FILE *f_target) {
     // FIRST ITERATION: get number of entries
     while (true) {
         if (feof(f_source)) {
-            if (is_root)
+            if (is_root) {
                 break;
-            else
+            } else {
+                errorf("Unexpected EOF in class \"%s\".\n", name);
                 return 1;
+            }
         }
 
         last = current;
@@ -366,10 +389,12 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             level--;
 
         if (level < 0) {
-            if (is_root)
+            if (is_root) {
+                errorf("Unexpected end-of-class (}).\n");
                 return 1;
-            else
+            } else {
                 break;
+            }
         }
 
         if (level == 0 && current == ';')
@@ -382,12 +407,23 @@ int rapify_class(FILE *f_source, FILE *f_target) {
 
     // SECOND ITERATION: write entries and class headers to file
     while (true) {
+        current = fgetc(f_source);
+        if (current == EOF)
+            break;
+        if (current != ' ' && current != '\t' && current != '\r' && current != '\n' && current != '}' &&
+                (current < 'a' || current > 'z') && (current < 'A' || current > 'Z')) {
+            errorf("Unexpected symbol after semi-colon: \"%c\".\n", current);
+            return 1;
+        }
+        fseek(f_source, -1, SEEK_CUR);
+
         if (skip_whitespace(f_source))
             break;
 
         if (lookahead_word(f_source, buffer, sizeof(buffer)))
             return 1;
 
+        trim_leading(buffer, sizeof(buffer));
         if (strlen(buffer) == 0)
             break;
 
@@ -436,7 +472,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                 fputc(0, f_target);
 
                 ptr = buffer;
-                while (*ptr != ' ' && *ptr != '\t' && *ptr != '{' && *ptr != ':')
+                while (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n' && *ptr != '{' && *ptr != ':')
                     ptr++;
                 *ptr = 0;
                 fwrite(buffer, strlen(buffer) + 1, 1, f_target);
@@ -473,12 +509,15 @@ int rapify_class(FILE *f_source, FILE *f_target) {
                     if (level == 0 && current == ';')
                         break;
 
-                    if (level < 0)
+                    if (level < 0) {
+                        errorf("Unexpected end-of-class (}).\n");
                         return 6;
+                    }
                 }
 
                 continue;
             } else {
+                errorf("This should never happen. If it does, you broke the laws of logic (or I am an idiot).\n");
                 return 7;
             }
         }
@@ -486,6 +525,11 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         // delete statement
         if (strcmp(buffer, "delete") == 0) {
             fputc(4, f_target);
+
+            fseek(f_source, 6, SEEK_CUR);
+
+            if (skip_whitespace(f_source))
+                return 2;
 
             if (lookahead_word(f_source, buffer, sizeof(buffer)))
                 return 2;
@@ -509,7 +553,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         //    return 2;
 
         // array
-        if (strcmp(buffer + strlen(buffer) - 2, "[]") == 0) {
+        if (strlen(buffer) > 2 && strcmp(buffer + strlen(buffer) - 2, "[]") == 0) {
             fseek(f_source, strlen(buffer), SEEK_CUR);
 
             buffer[strlen(buffer) - 2] = 0;
@@ -521,9 +565,12 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             current = fgetc(f_source);
             if (current == '+') {
                 fwrite("\x05\x01\0\0\0", 5, 1, f_target);
-                if (fgetc(f_source) != '=')
+                if (fgetc(f_source) != '=') {
+                    errorf("Expected \"=\" following \"+\".\n");
                     return 5;
+                }
             } else if (current != '=') {
+                errorf("Expected \"=\", got \"%c\".\n", current);
                 return 5;
             } else {
                 fputc(2, f_target);
@@ -534,15 +581,19 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             fwrite(buffer, strlen(buffer) + 1, 1, f_target);
 
             success = rapify_array(f_source, f_target);
-            if (success)
+            if (success) {
+                errorf("Failed to rapify array \"%s\".\n", buffer);
                 return success;
+            }
 
             // find trailing semicolon
             if (skip_whitespace(f_source))
                 return 7;
             current = fgetc(f_source);
-            if (current != ';')
+            if (current != ';') {
+                errorf("Expected \";\", got \"%c\".\n", current);
                 return 8;
+            }
 
             continue;
         }
@@ -555,13 +606,18 @@ int rapify_class(FILE *f_source, FILE *f_target) {
             return 3;
         if (feof(f_source))
             return 4;
-        if (fgetc(f_source) != '=')
+        current = fgetc(f_source);
+        if (current != '=') {
+            errorf("Expected \"=\" after \"%s\", got \"%c\".\n", buffer, current);
             return 5;
+        }
         if (skip_whitespace(f_source))
             return 6;
 
-        if (rapify_token(f_source, f_target, buffer))
+        if (rapify_token(f_source, f_target, buffer)) {
+            errorf("Failed to rapify token \"%s\".\n", buffer);
             return 7;
+        }
     }
 
     fp_endaddress = ftell(f_target);
@@ -609,9 +665,17 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         fwrite(&fp_tmp, 4, 1, f_target);
         fseek(f_target, 0, SEEK_END);
 
+        fp_tmp = ftell(f_source);
+        fseek(f_source, 6, SEEK_CUR);
+        skip_whitespace(f_source);
+        lookahead_word(f_source, name, sizeof(name));
+        fseek(f_source, fp_tmp, SEEK_SET);
+
         success = rapify_class(f_source, f_target);
-        if (success)
+        if (success) {
+            errorf("Failed to rapify class \"%s\".\n", name);
             return success;
+        }
     }
 
     // write end address
@@ -624,7 +688,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
 }
 
 
-int rapify_file(char *source, char *target, char *includefolder) {
+int rapify_file(char *source, char *target) {
     /*
      * Resolves macros/includes and rapifies the given file. If source and
      * target are identical, the target is overwritten.
@@ -632,26 +696,70 @@ int rapify_file(char *source, char *target, char *includefolder) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern char include_stack[MAXINCLUDES][1024];
     FILE *f_temp;
     FILE *f_target;
     int i;
+    int datasize;
     int success;
+    char dump_name[2048];
+    char buffer[4096];
     uint32_t enum_offset = 0;
     struct constant *constants;
 
-#ifdef _WIN32
-    char temp_name[2048];
-    if (!GetTempFileName(getenv("HOMEPATH"), "amk", 0, temp_name)) {
-        printf("Failed to get temp file name.\n");
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
+
+    // Check if the file is already rapified
+    f_temp = fopen(source, "rb");
+    if (!f_temp) {
+        errorf("Failed to open %s.\n", source);
         return 1;
     }
-    f_temp = fopen(temp_name, "w+");
+
+    fread(buffer, 4, 1, f_temp);
+    if (strncmp(buffer, "\0raP", 4) == 0) {
+        f_target = fopen(target, "wb");
+        if (!f_target) {
+            errorf("Failed to open %s.\n", target);
+            return 2;
+        }
+
+        fseek(f_temp, 0, SEEK_END);
+        datasize = ftell(f_temp);
+
+        fseek(f_temp, 0, SEEK_SET);
+        for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+            fread(buffer, sizeof(buffer), 1, f_temp);
+            fwrite(buffer, sizeof(buffer), 1, f_target);
+        }
+        fread(buffer, datasize - i, 1, f_temp);
+        fwrite(buffer, datasize - i, 1, f_target);
+
+        fclose(f_temp);
+        fclose(f_target);
+
+        return 0;
+    } else {
+        fclose(f_temp);
+    }
+
+#ifdef _WIN32
+    char temp_name[2048];
+    if (!GetTempFileName(".", "amk", 0, temp_name)) {
+        errorf("Failed to get temp file name (system error %i).\n", GetLastError());
+        return 1;
+    }
+    f_temp = fopen(temp_name, "wb+");
 #else
     f_temp = tmpfile();
 #endif
 
     if (!f_temp) {
-        printf("Failed to open temp file.\n");
+        errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return 1;
     }
 
@@ -660,21 +768,35 @@ int rapify_file(char *source, char *target, char *includefolder) {
     for (i = 0; i < MAXCONSTS; i++) {
         constants[i].name[0] = 0;
         constants[i].arguments[0][0] = 0;
-        constants[i].value[0] = 0;
+        constants[i].value = 0;
     }
-    success = preprocess(source, f_temp, includefolder, constants);
+
+    for (i = 0; i < MAXINCLUDES; i++)
+        include_stack[i][0] = 0;
+
+    success = preprocess(source, f_temp, constants);
+
+    for (i = 0; i < MAXCONSTS && constants[i].value != 0; i++)
+        free(constants[i].value);
     free(constants);
+
+    current_operation = OP_RAPIFY;
+    strcpy(current_target, source);
+
     if (success) {
-        printf("Failed to preprocess %s.\n", source);
+        errorf("Failed to preprocess %s.\n", source);
         fclose(f_temp);
+#ifdef _WIN32
+        DeleteFile(temp_name);
+#endif
         return success;
     }
 
     // Rapify file
     fseek(f_temp, 0, SEEK_SET);
-    f_target = fopen(target, "w");
+    f_target = fopen(target, "wb");
     if (!f_target) {
-        printf("Failed to open %s.\n", target);
+        errorf("Failed to open %s.\n", target);
         fclose(f_temp);
         return 2;
     }
@@ -684,7 +806,23 @@ int rapify_file(char *source, char *target, char *includefolder) {
 
     success = rapify_class(f_temp, f_target);
     if (success) {
-        printf("Failed to rapify %s.\n", source);
+        sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
+        errorf("Failed to rapify %s,\n       dumping preprocessed config to %s.\n", source, dump_name);
+
+        fclose(f_target);
+
+        f_target = fopen(dump_name, "wb");
+
+        fseek(f_temp, 0, SEEK_END);
+        datasize = ftell(f_temp);
+
+        fseek(f_temp, 0, SEEK_SET);
+        for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+            fread(buffer, sizeof(buffer), 1, f_temp);
+            fwrite(buffer, sizeof(buffer), 1, f_target);
+        }
+        fread(buffer, datasize - i, 1, f_temp);
+        fwrite(buffer, datasize - i, 1, f_target);
 
         fclose(f_temp);
         fclose(f_target);

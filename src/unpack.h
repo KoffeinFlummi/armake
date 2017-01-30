@@ -19,26 +19,15 @@
 #pragma once
 
 
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+#define MAXFILES 4096
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
+struct header {
+    char name[512];
+    uint32_t packing_method;
+    uint32_t original_size;
+    uint32_t data_size;
 };
 
 
-char include_stack[MAXINCLUDES][1024];
-
-
-bool matches_includepath(char *path, char *includepath, char *includefolder);
-
-int find_file(char *includepath, char *origin, char *actualpath);
-
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
-
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+int unpack();

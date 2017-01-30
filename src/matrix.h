@@ -16,29 +16,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
 #pragma once
 
-
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+#include "vector.h"
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
-};
+typedef struct {
+    float m00, m01, m02;
+    float m10, m11, m12;
+    float m20, m21, m22;
+} matrix;
 
 
-char include_stack[MAXINCLUDES][1024];
+static const matrix empty_matrix = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const matrix identity_matrix = { 1, 0, 0, 0, 1, 0, 0, 0, 1 }; 
 
 
-bool matches_includepath(char *path, char *includepath, char *includefolder);
+matrix vector_tilda(const vector v);
 
-int find_file(char *includepath, char *origin, char *actualpath);
+matrix matrix_sub(const matrix m1, const matrix m2);
 
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
+matrix matrix_mult(const matrix m1, const matrix m2);
 
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+matrix matrix_mult_scalar(const float s, const matrix m);
+
+matrix matrix_inverse(const matrix m);

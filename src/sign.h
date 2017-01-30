@@ -19,26 +19,9 @@
 #pragma once
 
 
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+#include "docopt.h"
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
-};
+int sign();
 
-
-char include_stack[MAXINCLUDES][1024];
-
-
-bool matches_includepath(char *path, char *includepath, char *includefolder);
-
-int find_file(char *includepath, char *origin, char *actualpath);
-
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
-
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature);

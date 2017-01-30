@@ -27,33 +27,64 @@
 #include "paa2img.h"
 #include "binarize.h"
 #include "build.h"
-
-#define VERSION "v1.0"
+#include "unpack.h"
+#include "derapify.h"
+#include "filesystem.h"
+#include "keygen.h"
+#include "sign.h"
 
 
 int main(int argc, char *argv[]) {
-    DocoptArgs args = docopt(argc, argv, 1, VERSION);
+    extern DocoptArgs args;
+    extern char exclude_files[MAXEXCLUDEFILES][512];
+    extern char include_folders[MAXINCLUDEFOLDERS][512];
+    extern char muted_warnings[MAXWARNINGS][512];
+    int i;
+    int j;
     char *halp[] = {argv[0], "-h"};
 
+    args = docopt(argc, argv, 1, VERSION);
+
     // Docopt doesn't yet support positional arguments
-    if (argc < 4)
+    if (argc < (args.keygen ? 3 : 4))
         docopt(2, halp, 1, VERSION);
 
-    args.source = argv[argc - 2];
-    args.target = argv[argc - 1];
+    if (!args.keygen) {
+        args.source = argv[argc - 2];
+        if (args.source[strlen(args.source) - 1] == PATHSEP)
+            args.source[strlen(args.source) - 1] = 0;
 
-    if (args.source[0] == '-' || args.target[0] == '-')
+        if (args.source[0] == '-' && strlen(args.source) > 1)
+            docopt(2, halp, 1, VERSION);
+    }
+
+    args.target = argv[argc - 1];
+    if (args.target[strlen(args.target) - 1] == PATHSEP)
+        args.target[strlen(args.target) - 1] = 0;
+
+    if (args.target[0] == '-' && strlen(args.target) > 1)
         docopt(2, halp, 1, VERSION);
 
 
     // @todo
-    for (int i; i < argc; i++) {
-        if (strcmp(argv[i], "-i") == 0) {
-            if (i + 1 < argc)
-                args.includefolder = argv[i+1];
-            else
-                docopt(2, halp, 1, VERSION);
+    strcpy(include_folders[0], ".");
+    for (i = 0; i < argc - 1; i++) {
+        if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--exclude") == 0) {
+            for (j = 0; j < MAXEXCLUDEFILES && exclude_files[j][0] != 0; j++);
+            strncpy(exclude_files[j], argv[i + 1], sizeof(exclude_files[j]));
         }
+        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--include") == 0) {
+            for (j = 0; j < MAXINCLUDEFOLDERS && include_folders[j][0] != 0; j++);
+            strncpy(include_folders[j], argv[i + 1], sizeof(include_folders[j]));
+            if (include_folders[j][strlen(include_folders[j]) - 1] == PATHSEP)
+                include_folders[j][strlen(include_folders[j]) - 1] = 0;
+        }
+        if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--warning") == 0) {
+            for (j = 0; j < MAXWARNINGS && muted_warnings[j][0] != 0; j++);
+            strncpy(muted_warnings[j], argv[i + 1], sizeof(muted_warnings[j]));
+        }
+        if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--key") == 0)
+            args.privatekey = argv[i + 1];
     }
 
 
@@ -62,10 +93,19 @@ int main(int argc, char *argv[]) {
     if (args.paa2img)
         return paa2img(args);
     if (args.binarize)
-        return binarize(args);
+        return binarize();
     if (args.build)
-        return build(args);
+        return build();
+    if (args.unpack)
+        return unpack();
+    if (args.derapify)
+        return derapify();
+    if (args.keygen)
+        return keygen();
+    if (args.sign)
+        return sign();
 
 
     docopt(2, halp, 1, VERSION);
+    return 1;
 }

@@ -16,29 +16,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
 #pragma once
 
 
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+typedef struct triplet {
+    float x;
+    float y;
+    float z;
+} vector;
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
-};
+static const vector empty_vector = {0, 0, 0};
 
 
-char include_stack[MAXINCLUDES][1024];
+vector vector_add(const vector v1, const vector v2);
 
+vector vector_sub(const vector v1, const vector v2);
 
-bool matches_includepath(char *path, char *includepath, char *includefolder);
+vector vector_mult_scalar(const float s, const vector v);
 
-int find_file(char *includepath, char *origin, char *actualpath);
+vector vector_normalize(const vector v);
 
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
+vector vector_crossproduct(const vector v1, const vector v2);
 
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+float vector_length(const vector v);

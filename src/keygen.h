@@ -19,26 +19,17 @@
 #pragma once
 
 
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+#define KEY_LENGTH 1024
+#define KEY_EXPONENT 65537
 
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
-};
+#include <openssl/bn.h>
+
+#include "docopt.h"
 
 
-char include_stack[MAXINCLUDES][1024];
+int keygen();
 
+int generate_keypair(char *name, char *path_private, char *path_public);
 
-bool matches_includepath(char *path, char *includepath, char *includefolder);
-
-int find_file(char *includepath, char *origin, char *actualpath);
-
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
-
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+int custom_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen);

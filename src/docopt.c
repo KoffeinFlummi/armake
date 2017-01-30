@@ -37,35 +37,58 @@ const char help_message[] =
 "armake\n"
 "\n"
 "Usage:\n"
-"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
+"    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake unpack [-f] <source> <target>\n"
+"    armake derapify [-f] [-d <indentation>] <source> <target>\n"
+"    armake keygen [-f] <target>\n"
+"    armake sign [-f] <privatekey> <target>\n"
 "    armake paa2img [-f] <source> <target>\n"
-"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)\n"
 "\n"
 "Commands:\n"
-"    img2paa      Convert image to PAA\n"
-"    paa2img      Convert PAA to image\n"
-"    binarize     Binarize a file\n"
-"    build        Pack a folder into a PBO\n"
+"    paa2img     Convert PAA to image (PNG)\n"
+"    img2paa     Convert image to PAA\n"
+"    binarize    Binarize a file.\n"
+"    build       Pack a folder into a PBO.\n"
+"    unpack      Unpack a PBO into a folder.\n"
+"    derapify    Derapify a config. You can pass - as the target to print to stdout.\n"
+"    keygen      Generate a keypair with the specified path (extensions are added).\n"
+"    sign        Sign a PBO with the given private key.\n"
 "\n"
 "Options:\n"
-"    -f --force      Overwrite the target file/folder if it already exists\n"
+"    -f --force      Overwrite the target file/folder if it already exists.\n"
+"    -p --packonly   Don't binarize models, configs etc.\n"
+"    -w --warning    Warning to disable (repeatable).\n"
+"    -i --include    Folder to search for includes, defaults to CWD (repeatable).\n"
+"    -x --exclude    Glob patterns to exclude from PBO (repeatable).\n"
+"    -k --key        Private key to use for signing the PBO.\n"
+"    -d --indent     String to use for indentation. \"    \" (4 spaces) by default.\n"
 "    -z --compress   Compress final PAA where possible\n"
 "    -t --type       PAA type. One of: DXT1, DXT3, DXT5, RGBA4444, RGBA5551, GRAY\n"
-"    -p --packonly   Don't binarize models, configs etc.\n"
-"    -i --include    Folder to search for includes, defaults to CWD\n"
-"    -h --help       Show usage information and exit\n"
-"    -v --version    Print the version number and exit\n"
+"    -h --help       Show usage information and exit.\n"
+"    -v --version    Print the version number and exit.\n"
+"\n"
+"Warnings:\n"
+"    By default, armake prints all warnings. You can mute trivial warnings\n"
+"    using the name that is printed along with them.\n"
+"\n"
+"    Example: \"-w unquoted-string\" disables warnings about improperly quoted\n"
+"             strings.\n"
 "";
 
 const char usage_pattern[] =
 "Usage:\n"
-"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
+"    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake unpack [-f] <source> <target>\n"
+"    armake derapify [-f] [-d <indentation>] <source> <target>\n"
+"    armake keygen [-f] <target>\n"
+"    armake sign [-f] <privatekey> <target>\n"
 "    armake paa2img [-f] <source> <target>\n"
-"    armake binarize [-f] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-i <includefolder>] <source> <target>\n"
+"    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
 "    armake (-h | --help)\n"
 "    armake (-v | --version)";
 
@@ -242,6 +265,10 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
     Option *option;
     int i;
 
+    // fix gcc-related compiler warnings (unused)
+    (void)command;
+    (void)argument;
+
     /* options */
     for (i=0; i < elements->n_options; i++) {
         option = &elements->options[i];
@@ -254,18 +281,26 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             return 1;
         } else if (!strcmp(option->olong, "--compress")) {
             args->compress = option->value;
+        } else if (!strcmp(option->olong, "--exclude")) {
+            args->exclude = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
         } else if (!strcmp(option->olong, "--help")) {
             args->help = option->value;
         } else if (!strcmp(option->olong, "--include")) {
             args->include = option->value;
+        } else if (!strcmp(option->olong, "--indent")) {
+            args->indent = option->value;
+        } else if (!strcmp(option->olong, "--key")) {
+            args->key = option->value;
         } else if (!strcmp(option->olong, "--packonly")) {
             args->packonly = option->value;
         } else if (!strcmp(option->olong, "--type")) {
             args->type = option->value;
         } else if (!strcmp(option->olong, "--version")) {
             args->version = option->value;
+        } else if (!strcmp(option->olong, "--warning")) {
+            args->warning = option->value;
         }
     }
     /* commands */
@@ -275,10 +310,18 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->binarize = command->value;
         } else if (!strcmp(command->name, "build")) {
             args->build = command->value;
+        } else if (!strcmp(command->name, "derapify")) {
+            args->derapify = command->value;
         } else if (!strcmp(command->name, "img2paa")) {
             args->img2paa = command->value;
+        } else if (!strcmp(command->name, "keygen")) {
+            args->keygen = command->value;
         } else if (!strcmp(command->name, "paa2img")) {
             args->paa2img = command->value;
+        } else if (!strcmp(command->name, "sign")) {
+            args->sign = command->value;
+        } else if (!strcmp(command->name, "unpack")) {
+            args->unpack = command->value;
         }
     }
     /* arguments */
@@ -286,12 +329,20 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
         argument = &elements->arguments[i];
         if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
+        } else if (!strcmp(argument->name, "<indentation>")) {
+            args->indentation = argument->value;
         } else if (!strcmp(argument->name, "<paatype>")) {
             args->paatype = argument->value;
+        } else if (!strcmp(argument->name, "<privatekey>")) {
+            args->privatekey = argument->value;
         } else if (!strcmp(argument->name, "<source>")) {
             args->source = argument->value;
         } else if (!strcmp(argument->name, "<target>")) {
             args->target = argument->value;
+        } else if (!strcmp(argument->name, "<wname>")) {
+            args->wname = argument->value;
+        } else if (!strcmp(argument->name, "<xlist>")) {
+            args->xlist = argument->value;
         }
     }
     return 0;
@@ -304,32 +355,45 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, 0, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
     Command commands[] = {
         {"binarize", 0},
         {"build", 0},
+        {"derapify", 0},
         {"img2paa", 0},
-        {"paa2img", 0}
+        {"keygen", 0},
+        {"paa2img", 0},
+        {"sign", 0},
+        {"unpack", 0}
     };
     Argument arguments[] = {
         {"<includefolder>", NULL, NULL},
+        {"<indentation>", NULL, NULL},
         {"<paatype>", NULL, NULL},
+        {"<privatekey>", NULL, NULL},
         {"<source>", NULL, NULL},
-        {"<target>", NULL, NULL}
+        {"<target>", NULL, NULL},
+        {"<wname>", NULL, NULL},
+        {"<xlist>", NULL, NULL}
     };
     Option options[] = {
         {"-z", "--compress", 0, 0, NULL},
+        {"-x", "--exclude", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
+        {"-d", "--indent", 0, 0, NULL},
+        {"-k", "--key", 0, 0, NULL},
         {"-p", "--packonly", 0, 0, NULL},
         {"-t", "--type", 0, 0, NULL},
-        {"-v", "--version", 0, 0, NULL}
+        {"-v", "--version", 0, 0, NULL},
+        {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {4, 4, 7, commands, arguments, options};
+    Elements elements = {8, 8, 11, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

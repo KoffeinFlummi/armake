@@ -19,8 +19,4 @@
 #pragma once
 
 
-#include "docopt.h"
-
-
-int build(DocoptArgs args);
-
+int build();

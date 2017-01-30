@@ -1,0 +1,10 @@
+language: c
+before_script:
+- wget http://ftp.gnu.org/gnu/make/make-4.2.1.tar.gz
+- tar -xf make-4.2.1.tar.gz
+- cd make-4.2.1
+- ./configure --prefix=/usr
+- sudo make install
+- cd ..
+script: make test
+sudo: required

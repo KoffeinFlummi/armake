@@ -19,26 +19,26 @@
 #pragma once
 
 
-#define MAXCONSTS 4096
-#define MAXARGS 32
-#define MAXINCLUDES 16
-#define LINEBUFFSIZE 131072
+int seek_config_path(FILE *f, char *config_path);
 
+int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize);
 
-struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
-    char *value;
-};
+int seek_definition(FILE *f, char *config_path);
 
+int read_string(FILE *f, char *config_path, char *buffer, size_t buffsize);
 
-char include_stack[MAXINCLUDES][1024];
+int read_int(FILE *f, char *config_path, int32_t *result);
 
+int read_float(FILE *f, char *config_path, float *result);
 
-bool matches_includepath(char *path, char *includepath, char *includefolder);
+int read_long_array(FILE *f, char *config_path, int32_t *array, int size);
 
-int find_file(char *includepath, char *origin, char *actualpath);
+int read_float_array(FILE *f, char *config_path, float *array, int size);
 
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
+int read_string_array(FILE *f, char *config_path, char *buffer, int size, size_t buffsize);
 
-int preprocess(char *source, FILE *f_target, struct constant *constants);
+int read_classes(FILE *f, char *config_path, char *array, int size, size_t buffsize);
+
+int derapify_file(char *source, char *target);
+
+int derapify();

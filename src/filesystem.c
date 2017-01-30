@@ -17,6 +17,7 @@
  */
 
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,7 +27,6 @@
 #include <windows.h>
 #include <wchar.h>
 #else
-#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <err.h>
@@ -129,7 +129,7 @@ int create_folders(char *path) {
      * failure and 0 on success.
      */
 
-    char tmp[256];
+    char tmp[2048];
     char *p = NULL;
     int success;
     size_t len;
@@ -142,7 +142,7 @@ int create_folders(char *path) {
         tmp[len - 1] = 0;
 
     for (p = tmp + 1; *p; p++) {
-        if (*p == PATHSEP) {
+        if (*p == PATHSEP && *(p-1) != ':') {
             *p = 0;
             success = create_folder(tmp);
             if (success != -2 && success != 0)
@@ -167,25 +167,52 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
      */
 
     char temp[2048] = TEMPPATH;
+    char addon_sanitized[2048];
+    int i;
+
 #ifdef _WIN32
     temp[0] = 0;
     GetTempPath(sizeof(temp), temp);
     strcat(temp, "armake\\");
 #endif
 
-    if (strlen(temp) + strlen(addon) + 1 > bufsize)
+    temp[strlen(temp) - 1] = 0;
+
+    for (i = 0; i < strlen(addon); i++) {
+        if (addon[i] == '\\' || addon[i] == '/')
+            addon_sanitized[i] = '_';
+        else
+            addon_sanitized[i] = addon[i];
+    }
+
+    // find a free one
+    for (i = 0; i < 1024; i++) {
+        snprintf(temp_folder, bufsize, "%s_%s_%i%c", temp, addon_sanitized, i, PATHSEP);
+        if (access(temp_folder, F_OK) == -1)
+            break;
+    }
+
+    if (i == 1024)
         return -1;
 
-    temp_folder[0] = 0;
-    strcat(temp_folder, temp);
-    strcat(temp_folder, addon);
+    return create_folders(temp_folder);
+}
 
-    int success = create_folders(temp_folder);
 
-    if (success == -2) // already exists
-        return 0;
+int remove_file(char *path) {
+    /*
+     * Remove a file. Returns 0 on success and 1 on failure.
+     */
 
-    return success;
+#ifdef _WIN32
+    if (!DeleteFile(path))
+        return 1;
+#else
+    if (remove(path))
+        return 1;
+#endif
+
+    return 0;
 }
 
 
@@ -217,16 +244,6 @@ int remove_folder(char *folder) {
 }
 
 
-int remove_temp_folder() {
-    char tempfolder[2048] = TEMPPATH;
-#ifdef _WIN32
-    GetTempPath(sizeof(tempfolder), tempfolder);
-    strcat(tempfolder, "armake\\");
-#endif
-    return remove_folder(tempfolder);
-}
-
-
 int copy_file(char *source, char *target) {
     /*
      * Copy the file from the source to the target. Overwrites if the target
@@ -235,9 +252,10 @@ int copy_file(char *source, char *target) {
      */
 
     // Create the containing folder
-    char containing[strlen(target)];
+    char containing[strlen(target) + 1];
     int lastsep = 0;
-    for (int i = 0; i < strlen(target); i++) {
+    int i;
+    for (i = 0; i < strlen(target); i++) {
         if (target[i] == PATHSEP)
             lastsep = i;
     }
@@ -306,32 +324,23 @@ int alphasort_ci(const struct dirent **a, const struct dirent **b) {
      */
 
     int i;
-    int result;
-    struct dirent *a_temp;
-    struct dirent *b_temp;
+    char a_name[512];
+    char b_name[512];
 
-    a_temp = (struct dirent *)malloc(sizeof(struct dirent));
-    b_temp = (struct dirent *)malloc(sizeof(struct dirent));
+    strncpy(a_name, (*a)->d_name, sizeof(a_name));
+    strncpy(b_name, (*b)->d_name, sizeof(b_name));
 
-    memcpy(a_temp, *a, sizeof(struct dirent));
-    memcpy(b_temp, *b, sizeof(struct dirent));
-
-    for (i = 0; i < strlen(a_temp->d_name); i++) {
-        if (a_temp->d_name[i] >= 'A' && a_temp->d_name[i] <= 'Z')
-            a_temp->d_name[i] = a_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(a_name); i++) {
+        if (a_name[i] >= 'A' && a_name[i] <= 'Z')
+            a_name[i] = a_name[i] - ('A' - 'a');
     }
 
-    for (i = 0; i < strlen(b_temp->d_name); i++) {
-        if (b_temp->d_name[i] >= 'A' && b_temp->d_name[i] <= 'Z')
-            b_temp->d_name[i] = b_temp->d_name[i] - ('A' - 'a');
+    for (i = 0; i < strlen(b_name); i++) {
+        if (b_name[i] >= 'A' && b_name[i] <= 'Z')
+            b_name[i] = b_name[i] - ('A' - 'a');
     }
 
-    result = alphasort((const struct dirent **)&a_temp, (const struct dirent **)&b_temp);
-
-    free(a_temp);
-    free(b_temp);
-
-    return result;
+    return strcoll(a_name, b_name);
 }
 #endif
 
@@ -374,6 +383,8 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
 
     FindClose(handle);
 
+     return 0;
+
 #else
 
     struct dirent **namelist;
@@ -381,17 +392,16 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
     int i;
     int n;
     int success;
-    
+
     n = scandir(cwd, &namelist, NULL, alphasort_ci);
     if (n < 0)
         return 1;
 
+    success = 0;
     for (i = 0; i < n; i++) {
         if (strcmp(namelist[i]->d_name, "..") == 0 ||
-                strcmp(namelist[i]->d_name, ".") == 0) {
-            free(namelist[i]);
+                strcmp(namelist[i]->d_name, ".") == 0)
             continue;
-        }
 
         strcpy(next, cwd);
         strcat(next, "/");
@@ -401,24 +411,25 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
             case DT_DIR:
                 success = traverse_directory_recursive(root, next, callback, third_arg);
                 if (success)
-                    return success;
+                    goto cleanup;
                 break;
 
             case DT_REG:
                 success = callback(root, next, third_arg);
                 if (success)
-                    return success;
+                    goto cleanup;
                 break;
         }
-
-        free(namelist[i]);
     }
 
+cleanup:
+    for (i = 0; i < n; i++)
+        free(namelist[i]);
     free(namelist);
 
+    return success;
+
 #endif
-    
-     return 0;
 }
 
 

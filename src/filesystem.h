@@ -21,9 +21,11 @@
 
 #ifdef _WIN32
 #define PATHSEP '\\'
+#define PATHSEP_STR "\\"
 #define TEMPPATH "C:\\Windows\\Temp\\armake\\"
 #else
 #define PATHSEP '/'
+#define PATHSEP_STR "/"
 #define TEMPPATH "/tmp/armake/"
 #endif
 
@@ -38,7 +40,9 @@ int create_folders(char *path);
 
 int create_temp_folder(char *addon, char *temp_folder, size_t bufsize);
 
-int remove_temp_folder();
+int remove_file(char *path);
+
+int remove_folder(char *folder);
 
 int copy_file(char *source, char *target);
 

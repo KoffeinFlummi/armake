@@ -22,6 +22,6 @@
 #include "docopt.h"
 
 
-int binarize(DocoptArgs args);
+int binarize();
 
-int binarize_file(char *source, char *target, char *includefolder);
+int binarize_file(char *source, char *target);

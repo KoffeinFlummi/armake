@@ -31,15 +31,13 @@ bin/*
 
 # Debug files
 *.dSYM/
-
-# Testing files
-test/*
-*.png
-*.paa
-*.pbo
-*.cpp
-*.p3d
-*.bin
+vgcore.*
 
 # Tmp
 tmp/*
+
+# Testing files except when in test folder
+test.*
+!test/**/test.*
+
+armake_*
