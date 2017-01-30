@@ -40,4 +40,6 @@ int img2dxt3(unsigned char *input, unsigned char *output, int width, int height)
 
 int img2dxt5(unsigned char *input, unsigned char *output, int width, int height);
 
-int img2paa(DocoptArgs args);
+int img2paa(char *source, char *target);
+
+int cmd_img2paa();

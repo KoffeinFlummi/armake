@@ -19,4 +19,4 @@
 #pragma once
 
 
-int build();
+int cmd_build();

@@ -55,7 +55,7 @@ bool is_garbage(struct header *header) {
 }
 
 
-int unpack() {
+int cmd_unpack() {
     extern DocoptArgs args;
     extern int current_operation;
     extern char current_target[2048];

@@ -942,7 +942,7 @@ int derapify_file(char *source, char *target) {
 }
 
 
-int derapify() {
+int cmd_derapify() {
     extern DocoptArgs args;
 
     // check if target already exists

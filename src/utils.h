@@ -38,6 +38,7 @@
 #define OP_MATERIAL 6
 #define OP_UNPACK 7
 #define OP_DERAPIFY 8
+#define OP_IMAGE 9
 
 
 #include "docopt.h"

@@ -24,37 +24,39 @@ _armake ()
 
     _arguments -C \
         ':command:->command' \
-		'(-h)-h[Show usage information and exit]' \
-		'(--help)--help[Show usage information and exit]' \
-		'(-h)-h[Show usage information and exit]' \
-		'(--help)--help[Show usage information and exit]' \
-		'(-v)-v[Print the version number and exit]' \
-		'(--version)--version[Print the version number and exit]' \
-		'(-v)-v[Print the version number and exit]' \
-		'(--version)--version[Print the version number and exit]' \
+		'(-h)-h[Show usage information and exit.]' \
+		'(--help)--help[Show usage information and exit.]' \
+		'(-h)-h[Show usage information and exit.]' \
+		'(--help)--help[Show usage information and exit.]' \
+		'(-v)-v[Print the version number and exit.]' \
+		'(--version)--version[Print the version number and exit.]' \
+		'(-v)-v[Print the version number and exit.]' \
+		'(--version)--version[Print the version number and exit.]' \
         '*::options:->options'
 
     case $state in
         (command)
             local -a subcommands
             subcommands=(
-				'sign[Sign a PBO with the given private key.]'
 				'binarize[Binarize a file.]'
+				'build[Pack a folder into a PBO.]'
 				'unpack[Unpack a PBO into a folder.]'
 				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
 				'keygen[Generate a keypair with the specified path (extensions are added).]'
-				'build[Pack a folder into a PBO.]'
+				'sign[Sign a PBO with the given private key.]'
+				'paa2img[Convert PAA to image (PNG)]'
+				'img2paa[Convert image to PAA]'
             )
             _values 'armake' $subcommands
         ;;
 
         (options)
             case $line[1] in
-                sign)
-                    _armake-sign
-                ;;
                 binarize)
                     _armake-binarize
+                ;;
+                build)
+                    _armake-build
                 ;;
                 unpack)
                     _armake-unpack
@@ -65,30 +67,19 @@ _armake ()
                 keygen)
                     _armake-keygen
                 ;;
-                build)
-                    _armake-build
+                sign)
+                    _armake-sign
+                ;;
+                paa2img)
+                    _armake-paa2img
+                ;;
+                img2paa)
+                    _armake-img2paa
                 ;;
             esac
         ;;
     esac
 
-}
-
-_armake-sign ()
-{
-    local context state state_descr line
-    typeset -A opt_args
-
-    if [[ $words[$CURRENT] == -* ]] ; then
-        _arguments -C \
-        ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
-
-    else
-        myargs=('<privatekey>' '<target>')
-        _message_next_arg
-    fi
 }
 
 _armake-binarize ()
@@ -99,15 +90,42 @@ _armake-binarize ()
     if [[ $words[$CURRENT] == -* ]] ; then
         _arguments -C \
         ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
-		'(-w)-w[Warning to disable (repeatable)]' \
-		'(--warning)--warning[Warning to disable (repeatable)]' \
-		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable)]' \
-		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable)]' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
+		'(-w)-w[Warning to disable (repeatable).]' \
+		'(--warning)--warning[Warning to disable (repeatable).]' \
+		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable).]' \
+		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable).]' \
 
     else
         myargs=('<wname>' '<includefolder>' '<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-build ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
+		'(-p)-p[Don'\''t binarize models, configs etc.]' \
+		'(--packonly)--packonly[Don'\''t binarize models, configs etc.]' \
+		'(-w)-w[Warning to disable (repeatable).]' \
+		'(--warning)--warning[Warning to disable (repeatable).]' \
+		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable).]' \
+		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable).]' \
+		'(-x)-x[Glob patterns to exclude from PBO (repeatable).]' \
+		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable).]' \
+		'(-k)-k[Private key to use for signing the PBO.]' \
+		'(--key)--key[Private key to use for signing the PBO.]' \
+
+    else
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<source>' '<target>')
         _message_next_arg
     fi
 }
@@ -120,8 +138,8 @@ _armake-unpack ()
     if [[ $words[$CURRENT] == -* ]] ; then
         _arguments -C \
         ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 
     else
         myargs=('<source>' '<target>')
@@ -137,8 +155,8 @@ _armake-derapify ()
     if [[ $words[$CURRENT] == -* ]] ; then
         _arguments -C \
         ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 		'(-d)-d[String to use for indentation. "    " (4 spaces) by default.]' \
 		'(--indent)--indent[String to use for indentation. "    " (4 spaces) by default.]' \
 
@@ -156,8 +174,8 @@ _armake-keygen ()
     if [[ $words[$CURRENT] == -* ]] ; then
         _arguments -C \
         ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 
     else
         myargs=('<target>')
@@ -165,7 +183,7 @@ _armake-keygen ()
     fi
 }
 
-_armake-build ()
+_armake-sign ()
 {
     local context state state_descr line
     typeset -A opt_args
@@ -173,21 +191,49 @@ _armake-build ()
     if [[ $words[$CURRENT] == -* ]] ; then
         _arguments -C \
         ':command:->command' \
-		'(-f)-f[Overwrite the target file/folder if it already exists]' \
-		'(--force)--force[Overwrite the target file/folder if it already exists]' \
-		'(-p)-p[Don'\''t binarize models, configs etc.]' \
-		'(--packonly)--packonly[Don'\''t binarize models, configs etc.]' \
-		'(-w)-w[Warning to disable (repeatable)]' \
-		'(--warning)--warning[Warning to disable (repeatable)]' \
-		'(-i)-i[Folder to search for includes, defaults to CWD (repeatable)]' \
-		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable)]' \
-		'(-x)-x[Glob patterns to exclude from PBO (repeatable)]' \
-		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable)]' \
-		'(-k)-k[Private key to use for signing the PBO]' \
-		'(--key)--key[Private key to use for signing the PBO]' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<source>' '<target>')
+        myargs=('<privatekey>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-paa2img ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
+
+    else
+        myargs=('<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-img2paa ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
+		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
+		'(-z)-z[Compress final PAA where possible]' \
+		'(--compress)--compress[Compress final PAA where possible]' \
+		'(-t)-t[PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88]' \
+		'(--type)--type[PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88]' \
+
+    else
+        myargs=('<paatype>' '<source>' '<target>')
         _message_next_arg
     fi
 }

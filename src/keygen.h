@@ -28,8 +28,8 @@
 #include "docopt.h"
 
 
-int keygen();
-
 int generate_keypair(char *name, char *path_private, char *path_public);
 
 int custom_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen);
+
+int cmd_keygen();

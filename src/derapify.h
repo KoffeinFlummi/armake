@@ -41,4 +41,4 @@ int read_classes(FILE *f, char *config_path, char *array, int size, size_t buffs
 
 int derapify_file(char *source, char *target);
 
-int derapify();
+int cmd_derapify();

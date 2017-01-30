@@ -85,25 +85,27 @@ int main(int argc, char *argv[]) {
         }
         if (strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--key") == 0)
             args.privatekey = argv[i + 1];
+        if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--type") == 0)
+            args.paatype = argv[i + 1];
     }
 
 
-    if (args.img2paa)
-        return img2paa(args);
-    if (args.paa2img)
-        return paa2img(args);
     if (args.binarize)
-        return binarize();
+        return cmd_binarize();
     if (args.build)
-        return build();
+        return cmd_build();
     if (args.unpack)
-        return unpack();
+        return cmd_unpack();
     if (args.derapify)
-        return derapify();
+        return cmd_derapify();
     if (args.keygen)
-        return keygen();
+        return cmd_keygen();
     if (args.sign)
-        return sign();
+        return cmd_sign();
+    if (args.paa2img)
+        return cmd_paa2img();
+    if (args.img2paa)
+        return cmd_img2paa();
 
 
     docopt(2, halp, 1, VERSION);

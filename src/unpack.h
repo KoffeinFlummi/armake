@@ -30,4 +30,4 @@ struct header {
 };
 
 
-int unpack();
+int cmd_unpack();

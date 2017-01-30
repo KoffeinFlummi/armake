@@ -5,9 +5,12 @@ _armake()
     cur="${COMP_WORDS[COMP_CWORD]}"
 
     if [ $COMP_CWORD -eq 1 ]; then
-        COMPREPLY=( $( compgen -W '-h --help -h --help -v --version -v --version build unpack derapify binarize keygen sign' -- $cur) )
+        COMPREPLY=( $( compgen -W '-h --help -h --help -v --version -v --version binarize build unpack derapify keygen sign paa2img img2paa' -- $cur) )
     else
         case ${COMP_WORDS[1]} in
+            binarize)
+            _armake_binarize
+        ;;
             build)
             _armake_build
         ;;
@@ -17,17 +20,30 @@ _armake()
             derapify)
             _armake_derapify
         ;;
-            binarize)
-            _armake_binarize
-        ;;
             keygen)
             _armake_keygen
         ;;
             sign)
             _armake_sign
         ;;
+            paa2img)
+            _armake_paa2img
+        ;;
+            img2paa)
+            _armake_img2paa
+        ;;
         esac
 
+    fi
+}
+
+_armake_binarize()
+{
+    local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ $COMP_CWORD -ge 2 ]; then
+        COMPREPLY=( $( compgen -fW '-f --force -w --warning -i --include ' -- $cur) )
     fi
 }
 
@@ -61,16 +77,6 @@ _armake_derapify()
     fi
 }
 
-_armake_binarize()
-{
-    local cur
-    cur="${COMP_WORDS[COMP_CWORD]}"
-
-    if [ $COMP_CWORD -ge 2 ]; then
-        COMPREPLY=( $( compgen -fW '-f --force -w --warning -i --include ' -- $cur) )
-    fi
-}
-
 _armake_keygen()
 {
     local cur
@@ -88,6 +94,26 @@ _armake_sign()
 
     if [ $COMP_CWORD -ge 2 ]; then
         COMPREPLY=( $( compgen -fW '-f --force ' -- $cur) )
+    fi
+}
+
+_armake_paa2img()
+{
+    local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ $COMP_CWORD -ge 2 ]; then
+        COMPREPLY=( $( compgen -fW '-f --force ' -- $cur) )
+    fi
+}
+
+_armake_img2paa()
+{
+    local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    if [ $COMP_CWORD -ge 2 ]; then
+        COMPREPLY=( $( compgen -fW '-f --force -z --compress -t --type ' -- $cur) )
     fi
 }
 

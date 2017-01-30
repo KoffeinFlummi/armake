@@ -7,7 +7,7 @@ SRC = src
 LIB = lib
 EXT =
 CC = gcc
-CFLAGS = -Wall -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
+CFLAGS = -Wall -Wno-misleading-indentation -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
 CLIBS = -I$(LIB) -lm -lcrypto
 
 $(BIN)/armake: \

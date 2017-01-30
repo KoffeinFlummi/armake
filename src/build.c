@@ -36,7 +36,7 @@
 #include "build.h"
 
 
-int binarize_file_callback(char *root, char *source, char *junk) {
+int binarize_callback(char *root, char *source, char *junk) {
     int success;
     char target[2048];
 
@@ -47,7 +47,7 @@ int binarize_file_callback(char *root, char *source, char *junk) {
         strcpy(target + strlen(target) - 3, "bin");
     }
 
-    success = binarize_file(source, target);
+    success = binarize(source, target);
 
     if (success > 0)
         return success * -1;
@@ -208,7 +208,7 @@ int hash_file(char *path, unsigned char *hash) {
 }
 
 
-int build() {
+int cmd_build() {
     extern DocoptArgs args;
     extern int current_operation;
     extern char current_target[2048];
@@ -297,7 +297,7 @@ int build() {
     strcpy(nobinpath + strlen(nobinpath) - 11, "$NOBIN$");
     strcpy(notestpath + strlen(notestpath) - 11, "$NOBIN-NOTEST$");
     if (!args.packonly && access(nobinpath, F_OK) == -1 && access(notestpath, F_OK) == -1) {
-        if (traverse_directory(tempfolder, binarize_file_callback, "")) {
+        if (traverse_directory(tempfolder, binarize_callback, "")) {
             current_operation = OP_BUILD;
             strcpy(current_target, args.source);
             errorf("Failed to binarize some files.\n");

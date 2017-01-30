@@ -39,7 +39,7 @@
 #include "binarize.h"
 
 
-int binarize_file(char *source, char *target) {
+int binarize(char *source, char *target) {
     /*
      * Binarize the given file. If source and target are identical, the target
      * is overwritten. If the source is a P3D, it is converted to ODOL. If the
@@ -67,7 +67,7 @@ int binarize_file(char *source, char *target) {
 }
 
 
-int binarize() {
+int cmd_binarize() {
     extern DocoptArgs args;
 
     // check if target already exists
@@ -76,7 +76,7 @@ int binarize() {
         return 1;
     }
 
-    int success = binarize_file(args.source, args.target);
+    int success = binarize(args.source, args.target);
 
     if (success == -1) {
         errorf("File is no P3D and doesn't seem rapifiable.\n");

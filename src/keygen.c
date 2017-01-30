@@ -163,7 +163,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
 }
 
 
-int keygen() {
+int cmd_keygen() {
     extern DocoptArgs args;
     char name[512];
     char path_private[2048];

@@ -22,9 +22,9 @@
 #define DXT1     0xFF01
 #define DXT3     0xFF03
 #define DXT5     0xFF05
-#define RGBA4444 0x4444
-#define RGBA5551 0x1555
-#define GRAY     0x8080
+#define ARGB4444 0x4444
+#define ARGB1555 0x1555
+#define AI88     0x8080
 
 #define COMP_NONE 0
 #define COMP_LZSS 1
@@ -34,15 +34,10 @@
 #include "docopt.h"
 
 
-typedef struct {
-    unsigned int i : 24;
-} uint24_t;
-
-
 int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
-
-int dxt32img(unsigned char *input, unsigned char *output, int width, int height);
 
 int dxt52img(unsigned char *input, unsigned char *output, int width, int height);
 
-int paa2img(DocoptArgs args);
+int paa2img(char *source, char *target);
+
+int cmd_paa2img();

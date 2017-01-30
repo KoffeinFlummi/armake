@@ -322,7 +322,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 }
 
 
-int sign() {
+int cmd_sign() {
     extern DocoptArgs args;
     char keyname[512];
     char path_signature[2048];

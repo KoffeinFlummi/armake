@@ -45,6 +45,11 @@ int img2dxt5(unsigned char *input, unsigned char *output, int width, int height)
 }
 
 
-int img2paa(DocoptArgs args) {
+int img2paa(char *source, char *target) {
+    return 0;
+}
+
+
+int cmd_img2paa() {
     return 0;
 }
