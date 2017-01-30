@@ -290,6 +290,7 @@ int paa2img(char *source, char *target) {
     fseek(f, mipmap, SEEK_SET);
     fread(&width, sizeof(width), 1, f);
     fread(&height, sizeof(height), 1, f);
+    datalen = 0;
     fread(&datalen, 3, 1, f);
 
     compresseddata = (unsigned char *)malloc(datalen);
@@ -325,6 +326,8 @@ int paa2img(char *source, char *target) {
     } else {
         memcpy(imgdata, compresseddata, imgdatalen);
     }
+
+    free(compresseddata);
 
     outputdata = malloc(width * height * 4);
 

@@ -13,7 +13,7 @@ Usage:
     armake (-v | --version)
 
 Commands:
-    paa2img     Convert PAA to image (PNG)
+    paa2img     Convert PAA to image (PNG only)
     img2paa     Convert image to PAA
     binarize    Binarize a file.
     build       Pack a folder into a PBO.
