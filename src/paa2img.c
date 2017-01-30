@@ -259,7 +259,7 @@ int paa2img(char *source, char *target) {
     int imgdatalen;
     lzo_uint out_len;
 
-    f = fopen(args.source, "r");
+    f = fopen(args.source, "rb");
     if (!f) {
         errorf("Couldn't open source file.\n");
         return 1;
