@@ -13,14 +13,14 @@ Usage:
     armake (-v | --version)
 
 Commands:
-    paa2img     Convert PAA to image (PNG only)
-    img2paa     Convert image to PAA
     binarize    Binarize a file.
     build       Pack a folder into a PBO.
     unpack      Unpack a PBO into a folder.
     derapify    Derapify a config. You can pass - as the target to print to stdout.
     keygen      Generate a keypair with the specified path (extensions are added).
     sign        Sign a PBO with the given private key.
+    paa2img     Convert PAA to image (PNG only)
+    img2paa     Convert image to PAA
 
 Options:
     -f --force      Overwrite the target file/folder if it already exists.
