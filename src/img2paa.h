@@ -19,24 +19,10 @@
 #pragma once
 
 
-#define DXT1     0xFF01
-#define DXT3     0xFF03
-#define DXT5     0xFF05
-#define RGBA4444 0x4444
-#define RGBA5551 0x1555
-#define GRAY     0x8080
-
-#define COMP_NONE 0
-#define COMP_LZSS 1
-#define COMP_LZO  2
-
-
 #include "docopt.h"
 
 
 int img2dxt1(unsigned char *input, unsigned char *output, int width, int height);
-
-int img2dxt3(unsigned char *input, unsigned char *output, int width, int height);
 
 int img2dxt5(unsigned char *input, unsigned char *output, int width, int height);
 

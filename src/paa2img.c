@@ -311,11 +311,8 @@ int paa2img(char *source, char *target) {
     imgdata = malloc(imgdatalen);
 
     if (compression == COMP_LZO) {
-        if (lzo_init() != LZO_E_OK) {
-            errorf("Failed to init LZO decompressor - this shouldn't be happening ...\n");
-            return 3;
-        }
         out_len = imgdatalen;
+        lzo_init();
         if (lzo1x_decompress(compresseddata, datalen, imgdata, &out_len, NULL) != LZO_E_OK) {
             errorf("Failed to decompress LZO data.\n");
             return 3;

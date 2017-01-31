@@ -30,7 +30,7 @@ Options:
     -x --exclude    Glob patterns to exclude from PBO (repeatable).
     -k --key        Private key to use for signing the PBO.
     -d --indent     String to use for indentation. "    " (4 spaces) by default.
-    -z --compress   Compress final PAA where possible
+    -z --compress   Compress final PAA where possible (not implemented)
     -t --type       PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88
                         Currently only DXT1 and DXT5 are implemented.
     -h --help       Show usage information and exit.
