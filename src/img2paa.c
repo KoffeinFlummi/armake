@@ -156,9 +156,9 @@ int img2paa(char *source, char *target) {
     uint16_t width;
     uint16_t height;
     long fp_offsets;
+    int num_channels;
     int w;
     int h;
-    int n;
     int i;
     lzo_uint in_len;
     lzo_uint out_len;
@@ -192,19 +192,30 @@ int img2paa(char *source, char *target) {
         return 4;
     }
 
-    imgdata = stbi_load(source, &w, &h, &n, 4);
+    imgdata = stbi_load(source, &w, &h, &num_channels, 4);
     if (!imgdata) {
         errorf("Failed to load image.\n");
         return 1;
     }
 
-    // Unless told otherwise, use DXT5 for alpha stuff and DXT1 for everything else
-    if (paatype == 0) {
-        paatype = (n == 4) ? DXT5 : DXT1;
-    }
-
     width = w;
     height = h;
+
+    // Check if alpha channel is necessary
+    if (num_channels == 4) {
+        num_channels--;
+        for (i = 3; i < width * height * 4; i += 4) {
+            if (imgdata[i] < 0xff) {
+                num_channels++;
+                break;
+            }
+        }
+    }
+
+    // Unless told otherwise, use DXT5 for alpha stuff and DXT1 for everything else
+    if (paatype == 0) {
+        paatype = (num_channels == 4) ? DXT5 : DXT1;
+    }
 
     if (width % 4 != 0 || height % 4 != 0) {
         errorf("Dimensions are no multiple of 4.\n");
