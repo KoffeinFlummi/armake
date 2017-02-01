@@ -158,6 +158,7 @@ int img2paa(char *source, char *target) {
     long fp_offsets;
     int w;
     int h;
+    int n;
     int i;
     lzo_uint in_len;
     lzo_uint out_len;
@@ -169,7 +170,7 @@ int img2paa(char *source, char *target) {
     unsigned char color[4];
     
     if (!args.paatype) {
-        paatype = DXT5; // @todo: potentially autodetect best option
+        paatype = 0;
     } else if (stricmp("DXT1", args.paatype) == 0) {
         paatype = DXT1;
     } else if (stricmp("DXT3", args.paatype) == 0) {
@@ -191,10 +192,15 @@ int img2paa(char *source, char *target) {
         return 4;
     }
 
-    imgdata = stbi_load(source, &w, &h, NULL, 4);
+    imgdata = stbi_load(source, &w, &h, &n, 4);
     if (!imgdata) {
         errorf("Failed to load image.\n");
         return 1;
+    }
+
+    // Unless told otherwise, use DXT5 for alpha stuff and DXT1 for everything else
+    if (paatype == 0) {
+        paatype = (n == 4) ? DXT5 : DXT1;
     }
 
     width = w;
