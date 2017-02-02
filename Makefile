@@ -1,6 +1,6 @@
 .RECIPEPREFIX +=
 
-VERSION = 0.5launchpadisshit
+VERSION = 0.5
 DESTDIR =
 BIN = bin
 SRC = src
