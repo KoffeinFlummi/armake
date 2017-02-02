@@ -1,6 +1,6 @@
 .RECIPEPREFIX +=
 
-VERSION = 0.4
+VERSION = 0.5
 DESTDIR =
 BIN = bin
 SRC = src

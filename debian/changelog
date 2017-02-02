@@ -1,3 +1,11 @@
+armake (0.5-1) precise; urgency=low
+
+  * Various fixes
+  * Add PAA conversion (types DXT1 and DXT5)
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 05 Jun 2016 03:01:00 +0200
+
+
 armake (0.4-1) precise; urgency=low
 
   * Various fixes (especially in regards to animations/sections)
