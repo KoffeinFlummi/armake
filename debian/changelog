@@ -1,9 +1,16 @@
+armake (0.5launchpadisshit-1) precise; urgency=low
+
+  * This version only has to exist because launchpad is shit.
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 02 Feb 2017 23:15:00 +0100
+
+
 armake (0.5-1) precise; urgency=low
 
   * Various fixes
   * Add PAA conversion (types DXT1 and DXT5)
 
- -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 05 Jun 2016 03:01:00 +0200
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Sun, 02 Feb 2017 23:10:00 +0100
 
 
 armake (0.4-1) precise; urgency=low

@@ -1,6 +1,6 @@
 .RECIPEPREFIX +=
 
-VERSION = 0.5
+VERSION = 0.5launchpadisshit
 DESTDIR =
 BIN = bin
 SRC = src
@@ -84,6 +84,8 @@ docopt-completion: $(BIN)/armake
     mv _armake completions/_armake
 
 debian: clean
+    unexpand -t 4 Makefile | tail -c +3 > tmp
+    mv tmp Makefile
     tar -czf ../armake_$(VERSION).orig.tar.gz .
     debuild -S -sa
     dput ppa:koffeinflummi/armake ../armake_*_source.changes
