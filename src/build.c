@@ -245,10 +245,10 @@ int cmd_build() {
     strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "rb");
     if (!f_prefix) {
-        if (strrchr(args.source, '/') == NULL)
+        if (strrchr(args.source, PATHSEP) == NULL)
             strncpy(addonprefix, args.source, sizeof(addonprefix));
         else
-            strncpy(addonprefix, strrchr(args.source, '/') + 1, sizeof(addonprefix));
+            strncpy(addonprefix, strrchr(args.source, PATHSEP) + 1, sizeof(addonprefix));
     } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
         fclose(f_prefix);
@@ -398,10 +398,10 @@ int cmd_build() {
             return 1;
         }
 
-        if (strchr(args.privatekey, '/') == NULL)
+        if (strchr(args.privatekey, PATHSEP) == NULL)
             strcpy(keyname, args.privatekey);
         else
-            strcpy(keyname, strrchr(args.privatekey, '/') + 1);
+            strcpy(keyname, strrchr(args.privatekey, PATHSEP) + 1);
         *strrchr(keyname, '.') = 0;
 
         strcpy(path_signature, args.target);
