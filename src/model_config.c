@@ -222,6 +222,41 @@ int read_animations(FILE *f, char *config_path, struct animation *animations) {
 }
 
 
+int sort_bones(struct bone *src, struct bone *tgt, int tgt_index, char *parent) {
+    int i;
+    int j;
+
+    for (i = 0; i < MAXBONES; i++) {
+        if (strlen(src[i].name) == 0)
+            continue;
+        if (strcmp(src[i].parent, parent) != 0)
+            continue;
+
+        memcpy(&tgt[tgt_index++], &src[i], sizeof(struct bone));
+        tgt_index = sort_bones(src, tgt, tgt_index, src[i].name);
+    }
+
+    if (strlen(parent) > 0)
+        return tgt_index;
+
+    // copy the remaining bones
+    for (i = 0; i < MAXBONES; i++) {
+        if (strlen(src[i].name) == 0)
+            break;
+        for (j = 0; j < MAXBONES; j++) {
+            if (strcmp(src[i].parent, tgt[j].name) == 0)
+                break;
+        }
+        if (j == MAXBONES) {
+            memcpy(&tgt[tgt_index], &src[i], sizeof(struct bone));
+            tgt_index++;
+        }
+    }
+
+    return tgt_index;
+}
+
+
 int read_model_config(char *path, struct skeleton *skeleton) {
     /*
      * Reads the model config information for the given model path. If no
@@ -240,6 +275,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     char model_name[512];
     char bones[MAXBONES * 2][512] = {};
     char buffer[512];
+    struct bone *bones_tmp;
 
     current_operation = OP_MODELCONFIG;
     strcpy(current_target, path);
@@ -344,6 +380,22 @@ int read_model_config(char *path, struct skeleton *skeleton) {
             strcpy(skeleton->bones[i / 2].name, bones[i]);
             strcpy(skeleton->bones[i / 2].parent, bones[i + 1]);
             skeleton->num_bones++;
+        }
+
+        // Sort bones by parent
+        bones_tmp = (struct bone *)malloc(sizeof(struct bone) * MAXBONES);
+
+        sort_bones(skeleton->bones, bones_tmp, 0, "");
+        memcpy(skeleton->bones, bones_tmp, sizeof(struct bone) * MAXBONES);
+
+        free(bones_tmp);
+
+        // Convert to lower case
+        for (i = 0; i < MAXBONES; i++) {
+            if (strlen(skeleton->bones[i].name) == 0)
+                break;
+            lower_case(skeleton->bones[i].name);
+            lower_case(skeleton->bones[i].parent);
         }
     }
 
