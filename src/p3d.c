@@ -1031,6 +1031,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         odol_lod->proxies[k].selection_index = i;
         odol_lod->proxies[k].bone_index = -1; // @todo
 
+        if (odol_lod->vertexboneref[odol_lod->faces[odol_lod->face_lookup[face]].table[0]].num_bones > 0) {
+            odol_lod->proxies[k].bone_index = odol_lod->vertexboneref[odol_lod->faces[odol_lod->face_lookup[face]].table[0]].weights[0][0];
+        }
+
         for (j = 0; j < odol_lod->num_sections; j++) {
             if (odol_lod->face_lookup[face] < odol_lod->sections[j].face_start)
                 continue;
