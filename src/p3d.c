@@ -1705,8 +1705,7 @@ int mlod2odol(char *source, char *target) {
     fwrite("ODOL", 4, 1, f_temp);
     version = P3DVERSION;
     fwrite(&version, sizeof(uint32_t), 1, f_temp); // version 70
-    // there seem to be another 4 bytes here, no idea what for
-    fwrite("\0\0\0\0", 4, 1, f_temp);
+    fwrite("\0\0\0\0", 4, 1, f_temp); // AppID
     fwrite("\0", 1, 1, f_temp); // prefix
     fwrite(&num_lods, 4, 1, f_temp);
 
