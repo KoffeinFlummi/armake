@@ -1086,9 +1086,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     if (odol_lod->vertexboneref != 0) {
         for (i = 0; i < odol_lod->num_points; i++) {
-            if (odol_lod->vertexboneref[i].num_bones > 1)
+            if (odol_lod->vertexboneref[i].num_bones > 1) {
                 odol_lod->vertexboneref_is_simple = 0;
                 break;
+            }
         }
     }
 }
