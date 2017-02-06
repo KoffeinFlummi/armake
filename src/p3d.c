@@ -1138,6 +1138,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
+	//fwrite(&model_info->ai_covers,     sizeof(bool), 1, f_target); //v73 will disable a model for cover search by the AI ("aicovers=0")
     fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
