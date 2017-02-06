@@ -29,8 +29,8 @@ typedef struct {
 } matrix;
 
 
-static const matrix empty_matrix = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const matrix identity_matrix = { 1, 0, 0, 0, 1, 0, 0, 0, 1 }; 
+static const matrix empty_matrix = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+static const matrix identity_matrix = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
 
 matrix vector_tilda(const vector v);

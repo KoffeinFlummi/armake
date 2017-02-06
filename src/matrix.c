@@ -17,6 +17,9 @@
  */
 
 
+#include <stdio.h>
+#include <string.h>
+
 #include "matrix.h"
 
 
@@ -93,22 +96,32 @@ matrix matrix_mult_scalar(const float s, const matrix m) {
     return r;
 }
 
+float matrix_determinant(const matrix m) {
+    return (m.m00 * m.m11 * m.m22) + (m.m01 * m.m12 * m.m20) + (m.m02 * m.m10 * m.m21) -
+            (m.m20 * m.m11 * m.m02) - (m.m21 * m.m12 * m.m00) - (m.m22 * m.m10 * m.m01);
+}
+
+matrix matrix_adjoint(const matrix m) {
+    matrix r;
+
+    memcpy(&r, &m, sizeof(matrix));
+
+    r.m01 = m.m10;
+    r.m02 = m.m20;
+
+    r.m10 = m.m01;
+    r.m12 = m.m21;
+
+    r.m20 = m.m02;
+    r.m21 = m.m12;
+
+    return r;
+}
+
 matrix matrix_inverse(const matrix m) {
     matrix r;
-    float determinant = 0;
 
-    determinant += m.m10 * ( m.m21 * m.m02 - m.m01 * m.m22);
-    determinant += m.m20 * ( m.m01 * m.m12 - m.m11 * m.m02);
+    r = matrix_mult_scalar(1.0f / matrix_determinant(m), matrix_adjoint(m));
 
-    r.m00 = ((m.m11 * m.m22) - (m.m21 * m.m12)) / determinant;
-    r.m10 = ((m.m21 * m.m02) - (m.m01 * m.m22)) / determinant;
-    r.m20 = ((m.m01 * m.m12) - (m.m11 * m.m02)) / determinant;
-    r.m01 = ((m.m12 * m.m20) - (m.m22 * m.m10)) / determinant;
-    r.m11 = ((m.m22 * m.m00) - (m.m02 * m.m20)) / determinant;
-    r.m21 = ((m.m02 * m.m10) - (m.m12 * m.m00)) / determinant;
-    r.m02 = ((m.m10 * m.m21) - (m.m20 * m.m11)) / determinant;
-    r.m12 = ((m.m20 * m.m01) - (m.m00 * m.m21)) / determinant;
-    r.m22 = ((m.m00 * m.m11) - (m.m10 * m.m01)) / determinant;
-
-   return r;
+    return r;
 }
