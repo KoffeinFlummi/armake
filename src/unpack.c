@@ -55,6 +55,99 @@ bool is_garbage(struct header *header) {
 }
 
 
+int cmd_inspect() {
+    extern DocoptArgs args;
+    extern int current_operation;
+    extern char current_target[2048];
+    FILE *f_target;
+    int num_files;
+    long i;
+    long fp_tmp;
+    char prefix[2048] = { 0 };
+    char buffer[2048];
+    struct header *headers;
+
+    headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
+
+    current_operation = OP_UNPACK;
+    strcpy(current_target, args.target);
+
+    // remove trailing slash in target
+    if (args.target[strlen(args.target) - 1] == PATHSEP)
+        args.target[strlen(args.target) - 1] = 0;
+
+    // open file
+    f_target = fopen(args.target, "rb");
+    if (!f_target) {
+        errorf("Failed to open %s.\n", args.target);
+        return 1;
+    }
+
+    // read header extensions and prefix
+    fseek(f_target, 1, SEEK_SET);
+    fgets(buffer, 5, f_target);
+    if (strncmp(buffer, "sreV", 4) != 0) {
+        errorf("Unrecognized file format.\n");
+        return 3;
+    }
+
+    fseek(f_target, 21, SEEK_SET);
+    while (true) {
+        fp_tmp = ftell(f_target);
+        if (strcmp(buffer, "prefix") == 0) {
+            fgets(prefix, sizeof(prefix), f_target);
+            fseek(f_target, fp_tmp + strlen(prefix) + 1, SEEK_SET);
+            strcpy(buffer, prefix);
+        } else {
+            fgets(buffer, sizeof(buffer), f_target);
+            fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+        }
+        if (strlen(buffer) == 0)
+            break;
+    }
+
+    printf("Prefix: \"%s\"\n", prefix);
+
+    // read headers
+    for (num_files = 0; num_files <= MAXFILES; num_files++) {
+        fp_tmp = ftell(f_target);
+        fgets(buffer, sizeof(buffer), f_target);
+        fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+        if (strlen(buffer) == 0) {
+            fseek(f_target, sizeof(uint32_t) * 5, SEEK_CUR);
+            break;
+        }
+
+        strcpy(headers[num_files].name, buffer);
+        fread(&headers[num_files].packing_method, sizeof(uint32_t), 1, f_target);
+        fread(&headers[num_files].original_size, sizeof(uint32_t), 1, f_target);
+        fseek(f_target, sizeof(uint32_t) * 2, SEEK_CUR);
+        fread(&headers[num_files].data_size, sizeof(uint32_t), 1, f_target);
+    }
+    if (num_files > MAXFILES) {
+        errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
+        return 4;
+    }
+
+    printf("# Files: %i\n\n", num_files);
+
+    printf("Path                                                  Method  Original    Packed\n");
+    printf("                                                                  Size      Size\n");
+    printf("================================================================================\n");
+    for (i = 0; i < num_files; i++) {
+        if (headers[i].original_size == 0)
+            headers[i].original_size = headers[i].data_size;
+        printf("%-50s %9u %9u %9u\n", headers[i].name, headers[i].packing_method, headers[i].original_size, headers[i].data_size);
+    }
+
+    // clean up
+    fclose(f_target);
+    free(headers);
+
+    return 0;
+}
+
+
 int cmd_unpack() {
     extern DocoptArgs args;
     extern int current_operation;
@@ -68,7 +161,9 @@ int cmd_unpack() {
     char prefix[2048] = { 0 };
     char full_path[2048];
     char buffer[2048];
-    struct header headers[MAXFILES];
+    struct header *headers;
+
+    headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
     strcpy(current_target, args.source);
@@ -190,6 +285,7 @@ int cmd_unpack() {
 
     // clean up
     fclose(f_source);
+    free(headers);
 
     // if prefix file wasn't included but there is a prefix, create one
     strcpy(full_path, args.target);

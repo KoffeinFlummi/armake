@@ -39,6 +39,7 @@ const char help_message[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake inspect <target>\n"
 "    armake unpack [-f] <source> <target>\n"
 "    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake keygen [-f] <target>\n"
@@ -52,6 +53,7 @@ const char help_message[] =
 "    binarize    Binarize a file.\n"
 "    build       Pack a folder into a PBO.\n"
 "    unpack      Unpack a PBO into a folder.\n"
+"    inspect     Inspect a PBO and list contained files\n"
 "    derapify    Derapify a config. You can pass - as the target to print to stdout.\n"
 "    keygen      Generate a keypair with the specified path (extensions are added).\n"
 "    sign        Sign a PBO with the given private key.\n"
@@ -84,6 +86,7 @@ const char usage_pattern[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake inspect <target>\n"
 "    armake unpack [-f] <source> <target>\n"
 "    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake keygen [-f] <target>\n"
@@ -315,6 +318,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->derapify = command->value;
         } else if (!strcmp(command->name, "img2paa")) {
             args->img2paa = command->value;
+        } else if (!strcmp(command->name, "inspect")) {
+            args->inspect = command->value;
         } else if (!strcmp(command->name, "keygen")) {
             args->keygen = command->value;
         } else if (!strcmp(command->name, "paa2img")) {
@@ -356,8 +361,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
-        0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+        NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -366,6 +371,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"build", 0},
         {"derapify", 0},
         {"img2paa", 0},
+        {"inspect", 0},
         {"keygen", 0},
         {"paa2img", 0},
         {"sign", 0},
@@ -394,7 +400,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {8, 8, 11, commands, arguments, options};
+    Elements elements = {9, 8, 11, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

@@ -40,6 +40,7 @@ _armake ()
             subcommands=(
 				'binarize[Binarize a file.]'
 				'build[Pack a folder into a PBO.]'
+				'inspect[Inspect a PBO and list contained files]'
 				'unpack[Unpack a PBO into a folder.]'
 				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
 				'keygen[Generate a keypair with the specified path (extensions are added).]'
@@ -57,6 +58,9 @@ _armake ()
                 ;;
                 build)
                     _armake-build
+                ;;
+                inspect)
+                    _armake-inspect
                 ;;
                 unpack)
                     _armake-unpack
@@ -126,6 +130,21 @@ _armake-build ()
 
     else
         myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<source>' '<target>')
+        _message_next_arg
+    fi
+}
+
+_armake-inspect ()
+{
+    local context state state_descr line
+    typeset -A opt_args
+
+    if [[ $words[$CURRENT] == -* ]] ; then
+        _arguments -C \
+        ':command:->command' \
+
+    else
+        myargs=('<target>')
         _message_next_arg
     fi
 }

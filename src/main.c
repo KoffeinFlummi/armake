@@ -46,10 +46,10 @@ int main(int argc, char *argv[]) {
     args = docopt(argc, argv, 1, VERSION);
 
     // Docopt doesn't yet support positional arguments
-    if (argc < (args.keygen ? 3 : 4))
+    if (argc < ((args.keygen || args.inspect) ? 3 : 4))
         docopt(2, halp, 1, VERSION);
 
-    if (!args.keygen) {
+    if (!args.keygen && !args.inspect) {
         args.source = argv[argc - 2];
         if (args.source[strlen(args.source) - 1] == PATHSEP)
             args.source[strlen(args.source) - 1] = 0;
@@ -94,6 +94,8 @@ int main(int argc, char *argv[]) {
         return cmd_binarize();
     if (args.build)
         return cmd_build();
+    if (args.inspect)
+        return cmd_inspect();
     if (args.unpack)
         return cmd_unpack();
     if (args.derapify)

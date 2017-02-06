@@ -43,6 +43,7 @@ typedef struct {
     int build;
     int derapify;
     int img2paa;
+    int inspect;
     int keygen;
     int paa2img;
     int sign;

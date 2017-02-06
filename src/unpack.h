@@ -30,4 +30,6 @@ struct header {
 };
 
 
+int cmd_inspect();
+
 int cmd_unpack();
