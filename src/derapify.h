@@ -19,6 +19,9 @@
 #pragma once
 
 
+#define RAD2DEG 0.017453293;
+
+
 int seek_config_path(FILE *f, char *config_path);
 
 int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize);

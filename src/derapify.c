@@ -401,7 +401,7 @@ int read_float(FILE *f, char *config_path, float *result) {
         if (strlen(endptr) > 0)
             return 4;
 
-        *result *= 0.0174533;
+        *result *= RAD2DEG;
     } else {
         fread(result, 4, 1, f);
     }
