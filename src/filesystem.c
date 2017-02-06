@@ -184,6 +184,7 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
         else
             addon_sanitized[i] = addon[i];
     }
+    addon_sanitized[i] = 0;
 
     // find a free one
     for (i = 0; i < 1024; i++) {
