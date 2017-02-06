@@ -789,12 +789,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             // Tris:  0 1 2   -> 1 0 2
             // Quads: 0 1 2 3 -> 1 0 3 2
 
-            if (j <= 1)
-                k = 1 - j;
-            else if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 3)
-                k = j;
+            if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 4)
+                k = j ^ 1;
             else
-                k = 2 + (1 - (j - 2));
+                k = j ^ (1 ^ (j >> 1));
 
             odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod, model_info,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
