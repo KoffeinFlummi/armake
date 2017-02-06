@@ -40,13 +40,13 @@ _armake ()
             subcommands=(
 				'binarize[Binarize a file.]'
 				'build[Pack a folder into a PBO.]'
-				'inspect[Inspect a PBO and list contained files]'
+				'inspect[Inspect a PBO and list contained files.]'
 				'unpack[Unpack a PBO into a folder.]'
 				'derapify[Derapify a config. You can pass - as the target to print to stdout.]'
 				'keygen[Generate a keypair with the specified path (extensions are added).]'
 				'sign[Sign a PBO with the given private key.]'
-				'paa2img[Convert PAA to image (PNG only)]'
-				'img2paa[Convert image to PAA]'
+				'paa2img[Convert PAA to image (PNG only).]'
+				'img2paa[Convert image to PAA.]'
             )
             _values 'armake' $subcommands
         ;;
@@ -246,8 +246,8 @@ _armake-img2paa ()
         ':command:->command' \
 		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
 		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
-		'(-z)-z[Compress final PAA where possible (not implemented)]' \
-		'(--compress)--compress[Compress final PAA where possible (not implemented)]' \
+		'(-z)-z[Compress final PAA where possible.]' \
+		'(--compress)--compress[Compress final PAA where possible.]' \
 		'(-t)-t[PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88]' \
 		'(--type)--type[PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88]' \
 
