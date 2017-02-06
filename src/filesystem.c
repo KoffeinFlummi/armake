@@ -178,13 +178,8 @@ int create_temp_folder(char *addon, char *temp_folder, size_t bufsize) {
 
     temp[strlen(temp) - 1] = 0;
 
-    for (i = 0; i < strlen(addon); i++) {
-        if (addon[i] == '\\' || addon[i] == '/')
-            addon_sanitized[i] = '_';
-        else
-            addon_sanitized[i] = addon[i];
-    }
-    addon_sanitized[i] = 0;
+    for (i = 0; i <= strlen(addon); i++)
+        addon_sanitized[i] = (addon[i] == '\\' || addon[i] == '/') ? '_' : addon[i];
 
     // find a free one
     for (i = 0; i < 1024; i++) {
@@ -206,14 +201,10 @@ int remove_file(char *path) {
      */
 
 #ifdef _WIN32
-    if (!DeleteFile(path))
-        return 1;
+    return !DeleteFile(path);
 #else
-    if (remove(path))
-        return 1;
+    return (remove(path) * -1);
 #endif
-
-    return 0;
 }
 
 
