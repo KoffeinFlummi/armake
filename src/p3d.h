@@ -201,7 +201,7 @@ struct odol_lod {
     uint32_t *vertex_to_point;
     uint32_t *face_lookup;
     uint32_t num_faces;
-    uint32_t offset_sections;
+    uint32_t face_allocation_size;
     uint16_t always_0;
     struct odol_face *faces;
     uint32_t num_sections;

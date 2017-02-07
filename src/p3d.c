@@ -707,7 +707,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     }
 
     odol_lod->num_faces = mlod_lod->num_faces;
-    odol_lod->offset_sections = sizeof(struct odol_face) * odol_lod->num_faces + 8;
 
     odol_lod->always_0 = 0;
 
@@ -800,7 +799,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         face_end += sizeof(struct odol_face) - (4 - mlod_lod->faces[i].face_type) * sizeof(uint32_t);
     }
 
-    odol_lod->offset_sections = face_end;
+    odol_lod->face_allocation_size = face_end;
 
     // Write remaining vertices
     for (i = 0; i < odol_lod->num_points_mlod; i++) {
@@ -1308,7 +1307,7 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite("\0\0\0\0\0\0\0\0", sizeof(uint32_t) * 2, 1, f_target);
 
     fwrite(&odol_lod->num_faces, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->offset_sections, sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_lod->face_allocation_size, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->always_0, sizeof(uint16_t), 1, f_target);
 
     for (i = 0; i < odol_lod->num_faces; i++) {
