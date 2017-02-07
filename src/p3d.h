@@ -19,7 +19,7 @@
 #pragma once
 
 
-#define P3DVERSION 70
+#define P3DVERSION 71
 
 #define MAXTEXTURES 128
 #define MAXMATERIALS 128
