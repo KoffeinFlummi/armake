@@ -797,7 +797,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod, model_info,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
-        face_end += 2 + 2 * odol_lod->faces[odol_lod->face_lookup[i]].face_type;
+        face_end += sizeof(struct odol_face) - (4 - mlod_lod->faces[i].face_type) * sizeof(uint32_t);
     }
 
     odol_lod->offset_sections = face_end;
