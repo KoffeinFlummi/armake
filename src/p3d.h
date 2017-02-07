@@ -264,6 +264,7 @@ struct model_info {
     bool lock_autocenter;
     bool can_occlude;
     bool can_be_occluded;
+    bool ai_cover;
     bool force_not_alpha;
     int32_t sb_source;
     bool prefer_shadow_volume;

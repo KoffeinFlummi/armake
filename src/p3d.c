@@ -380,6 +380,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->lock_autocenter = false; // @todo
     model_info->can_occlude = false; // @todo
     model_info->can_be_occluded = true; // @todo
+    model_info->ai_cover = false; // @todo
     model_info->animated = false; // @todo
 
     for (i = 0; i < num_lods; i++) {
@@ -1147,7 +1148,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
-    // fwrite(&model_info->ai_covers,     sizeof(bool), 1, f_target); //v73 will disable a model for cover search by the AI ("aicovers=0")
+    // fwrite(&model_info->ai_cover,            sizeof(bool), 1, f_target);  // v73
     fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
@@ -1174,6 +1175,8 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->destruct_type,       sizeof(char), 1, f_target);
     fwrite(&model_info->property_frequent,   sizeof(bool), 1, f_target);
     fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target); //@todo Array of unused Selection Names
+
+    // v73 adds another 4 bytes here
 
     //sets preferredShadowVolumeLod, preferredShadowBufferLod, and preferredShadowBufferLodVis for each LOD
     for (i = 0; i < num_lods; i++)
