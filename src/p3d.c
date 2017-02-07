@@ -891,7 +891,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                         mlod_lod->faces[odol_lod->face_lookup[j]].face_flags)
                     break;
                 odol_lod->sections[k].face_end++;
-                odol_lod->sections[k].face_index_end += 2 + 2 * odol_lod->faces[j].face_type;
+                odol_lod->sections[k].face_index_end += sizeof(struct odol_face) - (4 - odol_lod->faces[j].face_type) * sizeof(uint32_t);
             }
 
             face_start = odol_lod->sections[k].face_index_end;
