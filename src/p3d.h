@@ -252,6 +252,8 @@ struct model_info {
     float view_density;
     struct triplet bbox_min;
     struct triplet bbox_max;
+    float lod_density_coef;
+    float draw_importance;
     struct triplet bbox_visual_min;
     struct triplet bbox_visual_max;
     struct triplet bounding_center;
