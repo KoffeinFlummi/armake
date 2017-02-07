@@ -19,7 +19,7 @@
 #pragma once
 
 
-//#define VERSION70
+#define P3DVERSION 70
 
 #define MAXTEXTURES 128
 #define MAXMATERIALS 128
@@ -67,13 +67,7 @@
 #include "model_config.h"
 #include "matrix.h"
 
-#ifdef VERSION70
-    typedef uint32_t point_index;
-    #define NOPOINT UINT32_MAX //=-1 as int32_t
-#else
-    typedef uint16_t point_index;
-    #define NOPOINT UINT16_MAX //=-1 as int32_t
-#endif
+#define NOPOINT UINT32_MAX //=-1 as int32_t
 
 
 struct uv_pair {
@@ -126,7 +120,7 @@ struct mlod_lod {
 
 struct odol_face {
     uint8_t face_type;
-    point_index table[4];
+    uint32_t table[4];
 };
 
 struct odol_proxy {
@@ -165,13 +159,13 @@ struct odol_section {
 struct odol_selection {
     char name[512];
     uint32_t num_faces;
-    point_index *faces;
+    uint32_t *faces;
     uint32_t always_0;
     bool is_sectional;
     uint32_t num_sections;
     uint32_t *sections;
     uint32_t num_vertices;
-    point_index *vertices;
+    uint32_t *vertices;
     uint32_t num_vertex_weights;
     uint8_t *vertex_weights;
 };
@@ -203,11 +197,11 @@ struct odol_lod {
     char *textures;
     uint32_t num_materials;
     struct material *materials;
-    point_index *point_to_vertex;
-    point_index *vertex_to_point;
-    point_index *face_lookup;
+    uint32_t *point_to_vertex;
+    uint32_t *vertex_to_point;
+    uint32_t *face_lookup;
     uint32_t num_faces;
-    uint32_t offset_sections;
+    uint32_t face_allocation_size;
     uint16_t always_0;
     struct odol_face *faces;
     uint32_t num_sections;

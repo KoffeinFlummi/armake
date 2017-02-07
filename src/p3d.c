@@ -552,13 +552,13 @@ int compare_face_lookup(void *faces_ptr, const void *a, const void *b) {
 int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
 #endif
     struct mlod_face *faces;
-    point_index a_index;
-    point_index b_index;
+    uint32_t a_index;
+    uint32_t b_index;
     int compare;
 
     faces = (struct mlod_face *)faces_ptr;
-    a_index = *((point_index *)a);
-    b_index = *((point_index *)b);
+    a_index = *((uint32_t *)a);
+    b_index = *((uint32_t *)b);
 
     compare = strcmp(faces[a_index].texture_name, faces[b_index].texture_name);
     if (compare != 0)
@@ -711,7 +711,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     }
 
     odol_lod->num_faces = mlod_lod->num_faces;
-    odol_lod->offset_sections = sizeof(struct odol_face) * odol_lod->num_faces + 8;
 
     odol_lod->always_0 = 0;
 
@@ -720,9 +719,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->num_points = 0;
 
-    odol_lod->point_to_vertex = (point_index *)malloc(sizeof(point_index) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (point_index *)malloc(sizeof(point_index) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (point_index *)malloc(sizeof(point_index) * mlod_lod->num_faces);
+    odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
+    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
 
     for (i = 0; i < mlod_lod->num_faces; i++)
         odol_lod->face_lookup[i] = i;
@@ -769,9 +768,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     if (mlod_lod->num_faces > 1) {
 #ifdef _WIN32
-        qsort_s(odol_lod->face_lookup, odol_lod->num_faces, sizeof(point_index), compare_face_lookup, (void *)mlod_lod->faces);
+        qsort_s(odol_lod->face_lookup, odol_lod->num_faces, sizeof(uint32_t), compare_face_lookup, (void *)mlod_lod->faces);
 #else
-        qsort_r(odol_lod->face_lookup, odol_lod->num_faces, sizeof(point_index), compare_face_lookup, (void *)mlod_lod->faces);
+        qsort_r(odol_lod->face_lookup, odol_lod->num_faces, sizeof(uint32_t), compare_face_lookup, (void *)mlod_lod->faces);
 #endif
     }
 
@@ -793,20 +792,18 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             // Tris:  0 1 2   -> 1 0 2
             // Quads: 0 1 2 3 -> 1 0 3 2
 
-            if (j <= 1)
-                k = 1 - j;
-            else if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 3)
-                k = j;
+            if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 4)
+                k = j ^ 1;
             else
-                k = 2 + (1 - (j - 2));
+                k = j ^ (1 ^ (j >> 1));
 
             odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod, model_info,
                 mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
         }
-        face_end += 2 + 2 * odol_lod->faces[odol_lod->face_lookup[i]].face_type;
+        face_end += sizeof(struct odol_face) - (4 - mlod_lod->faces[i].face_type) * sizeof(uint32_t);
     }
 
-    odol_lod->offset_sections = face_end;
+    odol_lod->face_allocation_size = face_end;
 
     // Write remaining vertices
     for (i = 0; i < odol_lod->num_points_mlod; i++) {
@@ -898,7 +895,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                         mlod_lod->faces[odol_lod->face_lookup[j]].face_flags)
                     break;
                 odol_lod->sections[k].face_end++;
-                odol_lod->sections[k].face_index_end += 2 + 2 * odol_lod->faces[j].face_type;
+                odol_lod->sections[k].face_index_end += sizeof(struct odol_face) - (4 - odol_lod->faces[j].face_type) * sizeof(uint32_t);
             }
 
             face_start = odol_lod->sections[k].face_index_end;
@@ -958,7 +955,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 odol_lod->selections[i].num_faces++;
         }
 
-        odol_lod->selections[i].faces = (point_index *)malloc(sizeof(point_index) * odol_lod->selections[i].num_faces);
+        odol_lod->selections[i].faces = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_faces);
         for (j = 0; j < odol_lod->selections[i].num_faces; j++)
             odol_lod->selections[i].faces[j] = NOPOINT;
 
@@ -983,7 +980,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
         odol_lod->selections[i].num_vertex_weights = odol_lod->selections[i].num_vertices;
 
-        odol_lod->selections[i].vertices = (point_index *)malloc(sizeof(point_index) * odol_lod->selections[i].num_vertices);
+        odol_lod->selections[i].vertices = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_vertices);
         for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
             odol_lod->selections[i].vertices[j] = NOPOINT;
 
@@ -1095,22 +1092,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     if (odol_lod->vertexboneref != 0) {
         for (i = 0; i < odol_lod->num_points; i++) {
-            if (i == 0)
-                continue;
-            if (odol_lod->vertexboneref[i - 1].num_bones != odol_lod->vertexboneref[i].num_bones)
+            if (odol_lod->vertexboneref[i].num_bones > 1) {
+                odol_lod->vertexboneref_is_simple = 0;
                 break;
-            for (j = 0; j < 4; j++) {
-                if (odol_lod->vertexboneref[i - 1].weights[j][0] != odol_lod->vertexboneref[i].weights[j][0])
-                    break;
-                if (odol_lod->vertexboneref[i - 1].weights[j][1] != odol_lod->vertexboneref[i].weights[j][1])
-                    break;
             }
-            if (j < 4)
-                break;
         }
-
-        if (i < odol_lod->num_points)
-            odol_lod->vertexboneref_is_simple = 0;
     }
 }
 
@@ -1146,6 +1132,8 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->view_density,        sizeof(float), 1, f_target);
     fwrite(&model_info->bbox_min,            sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_max,            sizeof(struct triplet), 1, f_target);
+    float temp = 1.0f;
+    fwrite(&temp, 4, 1, f_target); //unknown float
     fwrite(&model_info->bbox_visual_min,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_visual_max,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
@@ -1163,9 +1151,6 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->skeleton->mf_act,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->t_body,    sizeof(float), 1, f_target);
     fwrite(&model_info->force_not_alpha,     sizeof(bool), 1, f_target);
-#ifdef VERSION70
-    fwrite("\0\0\0\0", 4, 1, f_target); //unknown int
-#endif
     fwrite(&model_info->sb_source,           sizeof(int32_t), 1, f_target);
     fwrite(&model_info->prefer_shadow_volume, sizeof(bool), 1, f_target);
     fwrite(&model_info->shadow_offset,       sizeof(float), 1, f_target);
@@ -1215,7 +1200,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_faces, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_faces > 0) {
         fputc(0, f_target);
-        fwrite(odol_selection->faces, sizeof(point_index) * odol_selection->num_faces, 1, f_target);
+        fwrite(odol_selection->faces, sizeof(uint32_t) * odol_selection->num_faces, 1, f_target);
     }
 
     fwrite(&odol_selection->always_0, sizeof(uint32_t), 1, f_target);
@@ -1230,7 +1215,7 @@ void write_odol_selection(FILE *f_target, struct odol_selection *odol_selection)
     fwrite(&odol_selection->num_vertices, sizeof(uint32_t), 1, f_target);
     if (odol_selection->num_vertices > 0) {
         fputc(0, f_target);
-        fwrite(odol_selection->vertices, sizeof(point_index) * odol_selection->num_vertices, 1, f_target);
+        fwrite(odol_selection->vertices, sizeof(uint32_t) * odol_selection->num_vertices, 1, f_target);
     }
 
     fwrite(&odol_selection->num_vertex_weights, sizeof(uint32_t), 1, f_target);
@@ -1331,12 +1316,12 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     fwrite("\0\0\0\0\0\0\0\0", sizeof(uint32_t) * 2, 1, f_target);
 
     fwrite(&odol_lod->num_faces, sizeof(uint32_t), 1, f_target);
-    fwrite(&odol_lod->offset_sections, sizeof(uint32_t), 1, f_target);
+    fwrite(&odol_lod->face_allocation_size, sizeof(uint32_t), 1, f_target);
     fwrite(&odol_lod->always_0, sizeof(uint16_t), 1, f_target);
 
     for (i = 0; i < odol_lod->num_faces; i++) {
         fwrite(&odol_lod->faces[i].face_type, sizeof(uint8_t), 1, f_target);
-        fwrite( odol_lod->faces[i].table, sizeof(point_index) * odol_lod->faces[i].face_type, 1, f_target);
+        fwrite( odol_lod->faces[i].table, sizeof(uint32_t) * odol_lod->faces[i].face_type, 1, f_target);
     }
 
     fwrite(&odol_lod->num_sections, sizeof(uint32_t), 1, f_target);
@@ -1431,6 +1416,11 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     // neighbor bone ref
     fwrite("\0\0\0\0", 4, 1, f_target);
 
+    // collimator stuff?
+    fwrite("\0\0\0\0", 4, 1, f_target);
+
+    // unknown byte
+    fwrite("\0", 1, 1, f_target);
 
     temp = ftell(f_target) - fp_vertextable_size;
     fseek(f_target, fp_vertextable_size, SEEK_SET);
@@ -1651,6 +1641,7 @@ int mlod2odol(char *source, char *target) {
     int success;
     long fp_lods;
     long fp_temp;
+    uint32_t version;
     uint32_t num_lods;
     struct mlod_lod *mlod_lods;
     struct model_info model_info;
@@ -1718,13 +1709,9 @@ int mlod2odol(char *source, char *target) {
 
     // Write header
     fwrite("ODOL", 4, 1, f_temp);
-#ifdef VERSION70
-    fwrite("\x46\0\0\0", 4, 1, f_temp); // version 70
-#else
-    fwrite("\x44\0\0\0", 4, 1, f_temp); // version 68
-#endif
-    // there seem to be another 4 bytes here, no idea what for
-    fwrite("\0\0\0\0", 4, 1, f_temp);
+    version = P3DVERSION;
+    fwrite(&version, sizeof(uint32_t), 1, f_temp); // version 70
+    fwrite("\0\0\0\0", 4, 1, f_temp); // AppID
     fwrite("\0", 1, 1, f_temp); // prefix
     fwrite(&num_lods, 4, 1, f_temp);
 
