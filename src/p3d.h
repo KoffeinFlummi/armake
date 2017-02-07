@@ -92,7 +92,9 @@ struct mlod_face {
     struct pseudovertextable table[4];
     uint32_t face_flags;
     char texture_name[512];
+    int texture_index;
     char material_name[512];
+    int material_index;
     char section_names[512];
 };
 

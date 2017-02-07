@@ -564,11 +564,11 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
     a_index = *((uint32_t *)a);
     b_index = *((uint32_t *)b);
 
-    compare = strcmp(faces[a_index].texture_name, faces[b_index].texture_name);
+    compare = faces[a_index].texture_index - faces[b_index].texture_index;
     if (compare != 0)
         return compare;
 
-    compare = strcmp(faces[a_index].material_name, faces[b_index].material_name);
+    compare = faces[a_index].material_index - faces[b_index].material_index;
     if (compare != 0)
         return compare;
 
@@ -673,6 +673,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 break;
         }
 
+        mlod_lod->faces[i].texture_index = j;
+
         if (j >= MAXTEXTURES) {
             warningf("Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
             break;
@@ -688,6 +690,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             if (strcmp(mlod_lod->faces[i].material_name, odol_lod->materials[j].path) == 0)
                 break;
         }
+
+        mlod_lod->faces[i].material_index = (strlen(mlod_lod->faces[i].material_name) > 0) ? j : -1;
 
         if (j >= MAXMATERIALS) {
             warningf("Maximum amount of materials per LOD (%i) exceeded.", MAXMATERIALS);
@@ -862,28 +866,14 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].min_bone_index = 0;
             odol_lod->sections[k].bones_count = odol_lod->num_items;
             odol_lod->sections[k].mat_dummy = 0;
-            odol_lod->sections[k].common_texture_index = -1;
+            odol_lod->sections[k].common_texture_index = mlod_lod->faces[odol_lod->face_lookup[i]].texture_index;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup[i]].face_flags;
-            odol_lod->sections[k].material_index = -1;
+            odol_lod->sections[k].material_index = mlod_lod->faces[odol_lod->face_lookup[i]].material_index;
             odol_lod->sections[k].num_stages = 2;
             //num_stages defines number of entries in area_over_tex
             odol_lod->sections[k].area_over_tex[0] = 1.0f; // @todo
             odol_lod->sections[k].area_over_tex[1] = 1.0f; // @todo
             odol_lod->sections[k].unknown_long = 0;
-
-            for (j = 0; j < odol_lod->num_textures; j++) {
-                if (strcmp(textures[j], mlod_lod->faces[odol_lod->face_lookup[i]].texture_name) == 0) {
-                    odol_lod->sections[k].common_texture_index = j;
-                    break;
-                }
-            }
-
-            for (j = 0; j < odol_lod->num_materials; j++) {
-                if (strcmp(odol_lod->materials[j].path, mlod_lod->faces[odol_lod->face_lookup[i]].material_name) == 0) {
-                    odol_lod->sections[k].material_index = j;
-                    break;
-                }
-            }
 
             for (j = i; j < odol_lod->num_faces; j++) {
                 if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].texture_name,
