@@ -1132,8 +1132,10 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->view_density,        sizeof(float), 1, f_target);
     fwrite(&model_info->bbox_min,            sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_max,            sizeof(struct triplet), 1, f_target);
-    float temp = 1.0f;
-    fwrite(&temp, 4, 1, f_target); //unknown float
+    float loddensitycoef = 1.0f;
+    fwrite(&loddensitycoef, 4, 1, f_target); // loddensitycoef default: 1.0f
+    //float drawimportance = 1.0f; //v71
+    //fwrite(&drawimportance, 4, 1, f_target); // drawimportance default: 1.0f
     fwrite(&model_info->bbox_visual_min,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_visual_max,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
@@ -1144,6 +1146,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->lock_autocenter,     sizeof(bool), 1, f_target);
     fwrite(&model_info->can_occlude,         sizeof(bool), 1, f_target);
     fwrite(&model_info->can_be_occluded,     sizeof(bool), 1, f_target);
+    //fwrite(&model_info->ai_covers,     sizeof(bool), 1, f_target); //v73 will disable a model for cover search by the AI ("aicovers=0")
     fwrite(&model_info->skeleton->ht_min,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->ht_max,    sizeof(float), 1, f_target);
     fwrite(&model_info->skeleton->af_max,    sizeof(float), 1, f_target);
@@ -1169,7 +1172,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->class_type,          sizeof(char), 1, f_target);
     fwrite(&model_info->destruct_type,       sizeof(char), 1, f_target);
     fwrite(&model_info->property_frequent,   sizeof(bool), 1, f_target);
-    fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target);
+    fwrite(&model_info->always_0,            sizeof(uint32_t), 1, f_target); //@todo Array of unused Selection Names
 
     //sets preferredShadowVolumeLod, preferredShadowBufferLod, and preferredShadowBufferLodVis for each LOD
     for (i = 0; i < num_lods; i++)
@@ -1416,8 +1419,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     // neighbor bone ref
     fwrite("\0\0\0\0", 4, 1, f_target);
 
-    // collimator stuff?
-    fwrite("\0\0\0\0", 4, 1, f_target);
+    // has Collimator info?
+    fwrite("\0\0\0\0", sizeof(uint32_t), 1, f_target); //If 1 then need to write CollimatorInfo structure
 
     // unknown byte
     fwrite("\0", 1, 1, f_target);
@@ -1711,8 +1714,8 @@ int mlod2odol(char *source, char *target) {
     fwrite("ODOL", 4, 1, f_temp);
     version = P3DVERSION;
     fwrite(&version, sizeof(uint32_t), 1, f_temp); // version 70
-    fwrite("\0\0\0\0", 4, 1, f_temp); // AppID
-    fwrite("\0", 1, 1, f_temp); // prefix
+    fwrite("\0\0\0\0", sizeof(uint32_t), 1, f_temp); // AppID
+    fwrite("\0", 1, 1, f_temp); // muzzleFlash string
     fwrite(&num_lods, 4, 1, f_temp);
 
     // Write model info
