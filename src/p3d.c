@@ -1136,7 +1136,7 @@ void write_model_info(FILE *f_target, uint32_t num_lods, struct model_info *mode
     fwrite(&model_info->bbox_min,            sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_max,            sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->lod_density_coef,    sizeof(float), 1, f_target);
-    // fwrite(&model_info->draw_importance,     sizeof(float), 1, f_target); v71
+    fwrite(&model_info->draw_importance,     sizeof(float), 1, f_target);
     fwrite(&model_info->bbox_visual_min,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bbox_visual_max,     sizeof(struct triplet), 1, f_target);
     fwrite(&model_info->bounding_center,     sizeof(struct triplet), 1, f_target);
