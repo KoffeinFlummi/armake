@@ -783,11 +783,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     }
 
     // Write face vertices
-    odol_lod->uv_scale[0] = 0.0f;
-    odol_lod->uv_scale[1] = 0.0f;
-    odol_lod->uv_scale[2] = 0.0f;
-    odol_lod->uv_scale[3] = 0.0f;
     face_end = 0;
+    memset(odol_lod->uv_scale, 0, sizeof(float) * 4);
     for (i = 0; i < mlod_lod->num_faces; i++) {
         odol_lod->faces[odol_lod->face_lookup[i]].face_type = mlod_lod->faces[i].face_type;
         for (j = 0; j < odol_lod->faces[odol_lod->face_lookup[i]].face_type; j++) {
@@ -812,7 +809,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
             // Quads: 0 1 2 3 -> 1 0 3 2
-
             if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 4)
                 k = j ^ 1;
             else
