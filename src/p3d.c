@@ -773,7 +773,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         odol_lod->vertexboneref = (struct odol_vertexboneref *)malloc(sizeof(struct odol_vertexboneref) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
     // Set face flags
-    #define CLAMPLIMIT (1.0 / 128)
     tileU = (bool *)malloc(odol_lod->num_textures);
     tileV = (bool *)malloc(odol_lod->num_textures);
     memset(tileU, 0, odol_lod->num_textures);
