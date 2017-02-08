@@ -550,6 +550,19 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct 
 }
 
 
+int flags_to_pass(uint32_t flags) {
+    if (flags & FLAG_DSTBLENDZERO)
+        return 0;
+    if (flags & FLAG_NOALPHAWRITE)
+        return 2;
+    if (flags & FLAG_NOCOLORWRITE)
+        return 3;
+    if (flags & FLAG_NOZWRITE)
+        return 4;
+    return 1;
+}
+
+
 #ifdef _WIN32
 int compare_face_lookup(void *faces_ptr, const void *a, const void *b) {
 #else
@@ -564,7 +577,15 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
     a_index = *((uint32_t *)a);
     b_index = *((uint32_t *)b);
 
-    compare = faces[a_index].texture_index - faces[b_index].texture_index;
+    if (faces[a_index].face_flags & FLAG_ISALPHAORDERED || faces[b_index].face_flags & FLAG_ISALPHAORDERED) {
+        if (!(faces[a_index].face_flags & FLAG_ISALPHAORDERED))
+            return -1;
+        if (!(faces[b_index].face_flags & FLAG_ISALPHAORDERED))
+            return +1;
+        return (b_index - a_index);
+    }
+
+    compare = flags_to_pass(faces[a_index].face_flags) - flags_to_pass(faces[b_index].face_flags);
     if (compare != 0)
         return compare;
 
@@ -572,11 +593,15 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
     if (compare != 0)
         return compare;
 
-    compare = strcmp(faces[a_index].section_names, faces[b_index].section_names);
+    compare = faces[a_index].face_flags - faces[b_index].face_flags;
     if (compare != 0)
         return compare;
 
-    return (faces[b_index].face_flags - faces[a_index].face_flags);
+    compare = faces[a_index].texture_index - faces[b_index].texture_index;
+    if (compare != 0)
+        return compare;
+
+    return strcmp(faces[a_index].section_names, faces[b_index].section_names);
 }
 
 
@@ -594,6 +619,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     char *ptr;
     char textures[MAXTEXTURES][512];
     char temp[2048];
+    bool *tileU;
+    bool *tileV;
     struct triplet normal;
     struct uv_pair uv_coords;
 
@@ -745,35 +772,69 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     if (model_info->skeleton->num_bones > 0)
         odol_lod->vertexboneref = (struct odol_vertexboneref *)malloc(sizeof(struct odol_vertexboneref) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
-    // Sort faces by texture, material and bone
-    for (i = 0; i < model_info->skeleton->num_sections; i++) {
-        for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name,
-                    model_info->skeleton->sections[i]) == 0)
-                break;
-        }
-
-        if (j >= mlod_lod->num_selections)
+    // Set face flags
+    #define CLAMPLIMIT (1.0 / 128)
+    tileU = (bool *)malloc(odol_lod->num_textures);
+    tileV = (bool *)malloc(odol_lod->num_textures);
+    memset(tileU, 0, odol_lod->num_textures);
+    memset(tileV, 0, odol_lod->num_textures);
+    for (i = 0; i < mlod_lod->num_faces; i++) {
+        if (strlen(mlod_lod->faces[i].texture_name) == 0)
             continue;
-
-        for (k = 0; k < mlod_lod->num_faces; k++) {
-            if (mlod_lod->selections[j].faces[k] > 0)
-                strcat(mlod_lod->faces[k].section_names, mlod_lod->selections[j].name);
+        if (tileU[mlod_lod->faces[i].texture_index] && tileV[mlod_lod->faces[i].texture_index])
+            continue;
+        for (j = 0; j < mlod_lod->faces[i].face_type; j++) {
+            if (mlod_lod->faces[i].table[j].u < -CLAMPLIMIT || mlod_lod->faces[i].table[j].u > 1 + CLAMPLIMIT)
+                tileU[mlod_lod->faces[i].texture_index] = 1;
+            if (mlod_lod->faces[i].table[j].v < -CLAMPLIMIT || mlod_lod->faces[i].table[j].v > 1 + CLAMPLIMIT)
+                tileV[mlod_lod->faces[i].texture_index] = 1;
         }
     }
+    for (i = 0; i < mlod_lod->num_faces; i++) {
+        if (mlod_lod->faces[i].face_flags & (FLAG_NOCLAMP | FLAG_CLAMPU | FLAG_CLAMPV))
+            continue;
+        if (strlen(mlod_lod->faces[i].texture_name) == 0) {
+            mlod_lod->faces[i].face_flags |= FLAG_NOCLAMP;
+            continue;
+        }
+
+        if (!tileU[mlod_lod->faces[i].texture_index])
+            mlod_lod->faces[i].face_flags |= FLAG_CLAMPU;
+        if (!tileV[mlod_lod->faces[i].texture_index])
+            mlod_lod->faces[i].face_flags |= FLAG_CLAMPV;
+        if (tileU[mlod_lod->faces[i].texture_index] && tileU[mlod_lod->faces[i].texture_index])
+            mlod_lod->faces[i].face_flags |= FLAG_NOCLAMP;
+    }
+    free(tileU);
+    free(tileV);
 
     for (i = 0; i < mlod_lod->num_selections; i++) {
+        for (j = 0; j < model_info->skeleton->num_sections; j++) {
+            if (strcmp(mlod_lod->selections[i].name, model_info->skeleton->sections[j]) == 0)
+                break;
+        }
+        if (j < model_info->skeleton->num_sections) {
+            for (k = 0; k < mlod_lod->num_faces; k++) {
+                if (mlod_lod->selections[i].faces[k] > 0) {
+                    strcat(mlod_lod->faces[k].section_names, ":");
+                    strcat(mlod_lod->faces[k].section_names, mlod_lod->selections[i].name);
+                }
+            }
+        }
+
         if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) != 0)
             continue;
 
         for (k = 0; k < mlod_lod->num_faces; k++) {
             if (mlod_lod->selections[i].faces[k] > 0) {
-                strcat(mlod_lod->faces[k].section_names, mlod_lod->selections[i].name);
-                mlod_lod->faces[k].face_flags = 0x10008000;
+                mlod_lod->faces[k].face_flags |= FLAG_ISHIDDENPROXY;
+                mlod_lod->faces[k].texture_index = -1;
+                mlod_lod->faces[k].material_index = -1;
             }
         }
     }
 
+    // Sort faces
     if (mlod_lod->num_faces > 1) {
 #ifdef _WIN32
         qsort_s(odol_lod->face_lookup, odol_lod->num_faces, sizeof(uint32_t), compare_face_lookup, (void *)mlod_lod->faces);

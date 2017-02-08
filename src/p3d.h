@@ -57,17 +57,33 @@
 #define LOD_SHADOW_VOLUME_VIEW_GUNNER    20000000000000000.0f
 #define LOD_WRECK                        21000000000000000.0f
 
+#define FLAG_NOZWRITE            0x10
+#define FLAG_NOSHADOW            0x20
+#define FLAG_NOALPHAWRITE        0x80
+#define FLAG_ISALPHA            0x100
+#define FLAG_ISTRANSPARENT      0x200
+#define FLAG_NOCLAMP           0x2000
+#define FLAG_CLAMPU            0x4000
+#define FLAG_CLAMPV            0x8000
+#define FLAG_ISALPHAORDERED   0x20000
+#define FLAG_NOCOLORWRITE     0x40000
+#define FLAG_ISALPHAFOG       0x80000
+#define FLAG_DSTBLENDZERO    0x100000
+#define FLAG_ISHIDDENPROXY 0x10000000
+
 #define SORT_TEXTURES 1
 #define SORT_MATERIALS 2
 #define SORT_SECTIONS 3
 #define SORT_FLAGS 4
 
+#define CLAMPLIMIT (1.0 / 128)
+
+#define NOPOINT UINT32_MAX //=-1 as int32_t
+
 
 //#include "utils.h"
 #include "model_config.h"
 #include "matrix.h"
-
-#define NOPOINT UINT32_MAX //=-1 as int32_t
 
 
 struct uv_pair {
