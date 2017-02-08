@@ -783,6 +783,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     }
 
     // Write face vertices
+    odol_lod->uv_scale[0] = 0.0f;
+    odol_lod->uv_scale[1] = 0.0f;
+    odol_lod->uv_scale[2] = 0.0f;
+    odol_lod->uv_scale[3] = 0.0f;
     face_end = 0;
     for (i = 0; i < mlod_lod->num_faces; i++) {
         odol_lod->faces[odol_lod->face_lookup[i]].face_type = mlod_lod->faces[i].face_type;
@@ -791,10 +795,19 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             uv_coords.u = mlod_lod->faces[i].table[j].u;
             uv_coords.v = mlod_lod->faces[i].table[j].v;
 
-            for (; uv_coords.u < 0.0f; uv_coords.u += 1.0f);
-            for (; uv_coords.v < 0.0f; uv_coords.v += 1.0f);
+            for (; uv_coords.u < -1.0f; uv_coords.u += 1.0f);
+            for (; uv_coords.v < -1.0f; uv_coords.v += 1.0f);
             for (; uv_coords.u > 1.0f; uv_coords.u -= 1.0f);
             for (; uv_coords.v > 1.0f; uv_coords.v -= 1.0f);
+
+            if (uv_coords.u < odol_lod->uv_scale[0])
+                odol_lod->uv_scale[0] = uv_coords.u;
+            if (uv_coords.v < odol_lod->uv_scale[1])
+                odol_lod->uv_scale[1] = uv_coords.v;
+            if (uv_coords.u > odol_lod->uv_scale[2])
+                odol_lod->uv_scale[2] = uv_coords.u;
+            if (uv_coords.v > odol_lod->uv_scale[3])
+                odol_lod->uv_scale[3] = uv_coords.v;
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
@@ -1077,11 +1090,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->flags = 0;
 
-    odol_lod->uv_scale[0] = 0;
-    odol_lod->uv_scale[1] = 0;
-    odol_lod->uv_scale[2] = 1;
-    odol_lod->uv_scale[3] = 1;
-
     odol_lod->vertexboneref_is_simple = 1;
 
     if (odol_lod->vertexboneref != 0) {
@@ -1268,6 +1276,8 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     long fp_vertextable_size;
     uint32_t temp;
     char *ptr;
+    float u_relative;
+    float v_relative;
 
     fwrite(&odol_lod->num_proxies, sizeof(uint32_t), 1, f_target);
     for (i = 0; i < odol_lod->num_proxies; i++) {
@@ -1362,8 +1372,10 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         fputc(0, f_target);
         for (i = 0; i < odol_lod->num_points; i++) {
             // write compressed pair
-            u = (short)(odol_lod->uv_coords[i].u * 2 * INT16_MAX - INT16_MAX);
-            v = (short)(odol_lod->uv_coords[i].v * 2 * INT16_MAX - INT16_MAX);
+            u_relative = (odol_lod->uv_coords[i].u - odol_lod->uv_scale[0]) / (odol_lod->uv_scale[2] - odol_lod->uv_scale[0]);
+            v_relative = (odol_lod->uv_coords[i].v - odol_lod->uv_scale[1]) / (odol_lod->uv_scale[3] - odol_lod->uv_scale[1]);
+            u = (short)(u_relative * 2 * INT16_MAX - INT16_MAX);
+            v = (short)(v_relative * 2 * INT16_MAX - INT16_MAX);
 
             fwrite(&u, sizeof(int16_t), 1, f_target);
             fwrite(&v, sizeof(int16_t), 1, f_target);
