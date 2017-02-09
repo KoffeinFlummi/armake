@@ -46,7 +46,8 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
      * Reads all LODs (starting at the current position of f_source) into
      * the given LODs array.
      *
-     * Returns a 0 on success and a positive integer on failure.
+     * Returns number of read lods on success and a negative integer on
+     * failure.
      */
 
     char buffer[256];
@@ -62,7 +63,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     for (i = 0; i < num_lods; i++) {
         fread(buffer, 4, 1, f_source);
         if (strncmp(buffer, "P3DM", 4) != 0)
-            return 1;
+            return -1;
 
         fseek(f_source, 8, SEEK_CUR);
         fread(&mlod_lods[i].num_points, 4, 1, f_source);
@@ -110,7 +111,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
 
         fread(buffer, 4, 1, f_source);
         if (strncmp(buffer, "TAGG", 4) != 0)
-            return 2;
+            return -2;
 
         mlod_lods[i].mass = 0;
         mlod_lods[i].num_sharp_edges = 0;
@@ -203,7 +204,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
                         break;
                 }
                 if (j == MAXPROPERTIES)
-                    return 3;
+                    return -3;
 
                 fread(mlod_lods[i].properties[j].name, 64, 1, f_source);
                 fread(mlod_lods[i].properties[j].value, 64, 1, f_source);
@@ -216,9 +217,27 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
         }
 
         fread(&mlod_lods[i].resolution, 4, 1, f_source);
+
+        if (mlod_lods[i].resolution >= LOD_EDIT_START && mlod_lods[i].resolution < LOD_EDIT_END) {
+            free(mlod_lods[i].points);
+            free(mlod_lods[i].facenormals);
+            free(mlod_lods[i].faces);
+            free(mlod_lods[i].mass);
+            free(mlod_lods[i].sharp_edges);
+
+            for (j = 0; j < mlod_lods[i].num_selections; j++) {
+                free(mlod_lods[i].selections[j].points);
+                free(mlod_lods[i].selections[j].faces);
+            }
+
+            free(mlod_lods[i].selections);
+
+            i--;
+            num_lods--;
+        }
     }
 
-    return 0;
+    return num_lods;
 }
 
 
@@ -1760,7 +1779,8 @@ int mlod2odol(char *source, char *target) {
     fseek(f_source, 8, SEEK_SET);
     fread(&num_lods, 4, 1, f_source);
     mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
-    if (read_lods(f_source, mlod_lods, num_lods)) {
+    num_lods = read_lods(f_source, mlod_lods, num_lods);
+    if (num_lods < 0) {
         errorf("Failed to read LODs.\n");
         fclose(f_temp);
         fclose(f_source);

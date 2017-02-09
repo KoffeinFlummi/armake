@@ -33,6 +33,8 @@
 #define LOD_SHADOW_STENCIL_2                         10010.0f
 #define LOD_SHADOW_VOLUME                            11000.0f
 #define LOD_SHADOW_VOLUME_2                          11010.0f
+#define LOD_EDIT_START                               20000.0f
+#define LOD_EDIT_END                                 20999.0f
 #define LOD_GEOMETRY                        10000000000000.0f
 #define LOD_PHYSX                           40000000000000.0f
 #define LOD_MEMORY                        1000000000000000.0f
