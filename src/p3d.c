@@ -481,10 +481,42 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->armor = 200.0f; // @todo
     model_info->inv_armor = 0.005f; // @todo
 
-    //the real indices to the lods are calculated by the engine when the model is loaded
+    // the real indices to the lods are calculated by the engine when the model is loaded
     memset(&model_info->special_lod_indices, 255, sizeof(struct lod_indices));
+    for (i = 0; i < num_lods; i++) {
+        if (mlod_lods[i].resolution == LOD_MEMORY)
+            model_info->special_lod_indices.memory = i;
+        if (mlod_lods[i].resolution == LOD_GEOMETRY)
+            model_info->special_lod_indices.geometry = i;
+        if (mlod_lods[i].resolution == LOD_PHYSX)
+            model_info->special_lod_indices.geometry_physx = i;
+        if (mlod_lods[i].resolution == LOD_FIRE_GEOMETRY)
+            model_info->special_lod_indices.geometry_fire = i;
+        if (mlod_lods[i].resolution == LOD_VIEW_GEOMETRY)
+            model_info->special_lod_indices.geometry_view = i;
+        if (mlod_lods[i].resolution == LOD_VIEW_PILOT_GEOMETRY)
+            model_info->special_lod_indices.geometry_view_pilot = i;
+        if (mlod_lods[i].resolution == LOD_VIEW_GUNNER_GEOMETRY)
+            model_info->special_lod_indices.geometry_view_gunner = i;
+        if (mlod_lods[i].resolution == LOD_VIEW_CARGO_GEOMETRY)
+            model_info->special_lod_indices.geometry_view_cargo = i;
+        if (mlod_lods[i].resolution == LOD_LAND_CONTACT)
+            model_info->special_lod_indices.land_contact = i;
+        if (mlod_lods[i].resolution == LOD_ROADWAY)
+            model_info->special_lod_indices.roadway = i;
+        if (mlod_lods[i].resolution == LOD_PATHS)
+            model_info->special_lod_indices.paths = i;
+        if (mlod_lods[i].resolution == LOD_HITPOINTS)
+            model_info->special_lod_indices.hitpoints = i;
+    }
 
-    //according to BIS: first LOD that can be used for shadowing
+    if (model_info->special_lod_indices.geometry_view == -1)
+        model_info->special_lod_indices.geometry_view = model_info->special_lod_indices.geometry;
+
+    if (model_info->special_lod_indices.geometry_fire == -1)
+        model_info->special_lod_indices.geometry_fire = model_info->special_lod_indices.geometry;
+
+    // according to BIS: first LOD that can be used for shadowing
     model_info->min_shadow = num_lods; // @todo
     model_info->can_blend = false; // @todo
     model_info->class_type = 0; // @todo

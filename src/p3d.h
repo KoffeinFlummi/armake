@@ -244,10 +244,10 @@ struct odol_lod {
 };
 
 struct lod_indices {
-    int8_t geometry_simple;
-    int8_t geometry_physx;
     int8_t memory;
     int8_t geometry;
+    int8_t geometry_simple;
+    int8_t geometry_physx;
     int8_t geometry_fire;
     int8_t geometry_view;
     int8_t geometry_view_pilot;
