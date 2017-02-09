@@ -370,7 +370,7 @@ void get_mass_data(struct mlod_lod *mlod_lods, uint32_t num_lods, struct model_i
     if (mass > 0) {
         model_info->mass_reciprocal = 1 / mass;
         //model_info->inv_inertia = matrix_inverse(inertia);
-        model_info->inv_inertia = inertia;
+        model_info->inv_inertia = empty_matrix;
         model_info->inv_inertia.m00 = 1.0f / inertia.m00;
         model_info->inv_inertia.m11 = 1.0f / inertia.m11;
         model_info->inv_inertia.m22 = 1.0f / inertia.m22;
