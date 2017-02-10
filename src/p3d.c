@@ -628,18 +628,6 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
     a_index = *((uint32_t *)a);
     b_index = *((uint32_t *)b);
 
-    if (faces[a_index].face_flags & FLAG_ISALPHAORDERED || faces[b_index].face_flags & FLAG_ISALPHAORDERED) {
-        if (!(faces[a_index].face_flags & FLAG_ISALPHAORDERED))
-            return -1;
-        if (!(faces[b_index].face_flags & FLAG_ISALPHAORDERED))
-            return +1;
-        return (b_index - a_index);
-    }
-
-    compare = flags_to_pass(faces[a_index].face_flags) - flags_to_pass(faces[b_index].face_flags);
-    if (compare != 0)
-        return compare;
-
     compare = faces[a_index].material_index - faces[b_index].material_index;
     if (compare != 0)
         return compare;
@@ -980,10 +968,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].common_texture_index = mlod_lod->faces[odol_lod->face_lookup[i]].texture_index;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup[i]].face_flags;
             odol_lod->sections[k].material_index = mlod_lod->faces[odol_lod->face_lookup[i]].material_index;
-            odol_lod->sections[k].num_stages = 2;
-            //num_stages defines number of entries in area_over_tex
+            odol_lod->sections[k].num_stages = 2; // num_stages defines number of entries in area_over_tex
             odol_lod->sections[k].area_over_tex[0] = 1.0f; // @todo
-            odol_lod->sections[k].area_over_tex[1] = 1.0f; // @todo
+            odol_lod->sections[k].area_over_tex[1] = -1000.0f;
             odol_lod->sections[k].unknown_long = 0;
 
             for (j = i; j < odol_lod->num_faces; j++) {
@@ -1135,7 +1122,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         lower_case(odol_lod->proxies[k].name);
 
         odol_lod->proxies[k].selection_index = i;
-        odol_lod->proxies[k].bone_index = -1; // @todo
+        odol_lod->proxies[k].bone_index = -1;
 
         if (odol_lod->vertexboneref != 0 &&
                 odol_lod->vertexboneref[odol_lod->faces[odol_lod->face_lookup[face]].table[0]].num_bones > 0) {
@@ -1143,9 +1130,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         for (j = 0; j < odol_lod->num_sections; j++) {
-            if (odol_lod->face_lookup[face] < odol_lod->sections[j].face_start)
-                continue;
-            if (odol_lod->face_lookup[face] >= odol_lod->sections[j].face_end)
+            if (odol_lod->face_lookup[face] < odol_lod->sections[j].face_index_start)
                 continue;
             odol_lod->proxies[k].section_index = j;
             break;
