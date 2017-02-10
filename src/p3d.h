@@ -201,10 +201,10 @@ struct odol_vertexboneref {
 struct odol_lod {
     uint32_t num_proxies;
     struct odol_proxy *proxies;
-    uint32_t num_items;
-    uint32_t *items;
-    uint32_t num_bonelinks;
-    struct odol_bonelink *bonelinks;
+    uint32_t num_bones_subskeleton;
+    uint32_t *subskeleton_to_skeleton;
+    uint32_t num_bones_skeleton;
+    struct odol_bonelink *skeleton_to_subskeleton;
     uint32_t num_points;
     uint32_t num_points_mlod;
     float face_area;

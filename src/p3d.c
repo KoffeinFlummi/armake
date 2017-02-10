@@ -581,7 +581,7 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct 
             weight_index = odol_lod->vertexboneref[odol_lod->num_points].num_bones;
             odol_lod->vertexboneref[odol_lod->num_points].num_bones++;
 
-            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->bonelinks[j].links[0];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->skeleton_to_subskeleton[j].links[0];
             odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[i].points[point_index_mlod];
 
             // convert weight
@@ -675,23 +675,13 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     struct triplet normal;
     struct uv_pair uv_coords;
 
-    odol_lod->num_items = 0;
-    for (i = 0; i < model_info->skeleton->num_bones; i++) {
-        for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
-                break;
-        }
+    // Set sub skeleton references
+    odol_lod->num_bones_skeleton = model_info->skeleton->num_bones;
+    odol_lod->subskeleton_to_skeleton = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_bones_skeleton);
+    odol_lod->skeleton_to_subskeleton = (struct odol_bonelink *)malloc(sizeof(struct odol_bonelink) * odol_lod->num_bones_skeleton);
 
-        if (j >= mlod_lod->num_selections)
-            continue;
-
-        odol_lod->num_items++;
-    }
-    odol_lod->num_bonelinks = model_info->skeleton->num_bones;
-
-    odol_lod->items = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_items);
-    odol_lod->bonelinks = (struct odol_bonelink *)malloc(sizeof(struct odol_bonelink) * odol_lod->num_bonelinks);
     k = 0;
+    odol_lod->num_bones_subskeleton = 0;
     for (i = 0; i < model_info->skeleton->num_bones; i++) {
         for (j = 0; j < mlod_lod->num_selections; j++) {
             if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
@@ -699,14 +689,15 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         if (j >= mlod_lod->num_selections) {
-            odol_lod->bonelinks[i].num_links = 0;
+            odol_lod->skeleton_to_subskeleton[i].num_links = 0;
             continue;
         }
 
-        odol_lod->items[k] = i;
-        odol_lod->bonelinks[i].num_links = 1;
-        odol_lod->bonelinks[i].links[0] = k;
+        odol_lod->subskeleton_to_skeleton[k] = i;
+        odol_lod->skeleton_to_subskeleton[i].num_links = 1;
+        odol_lod->skeleton_to_subskeleton[i].links[0] = k;
         k++;
+        odol_lod->num_bones_subskeleton++;
     }
 
     odol_lod->num_points_mlod = mlod_lod->num_points;
@@ -984,7 +975,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].face_index_start = face_start;
             odol_lod->sections[k].face_index_end = face_start;
             odol_lod->sections[k].min_bone_index = 0;
-            odol_lod->sections[k].bones_count = odol_lod->num_items;
+            odol_lod->sections[k].bones_count = odol_lod->num_bones_subskeleton;
             odol_lod->sections[k].mat_dummy = 0;
             odol_lod->sections[k].common_texture_index = mlod_lod->faces[odol_lod->face_lookup[i]].texture_index;
             odol_lod->sections[k].common_face_flags = mlod_lod->faces[odol_lod->face_lookup[i]].face_flags;
@@ -1399,13 +1390,13 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         fwrite(&odol_lod->proxies[i].section_index, sizeof(uint32_t), 1, f_target);
     }
 
-    fwrite(&odol_lod->num_items, sizeof(uint32_t), 1, f_target);
-    fwrite( odol_lod->items, sizeof(uint32_t) * odol_lod->num_items, 1, f_target);
+    fwrite(&odol_lod->num_bones_subskeleton, sizeof(uint32_t), 1, f_target);
+    fwrite( odol_lod->subskeleton_to_skeleton, sizeof(uint32_t) * odol_lod->num_bones_subskeleton, 1, f_target);
 
-    fwrite(&odol_lod->num_bonelinks, sizeof(uint32_t), 1, f_target);
-    for (i = 0; i < odol_lod->num_bonelinks; i++) {
-        fwrite(&odol_lod->bonelinks[i].num_links, sizeof(uint32_t), 1, f_target);
-        fwrite( odol_lod->bonelinks[i].links, sizeof(uint32_t) * odol_lod->bonelinks[i].num_links, 1, f_target);
+    fwrite(&odol_lod->num_bones_skeleton, sizeof(uint32_t), 1, f_target);
+    for (i = 0; i < odol_lod->num_bones_skeleton; i++) {
+        fwrite(&odol_lod->skeleton_to_subskeleton[i].num_links, sizeof(uint32_t), 1, f_target);
+        fwrite( odol_lod->skeleton_to_subskeleton[i].links, sizeof(uint32_t) * odol_lod->skeleton_to_subskeleton[i].num_links, 1, f_target);
     }
 
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
@@ -1882,8 +1873,8 @@ int mlod2odol(char *source, char *target) {
 
         // Clean up
         free(odol_lod.proxies);
-        free(odol_lod.items);
-        free(odol_lod.bonelinks);
+        free(odol_lod.subskeleton_to_skeleton);
+        free(odol_lod.skeleton_to_subskeleton);
         free(odol_lod.textures);
         free(odol_lod.point_to_vertex);
         free(odol_lod.vertex_to_point);
