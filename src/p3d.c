@@ -473,7 +473,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
     memset(model_info->skeleton, 0, sizeof(struct skeleton));
 
-    model_info->map_type = 0; //@todo
+    model_info->map_type = 22; //@todo
     model_info->n_floats = 0;
 
     model_info->armor = 200.0f; // @todo
