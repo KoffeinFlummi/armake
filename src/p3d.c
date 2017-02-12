@@ -91,10 +91,8 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
             fread(&mlod_lods[i].facenormals[j], sizeof(struct triplet), 1, f_source);
 
         mlod_lods[i].faces = (struct mlod_face *)malloc(sizeof(struct mlod_face) * mlod_lods[i].num_faces);
-        int p = 0;
         for (j = 0; j < mlod_lods[i].num_faces; j++) {
             fread(&mlod_lods[i].faces[j], 72, 1, f_source);
-            p += mlod_lods[i].faces[j].face_type;
 
             fp_tmp = ftell(f_source);
             fread(mlod_lods[i].faces[j].texture_name,
