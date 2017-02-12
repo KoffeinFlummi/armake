@@ -71,6 +71,8 @@ int stricmp(char *a, char *b);
 
 bool float_equal(float f1, float f2, float precision);
 
+int fsign(float f);
+
 void lower_case(char *string);
 
 void get_word(char *target, char *source);

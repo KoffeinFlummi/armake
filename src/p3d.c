@@ -880,19 +880,13 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             uv_coords.u = mlod_lod->faces[i].table[j].u;
             uv_coords.v = mlod_lod->faces[i].table[j].v;
 
-            for (; uv_coords.u < -1.0f; uv_coords.u += 1.0f);
-            for (; uv_coords.v < -1.0f; uv_coords.v += 1.0f);
-            for (; uv_coords.u > 1.0f; uv_coords.u -= 1.0f);
-            for (; uv_coords.v > 1.0f; uv_coords.v -= 1.0f);
+            uv_coords.u = fsign(uv_coords.u) * (fmod(fabs(uv_coords.u), 1.0));
+            uv_coords.v = fsign(uv_coords.v) * (fmod(fabs(uv_coords.v), 1.0));
 
-            if (uv_coords.u < odol_lod->uv_scale[0])
-                odol_lod->uv_scale[0] = uv_coords.u;
-            if (uv_coords.v < odol_lod->uv_scale[1])
-                odol_lod->uv_scale[1] = uv_coords.v;
-            if (uv_coords.u > odol_lod->uv_scale[2])
-                odol_lod->uv_scale[2] = uv_coords.u;
-            if (uv_coords.v > odol_lod->uv_scale[3])
-                odol_lod->uv_scale[3] = uv_coords.v;
+            odol_lod->uv_scale[0] = fminf(uv_coords.u, odol_lod->uv_scale[0]);
+            odol_lod->uv_scale[1] = fminf(uv_coords.v, odol_lod->uv_scale[1]);
+            odol_lod->uv_scale[2] = fmaxf(uv_coords.u, odol_lod->uv_scale[2]);
+            odol_lod->uv_scale[3] = fmaxf(uv_coords.v, odol_lod->uv_scale[3]);
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2

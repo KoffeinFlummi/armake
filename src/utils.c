@@ -192,6 +192,11 @@ bool float_equal(float f1, float f2, float precision) {
 }
 
 
+int fsign(float f) {
+    return (0 < f) - (f < 0);
+}
+
+
 void lower_case(char *string) {
     /*
      * Converts a null-terminated string to lower case.
