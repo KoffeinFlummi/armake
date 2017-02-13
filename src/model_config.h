@@ -81,6 +81,7 @@ struct skeleton {
     char sections[MAXSECTIONS][512];
     uint32_t num_animations;
     struct animation animations[MAXANIMS];
+    bool is_discrete;
     float ht_min;
     float ht_max;
     float af_max;

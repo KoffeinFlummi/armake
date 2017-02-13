@@ -352,6 +352,14 @@ int read_model_config(char *path, struct skeleton *skeleton) {
             strcpy(buffer, "");
         }
 
+        int32_t temp;
+        sprintf(config_path, "CfgSkeletons >> %s >> isDiscrete", skeleton->name);
+        success = read_int(f, config_path, &temp);
+        if (success == 0)
+            skeleton->is_discrete = (temp > 0);
+        else
+            skeleton->is_discrete = false;
+
         i = 0;
         if (strlen(buffer) > 0) {
             sprintf(config_path, "CfgSkeletons >> %s >> skeletonBones", buffer);

@@ -555,38 +555,46 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct 
     memcpy(&odol_lod->normals[odol_lod->num_points], normal, sizeof(struct triplet));
     memcpy(&odol_lod->uv_coords[odol_lod->num_points], uv_coords, sizeof(struct uv_pair));
 
-    if (odol_lod->vertexboneref != 0) {
+    if (odol_lod->vertexboneref != 0 && model_info->skeleton->num_bones > 0) {
         memset(&odol_lod->vertexboneref[odol_lod->num_points], 0, sizeof(struct odol_vertexboneref));
 
-        for (i = 0; i < mlod_lod->num_selections; i++) {
-            if (mlod_lod->selections[i].points[point_index_mlod] == 0)
-                continue;
-
-            for (j = 0; j < model_info->skeleton->num_bones; j++) {
-                if (stricmp(model_info->skeleton->bones[j].name,
-                        mlod_lod->selections[i].name) == 0)
+        for (i = model_info->skeleton->num_bones - 1; (int32_t)i >= 0; i--) {
+            for (j = 0; j < mlod_lod->num_selections; j++) {
+                if (stricmp(model_info->skeleton->bones[i].name,
+                        mlod_lod->selections[j].name) == 0)
                     break;
             }
 
-            if (j == model_info->skeleton->num_bones)
+            if (j == mlod_lod->num_selections)
+                continue;
+
+            if (mlod_lod->selections[j].points[point_index_mlod] == 0)
                 continue;
 
             if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 4) {
-                warningf("Vertex %u of LOD %f is part of more than 4 bones.\n", mlod_lod->resolution, point_index_mlod);
+                warningf("Vertex %u of LOD %f is part of more than 4 bones.\n", point_index_mlod, mlod_lod->resolution);
+                continue;
+            }
+
+            if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 1 && model_info->skeleton->is_discrete) {
+                warningf("Vertex %u of LOD %f is part of more than 1 bone in a discrete skeleton.\n", point_index_mlod, mlod_lod->resolution);
                 continue;
             }
 
             weight_index = odol_lod->vertexboneref[odol_lod->num_points].num_bones;
             odol_lod->vertexboneref[odol_lod->num_points].num_bones++;
 
-            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->skeleton_to_subskeleton[j].links[0];
-            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[i].points[point_index_mlod];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][0] = odol_lod->skeleton_to_subskeleton[i].links[0];
+            odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = mlod_lod->selections[j].points[point_index_mlod];
 
             // convert weight
             if (odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] == 0x01)
                 odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1] = 0xff;
             else
                 odol_lod->vertexboneref[odol_lod->num_points].weights[weight_index][1]--;
+
+            if (model_info->skeleton->is_discrete)
+                break;
         }
     }
 
@@ -663,27 +671,14 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     // Set sub skeleton references
     odol_lod->num_bones_skeleton = model_info->skeleton->num_bones;
+    odol_lod->num_bones_subskeleton = model_info->skeleton->num_bones;
     odol_lod->subskeleton_to_skeleton = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_bones_skeleton);
     odol_lod->skeleton_to_subskeleton = (struct odol_bonelink *)malloc(sizeof(struct odol_bonelink) * odol_lod->num_bones_skeleton);
 
-    k = 0;
-    odol_lod->num_bones_subskeleton = 0;
     for (i = 0; i < model_info->skeleton->num_bones; i++) {
-        for (j = 0; j < mlod_lod->num_selections; j++) {
-            if (strcmp(mlod_lod->selections[j].name, model_info->skeleton->bones[i].name) == 0)
-                break;
-        }
-
-        if (j >= mlod_lod->num_selections) {
-            odol_lod->skeleton_to_subskeleton[i].num_links = 0;
-            continue;
-        }
-
-        odol_lod->subskeleton_to_skeleton[k] = i;
+        odol_lod->subskeleton_to_skeleton[i] = i;
         odol_lod->skeleton_to_subskeleton[i].num_links = 1;
-        odol_lod->skeleton_to_subskeleton[i].links[0] = k;
-        k++;
-        odol_lod->num_bones_subskeleton++;
+        odol_lod->skeleton_to_subskeleton[i].links[0] = i;
     }
 
     odol_lod->num_points_mlod = mlod_lod->num_points;
