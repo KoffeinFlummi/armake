@@ -115,9 +115,6 @@ int read_material(struct material *material) {
         strcpy(temp, material->path);
     }
 
-    current_operation = OP_MATERIAL;
-    strcpy(current_target, temp);
-
     // Write default values
     material->type = MATERIALTYPE;
     material->depr_1 = 1;
@@ -153,9 +150,12 @@ int read_material(struct material *material) {
     material->dummy_texture.type11_bool = 0;
 
     if (find_file(temp, "", actual_path)) {
-        warningf("Failed to find material.\n");
+        warningf("Failed to find material \"%s\".\n", temp);
         return 1;
     }
+
+    current_operation = OP_MATERIAL;
+    strcpy(current_target, temp);
 
     strcpy(rapified_path, actual_path);
     strcat(rapified_path, ".armake.bin"); // it is assumed that this doesn't exist
