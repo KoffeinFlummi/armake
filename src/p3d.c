@@ -913,6 +913,28 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             i, &normal, &uv_coords);
     }
 
+    // Normalize vertex bone ref
+    odol_lod->vertexboneref_is_simple = 1;
+    float weight_sum;
+    if (odol_lod->vertexboneref != 0) {
+        for (i = 0; i < odol_lod->num_points; i++) {
+            if (odol_lod->vertexboneref[i].num_bones > 1)
+                odol_lod->vertexboneref_is_simple = 0;
+
+            if (odol_lod->vertexboneref[i].num_bones == 0)
+                continue;
+
+            weight_sum = 0;
+            for (j = 0; j < odol_lod->vertexboneref[i].num_bones; j++) {
+                weight_sum += odol_lod->vertexboneref[i].weights[j][1] / 255.0f;
+            }
+
+            for (j = 0; j < odol_lod->vertexboneref[i].num_bones; j++) {
+                odol_lod->vertexboneref[i].weights[j][1] *= (1.0 / weight_sum);
+            }
+        }
+    }
+
     // Sections
     if (odol_lod->num_faces > 0) {
         odol_lod->num_sections = 1;
@@ -1159,17 +1181,6 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     odol_lod->selected_color = 0xff9d8254;
 
     odol_lod->flags = 0;
-
-    odol_lod->vertexboneref_is_simple = 1;
-
-    if (odol_lod->vertexboneref != 0) {
-        for (i = 0; i < odol_lod->num_points; i++) {
-            if (odol_lod->vertexboneref[i].num_bones > 1) {
-                odol_lod->vertexboneref_is_simple = 0;
-                break;
-            }
-        }
-    }
 }
 
 
