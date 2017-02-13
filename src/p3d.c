@@ -874,11 +874,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     face_end = 0;
     memset(odol_lod->uv_scale, 0, sizeof(float) * 4);
     for (i = 0; i < mlod_lod->num_faces; i++) {
-        odol_lod->faces[odol_lod->face_lookup[i]].face_type = mlod_lod->faces[i].face_type;
-        for (j = 0; j < odol_lod->faces[odol_lod->face_lookup[i]].face_type; j++) {
-            memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[i].table[j].normals_index], sizeof(struct triplet));
-            uv_coords.u = mlod_lod->faces[i].table[j].u;
-            uv_coords.v = mlod_lod->faces[i].table[j].v;
+        odol_lod->faces[i].face_type = mlod_lod->faces[odol_lod->face_lookup[i]].face_type;
+        for (j = 0; j < odol_lod->faces[i].face_type; j++) {
+            memcpy(&normal, &mlod_lod->facenormals[mlod_lod->faces[odol_lod->face_lookup[i]].table[j].normals_index], sizeof(struct triplet));
+            uv_coords.u = mlod_lod->faces[odol_lod->face_lookup[i]].table[j].u;
+            uv_coords.v = mlod_lod->faces[odol_lod->face_lookup[i]].table[j].v;
 
             uv_coords.u = fsign(uv_coords.u) * (fmod(fabs(uv_coords.u), 1.0));
             uv_coords.v = fsign(uv_coords.v) * (fmod(fabs(uv_coords.v), 1.0));
@@ -891,15 +891,15 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
             // Quads: 0 1 2 3 -> 1 0 3 2
-            if (odol_lod->faces[odol_lod->face_lookup[i]].face_type == 4)
+            if (odol_lod->faces[i].face_type == 4)
                 k = j ^ 1;
             else
                 k = j ^ (1 ^ (j >> 1));
 
-            odol_lod->faces[odol_lod->face_lookup[i]].table[k] = add_point(odol_lod, mlod_lod, model_info,
-                mlod_lod->faces[i].table[j].points_index, &normal, &uv_coords);
+            odol_lod->faces[i].table[k] = add_point(odol_lod, mlod_lod, model_info,
+                mlod_lod->faces[odol_lod->face_lookup[i]].table[j].points_index, &normal, &uv_coords);
         }
-        face_end += sizeof(struct odol_face) - (4 - mlod_lod->faces[i].face_type) * sizeof(uint32_t);
+        face_end += (odol_lod->faces[i].face_type == 4) ? 20 : 16;
     }
 
     odol_lod->face_allocation_size = face_end;
@@ -979,7 +979,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                         mlod_lod->faces[odol_lod->face_lookup[j]].face_flags)
                     break;
                 odol_lod->sections[k].face_end++;
-                odol_lod->sections[k].face_index_end += sizeof(struct odol_face) - (4 - odol_lod->faces[j].face_type) * sizeof(uint32_t);
+                odol_lod->sections[k].face_index_end += (odol_lod->faces[j].face_type == 4) ? 20 : 16;
             }
 
             face_start = odol_lod->sections[k].face_index_end;
@@ -1095,8 +1095,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) != 0)
             continue;
 
-        for (j = 0; j < mlod_lod->num_faces; j++) {
-            if (mlod_lod->selections[i].faces[j] > 0) {
+        for (j = 0; j < odol_lod->num_faces; j++) {
+            if (mlod_lod->selections[i].faces[odol_lod->face_lookup[j]] > 0) {
                 face = j;
                 break;
             }
@@ -1117,25 +1117,25 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         odol_lod->proxies[k].bone_index = -1;
 
         if (odol_lod->vertexboneref != 0 &&
-                odol_lod->vertexboneref[odol_lod->faces[odol_lod->face_lookup[face]].table[0]].num_bones > 0) {
-            odol_lod->proxies[k].bone_index = odol_lod->vertexboneref[odol_lod->faces[odol_lod->face_lookup[face]].table[0]].weights[0][0];
+                odol_lod->vertexboneref[odol_lod->faces[face].table[0]].num_bones > 0) {
+            odol_lod->proxies[k].bone_index = odol_lod->vertexboneref[odol_lod->faces[face].table[0]].weights[0][0];
         }
 
         for (j = 0; j < odol_lod->num_sections; j++) {
-            if (odol_lod->face_lookup[face] < odol_lod->sections[j].face_index_start)
+            if (face < odol_lod->sections[j].face_index_start)
                 continue;
             odol_lod->proxies[k].section_index = j;
             break;
         }
 
         odol_lod->proxies[k].transform_y = vector_sub(
-            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[1].points_index]),
-            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[0].points_index]));
+            *((vector *)&mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup[face]].table[1].points_index]),
+            *((vector *)&mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup[face]].table[0].points_index]));
         odol_lod->proxies[k].transform_y = vector_normalize(odol_lod->proxies[k].transform_y);
 
         odol_lod->proxies[k].transform_z = vector_sub(
-            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[2].points_index]),
-            *((vector *)&mlod_lod->points[mlod_lod->faces[face].table[0].points_index]));
+            *((vector *)&mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup[face]].table[2].points_index]),
+            *((vector *)&mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup[face]].table[0].points_index]));
         odol_lod->proxies[k].transform_z = vector_normalize(odol_lod->proxies[k].transform_z);
 
         odol_lod->proxies[k].transform_x = vector_crossproduct(
@@ -1143,7 +1143,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->proxies[k].transform_z);
 
         memcpy(&odol_lod->proxies[k].transform_n,
-            &mlod_lod->points[mlod_lod->faces[face].table[0].points_index],
+            &mlod_lod->points[mlod_lod->faces[odol_lod->face_lookup[face]].table[0].points_index],
             sizeof(struct triplet));
 
         k++;
