@@ -650,6 +650,12 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
 }
 
 
+bool is_alpha(struct mlod_face *face) {
+    // @todo check actual texture maybe?
+    return strstr(face->texture_name, "_ca.paa") != NULL;
+}
+
+
 void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         struct model_info *model_info) {
     extern int current_operation;
@@ -826,6 +832,9 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             mlod_lod->faces[i].face_flags |= FLAG_CLAMPV;
         if (tileU[mlod_lod->faces[i].texture_index] && tileU[mlod_lod->faces[i].texture_index])
             mlod_lod->faces[i].face_flags |= FLAG_NOCLAMP;
+
+        if (is_alpha(&mlod_lod->faces[i]))
+            mlod_lod->faces[i].face_flags |= FLAG_ISALPHA;
     }
     free(tileU);
     free(tileV);
