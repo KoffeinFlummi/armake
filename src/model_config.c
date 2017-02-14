@@ -348,8 +348,6 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         if (success > 0) {
             errorf("Failed to read bones.\n");
             return success;
-        } else {
-            strcpy(buffer, "");
         }
 
         int32_t temp;
