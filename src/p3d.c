@@ -1122,7 +1122,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         for (j = 0; j < odol_lod->num_sections; j++) {
-            if (face < odol_lod->sections[j].face_index_start)
+            if (face > odol_lod->sections[j].face_start)
                 continue;
             odol_lod->proxies[k].section_index = j;
             break;
