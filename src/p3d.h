@@ -25,14 +25,15 @@
 #define MAXMATERIALS 128
 #define MAXPROPERTIES 128
 
-#define LOD_GRAPHICAL                                  999.9f
+#define LOD_GRAPHICAL_START                              0.0f
+#define LOD_GRAPHICAL_END                              999.9f
 #define LOD_VIEW_GUNNER                               1000.0f
 #define LOD_VIEW_PILOT                                1100.0f
 #define LOD_VIEW_CARGO                                1200.0f
-#define LOD_SHADOW_STENCIL                           10000.0f
-#define LOD_SHADOW_STENCIL_2                         10010.0f
-#define LOD_SHADOW_VOLUME                            11000.0f
-#define LOD_SHADOW_VOLUME_2                          11010.0f
+#define LOD_SHADOW_STENCIL_START                     10000.0f
+#define LOD_SHADOW_STENCIL_END                       10999.0f
+#define LOD_SHADOW_VOLUME_START                      11000.0f
+#define LOD_SHADOW_VOLUME_END                        11999.0f
 #define LOD_EDIT_START                               20000.0f
 #define LOD_EDIT_END                                 20999.0f
 #define LOD_GEOMETRY                        10000000000000.0f

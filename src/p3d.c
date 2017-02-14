@@ -259,7 +259,7 @@ void get_bounding_box(struct mlod_lod *mlod_lods, uint32_t num_lods,
     first = true;
 
     for (i = 0; i < num_lods; i++) {
-        if (mlod_lods[i].resolution > LOD_GRAPHICAL && visual_only)
+        if (mlod_lods[i].resolution > LOD_GRAPHICAL_END && visual_only)
             continue;
 
         if (!float_equal(mlod_lods[i].resolution, LOD_GEOMETRY, 0.01) && geometry_only)
