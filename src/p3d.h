@@ -232,7 +232,7 @@ struct odol_lod {
     uint32_t selected_color;
     uint32_t flags;
     bool vertexboneref_is_simple;
-    float uv_scale[4];
+    struct uv_pair uv_scale[4];
     struct uv_pair *uv_coords;
     struct triplet *points;
     struct triplet *normals;

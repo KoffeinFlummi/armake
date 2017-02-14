@@ -880,7 +880,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     // Write face vertices
     face_end = 0;
-    memset(odol_lod->uv_scale, 0, sizeof(float) * 4);
+    memset(odol_lod->uv_scale, 0, sizeof(struct uv_pair) * 2);
     for (i = 0; i < mlod_lod->num_faces; i++) {
         odol_lod->faces[i].face_type = mlod_lod->faces[odol_lod->face_lookup[i]].face_type;
         for (j = 0; j < odol_lod->faces[i].face_type; j++) {
@@ -891,10 +891,10 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             uv_coords.u = fsign(uv_coords.u) * (fmod(fabs(uv_coords.u), 1.0));
             uv_coords.v = fsign(uv_coords.v) * (fmod(fabs(uv_coords.v), 1.0));
 
-            odol_lod->uv_scale[0] = fminf(uv_coords.u, odol_lod->uv_scale[0]);
-            odol_lod->uv_scale[1] = fminf(uv_coords.v, odol_lod->uv_scale[1]);
-            odol_lod->uv_scale[2] = fmaxf(uv_coords.u, odol_lod->uv_scale[2]);
-            odol_lod->uv_scale[3] = fmaxf(uv_coords.v, odol_lod->uv_scale[3]);
+            odol_lod->uv_scale[0].u = fminf(uv_coords.u, odol_lod->uv_scale[0].u);
+            odol_lod->uv_scale[0].v = fminf(uv_coords.v, odol_lod->uv_scale[0].v);
+            odol_lod->uv_scale[1].u = fmaxf(uv_coords.u, odol_lod->uv_scale[1].u);
+            odol_lod->uv_scale[1].v = fmaxf(uv_coords.v, odol_lod->uv_scale[1].v);
 
             // Change vertex order for ODOL
             // Tris:  0 1 2   -> 1 0 2
@@ -1442,15 +1442,15 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
         fwrite("\0\0\0\0", 4, 1, f_target);
 
     // uvs
-    fwrite( odol_lod->uv_scale, sizeof(float) * 4, 1, f_target);
+    fwrite( odol_lod->uv_scale, sizeof(struct uv_pair) * 2, 1, f_target);
     fwrite(&odol_lod->num_points, sizeof(uint32_t), 1, f_target);
     fputc(0, f_target);
     if (odol_lod->num_points > 0) {
         fputc(0, f_target);
         for (i = 0; i < odol_lod->num_points; i++) {
             // write compressed pair
-            u_relative = (odol_lod->uv_coords[i].u - odol_lod->uv_scale[0]) / (odol_lod->uv_scale[2] - odol_lod->uv_scale[0]);
-            v_relative = (odol_lod->uv_coords[i].v - odol_lod->uv_scale[1]) / (odol_lod->uv_scale[3] - odol_lod->uv_scale[1]);
+            u_relative = (odol_lod->uv_coords[i].u - odol_lod->uv_scale[0].u) / (odol_lod->uv_scale[1].u - odol_lod->uv_scale[0].u);
+            v_relative = (odol_lod->uv_coords[i].v - odol_lod->uv_scale[0].v) / (odol_lod->uv_scale[1].v - odol_lod->uv_scale[0].v);
             u = (short)(u_relative * 2 * INT16_MAX - INT16_MAX);
             v = (short)(v_relative * 2 * INT16_MAX - INT16_MAX);
 
