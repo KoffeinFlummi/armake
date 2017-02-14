@@ -652,7 +652,11 @@ int compare_face_lookup(const void *a, const void *b, void *faces_ptr) {
 
 bool is_alpha(struct mlod_face *face) {
     // @todo check actual texture maybe?
-    return strstr(face->texture_name, "_ca.paa") != NULL;
+    if (strstr(face->texture_name, "_ca.paa") != NULL)
+        return true;
+    if (strstr(face->texture_name, "ca)") != NULL)
+        return true;
+    return false;
 }
 
 
