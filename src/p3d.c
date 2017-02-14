@@ -918,11 +918,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     float weight_sum;
     if (odol_lod->vertexboneref != 0) {
         for (i = 0; i < odol_lod->num_points; i++) {
-            if (odol_lod->vertexboneref[i].num_bones > 1)
-                odol_lod->vertexboneref_is_simple = 0;
-
             if (odol_lod->vertexboneref[i].num_bones == 0)
                 continue;
+
+            if (odol_lod->vertexboneref[i].num_bones > 1)
+                odol_lod->vertexboneref_is_simple = 0;
 
             weight_sum = 0;
             for (j = 0; j < odol_lod->vertexboneref[i].num_bones; j++) {
@@ -939,23 +939,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     if (odol_lod->num_faces > 0) {
         odol_lod->num_sections = 1;
         for (i = 1; i < odol_lod->num_faces; i++) {
-            if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].texture_name,
-                    mlod_lod->faces[odol_lod->face_lookup[i - 1]].texture_name)) {
-                odol_lod->num_sections++;
-                continue;
-            }
-            if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].material_name,
-                    mlod_lod->faces[odol_lod->face_lookup[i - 1]].material_name)) {
-                odol_lod->num_sections++;
-                continue;
-            }
-            if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].section_names,
-                    mlod_lod->faces[odol_lod->face_lookup[i - 1]].section_names)) {
-                odol_lod->num_sections++;
-                continue;
-            }
-            if (mlod_lod->faces[odol_lod->face_lookup[i]].face_flags !=
-                    mlod_lod->faces[odol_lod->face_lookup[i - 1]].face_flags) {
+#ifdef _WIN32
+            if (compare_face_lookup((void *)mlod_lod->faces, &odol_lod->face_lookup[i], &odol_lod->face_lookup[i - 1])) {
+#else
+            if (compare_face_lookup(&odol_lod->face_lookup[i], &odol_lod->face_lookup[i - 1], (void *)mlod_lod->faces)) {
+#endif
                 odol_lod->num_sections++;
                 continue;
             }
@@ -983,18 +971,13 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             odol_lod->sections[k].unknown_long = 0;
 
             for (j = i; j < odol_lod->num_faces; j++) {
-                if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].texture_name,
-                        mlod_lod->faces[odol_lod->face_lookup[j]].texture_name))
+#ifdef _WIN32
+                if (compare_face_lookup((void *)mlod_lod->faces, &odol_lod->face_lookup[j], &odol_lod->face_lookup[i]))
+#else
+                if (compare_face_lookup(&odol_lod->face_lookup[j], &odol_lod->face_lookup[i], (void *)mlod_lod->faces))
+#endif
                     break;
-                if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].material_name,
-                        mlod_lod->faces[odol_lod->face_lookup[j]].material_name))
-                    break;
-                if (strcmp(mlod_lod->faces[odol_lod->face_lookup[i]].section_names,
-                        mlod_lod->faces[odol_lod->face_lookup[j]].section_names))
-                    break;
-                if (mlod_lod->faces[odol_lod->face_lookup[i]].face_flags !=
-                        mlod_lod->faces[odol_lod->face_lookup[j]].face_flags)
-                    break;
+
                 odol_lod->sections[k].face_end++;
                 odol_lod->sections[k].face_index_end += (odol_lod->faces[j].face_type == 4) ? 20 : 16;
             }
