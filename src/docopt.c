@@ -56,7 +56,7 @@ const char help_message[] =
 "    inspect     Inspect a PBO and list contained files.\n"
 "    unpack      Unpack a PBO into a folder.\n"
 "    cat         Read the named file from the target PBO to stdout.\n"
-"    derapify    Derapify a config. You can pass - as the target to print to stdout.\n"
+"    derapify    Derapify a config. Pass no target for stdout and no source for stdin.\n"
 "    keygen      Generate a keypair with the specified path (extensions are added).\n"
 "    sign        Sign a PBO with the given private key.\n"
 "    paa2img     Convert PAA to image (PNG only).\n"

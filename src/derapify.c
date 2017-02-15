@@ -840,13 +840,17 @@ int derapify_file(char *source, char *target) {
     FILE *f_temp;
     FILE *f_source;
     FILE *f_target;
+    char c;
     char buffer[4096];
     int i;
     int success;
     int datasize;
 
     current_operation = OP_DERAPIFY;
-    strcpy(current_target, source);
+    if (strcmp(source, "-") == 0)
+        strcpy(current_target, "stdin");
+    else
+        strcpy(current_target, source);
 
 #ifdef _WIN32
     char temp_name[2048];
@@ -868,14 +872,40 @@ int derapify_file(char *source, char *target) {
     }
 
     // Open source and read LODs
-    f_source = fopen(source, "rb");
-    if (!f_source) {
-        errorf("Failed to open source file.\n");
-        fclose(f_temp);
+    if (strcmp(source, "-") == 0) {
 #ifdef _WIN32
-        DeleteFile(temp_name);
+        strcpy(buffer, temp_name);
+        strcat(buffer, "_in");
+        f_source = fopen(buffer, "wb+");
+#else
+        f_source = tmpfile();
 #endif
-        return 2;
+        if (!f_source) {
+            errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+            DeleteFile(temp_name);
+#endif
+            return 1;
+        }
+
+        while (true) {
+            c = fgetc(stdin);
+            if (feof(stdin))
+                break;
+            fputc(c, f_source);
+        }
+
+        fseek(f_source, 0, SEEK_SET);
+    } else {
+        f_source = fopen(source, "rb");
+        if (!f_source) {
+            errorf("Failed to open source file.\n");
+            fclose(f_temp);
+#ifdef _WIN32
+            DeleteFile(temp_name);
+#endif
+            return 2;
+        }
     }
 
     fgets(buffer, 5, f_source);
@@ -933,6 +963,11 @@ int derapify_file(char *source, char *target) {
 
 #ifdef _WIN32
     DeleteFile(temp_name);
+    if (strcmp(args.source, "-") == 0) {
+        strcpy(buffer, temp_name);
+        strcat(buffer, "_in");
+        DeleteFile(buffer);
+    }
 #endif
 
     return 0;

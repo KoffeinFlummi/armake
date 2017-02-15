@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     args = docopt(argc, argv, 1, VERSION);
 
     // Docopt doesn't yet support positional arguments
-    if (argc < ((args.keygen || args.inspect) ? 3 : 4))
+    if (!args.derapify && argc < ((args.keygen || args.inspect) ? 3 : 4))
         docopt(2, halp, 1, VERSION);
 
     if (!args.keygen && !args.inspect) {
@@ -65,6 +65,15 @@ int main(int argc, char *argv[]) {
     if (args.target[0] == '-' && strlen(args.target) > 1)
         docopt(2, halp, 1, VERSION);
 
+    if (args.derapify) {
+        if (args.target[0] == '-' || argc <= 2) {
+            strcpy(args.source, "-");
+            strcpy(args.target, "-");
+        } else if (args.source[0] == '-' || argc <= 3) {
+            strcpy(args.source, args.target);
+            strcpy(args.target, "-");
+        }
+    }
 
     // @todo
     strcpy(include_folders[0], ".");
