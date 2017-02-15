@@ -33,3 +33,5 @@ struct header {
 int cmd_inspect();
 
 int cmd_unpack();
+
+int cmd_cat();

@@ -41,6 +41,7 @@ typedef struct {
     /* commands */
     int binarize;
     int build;
+    int cat;
     int derapify;
     int img2paa;
     int inspect;
@@ -51,6 +52,7 @@ typedef struct {
     /* arguments */
     char *includefolder;
     char *indentation;
+    char *name;
     char *paatype;
     char *privatekey;
     char *source;

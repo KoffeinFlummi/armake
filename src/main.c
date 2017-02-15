@@ -98,6 +98,8 @@ int main(int argc, char *argv[]) {
         return cmd_inspect();
     if (args.unpack)
         return cmd_unpack();
+    if (args.cat)
+        return cmd_cat();
     if (args.derapify)
         return cmd_derapify();
     if (args.keygen)
