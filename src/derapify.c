@@ -168,7 +168,6 @@ int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize) {
     char containing[2048];
     char name[2048];
     char parent[2048];
-    char temp[2048];
 
     // Loop up class
     fseek(f, 16, SEEK_SET);
@@ -202,14 +201,12 @@ int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize) {
 
     // Check parent class inside same containing class
     if (strcmp(name, parent) != 0) {
-        sprintf(temp, "%s >> %s", containing, parent);
+        sprintf(buffer, "%s >> %s", containing, parent);
 
         fseek(f, 16, SEEK_SET);
-        success = seek_config_path(f, temp);
+        success = seek_config_path(f, buffer);
         if (success == 0)
-            strncpy(buffer, temp, buffsize);
-        if (success >= 0)
-            return success;
+            return 0;
     }
 
     // If this is a root class, we can't do anything at this point
@@ -217,15 +214,15 @@ int find_parent(FILE *f, char *config_path, char *buffer, size_t buffsize) {
         return -2;
 
     // Try to find the class parent in the parent of the containing class
-    success = find_parent(f, containing, temp, sizeof(temp));
+    success = find_parent(f, containing, buffer, sizeof(buffer));
     if (success > 0)
         return success;
     if (success < 0)
         return -2;
 
-    strcat(temp, " >> ");
-    strcat(temp, parent);
-    return find_parent(f, temp, buffer, buffsize);
+    strcat(buffer, " >> ");
+    strcat(buffer, parent);
+    return 0;
 }
 
 
