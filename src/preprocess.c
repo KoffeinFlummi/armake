@@ -633,7 +633,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
             i = 0;
             while (strlen(constants[i].name) != 0 &&
                     strcmp(constants[i].name, definition) != 0 &&
-                    i <= MAXCONSTS)
+                    i < MAXCONSTS)
                 i++;
 
             if (i == MAXCONSTS) {
@@ -701,17 +701,12 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
             strncpy(constants[i].name, definition, sizeof(constants[i].name));
         } else if (level_comment == 0 && strlen(buffer) >= 6 && strncmp(buffer, "#undef", 6) == 0) {
             i = 0;
-            while (strlen(constants[i].name) != 0 &&
-                    strcmp(constants[i].name, definition) != 0 &&
-                    i <= MAXCONSTS)
+            while (strcmp(constants[i].name, definition) != 0 &&
+                    i < MAXCONSTS)
                 i++;
 
-            if (i == MAXCONSTS) {
-                errorf("Include %s not found in line %i of %s.\n", definition, line, source);
-                return 3;
-            }
-
-            constants[i].name[0] = 0;
+            if (i < MAXCONSTS)
+                constants[i].name[0] = 0;
         } else if (level_comment == 0 && strlen(buffer) >= 8 &&
                 (strncmp(buffer, "#ifdef", 6) == 0 || strncmp(buffer, "#ifndef", 7) == 0)) {
             level++;
