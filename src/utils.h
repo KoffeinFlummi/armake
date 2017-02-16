@@ -61,6 +61,8 @@ void nwarningf(char *name, char *format, ...);
 
 void errorf(char *format, ...);
 
+int get_line_number(FILE *f_source);
+
 void reverse_endianness(void *ptr, size_t buffsize);
 
 bool matches_glob(char *string, char *pattern);

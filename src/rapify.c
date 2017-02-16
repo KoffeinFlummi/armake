@@ -36,8 +36,9 @@
 #include "rapify.h"
 
 
-int rapify_token(FILE *f_source, FILE *f_target, char *name) {
+int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lineref) {
     int i;
+    int line;
     uint32_t fp_tmp;
     uint32_t value_long;
     float value_float;
@@ -130,10 +131,11 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
 
         unescape_string(buffer, sizeof(buffer));
     } else if (buffer[0] != '"' && buffer[0] != '\'') {
+        line = get_line_number(f_source);
         if (name == NULL)
-            nwarningf("unquoted-string", "String in array is not quoted properly.\n");
+            nwarningf("unquoted-string", "String in array is not quoted properly in %s:%i.\n", lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
         else
-            nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", name);
+            nwarningf("unquoted-string", "String \"%s\" is not quoted properly in %s:%i.\n", name, lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
     }
 
     fwrite(buffer, strlen(buffer) + 1, 1, f_target);
@@ -142,7 +144,7 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name) {
 }
 
 
-int rapify_array(FILE *f_source, FILE *f_target) {
+int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref) {
     int level;
     int success;
     char last;
@@ -263,11 +265,11 @@ int rapify_array(FILE *f_source, FILE *f_target) {
 
         if (current == '{') {
             fputc(3, f_target);
-            success = rapify_array(f_source, f_target);
+            success = rapify_array(f_source, f_target, lineref);
             if (success)
                 return success;
         } else {
-            success = rapify_token(f_source, f_target, NULL);
+            success = rapify_token(f_source, f_target, NULL, lineref);
             if (success)
                 return success;
         }
@@ -277,7 +279,7 @@ int rapify_array(FILE *f_source, FILE *f_target) {
 }
 
 
-int rapify_class(FILE *f_source, FILE *f_target) {
+int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
     bool is_root;
     int i;
     int success = 0;
@@ -580,7 +582,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
 
             fwrite(buffer, strlen(buffer) + 1, 1, f_target);
 
-            success = rapify_array(f_source, f_target);
+            success = rapify_array(f_source, f_target, lineref);
             if (success) {
                 errorf("Failed to rapify array \"%s\".\n", buffer);
                 return success;
@@ -614,7 +616,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         if (skip_whitespace(f_source))
             return 6;
 
-        if (rapify_token(f_source, f_target, buffer)) {
+        if (rapify_token(f_source, f_target, buffer, lineref)) {
             errorf("Failed to rapify token \"%s\".\n", buffer);
             return 7;
         }
@@ -671,7 +673,7 @@ int rapify_class(FILE *f_source, FILE *f_target) {
         lookahead_word(f_source, name, sizeof(name));
         fseek(f_source, fp_tmp, SEEK_SET);
 
-        success = rapify_class(f_source, f_target);
+        success = rapify_class(f_source, f_target, lineref);
         if (success) {
             errorf("Failed to rapify class \"%s\".\n", name);
             return success;
@@ -706,6 +708,7 @@ int rapify_file(char *source, char *target) {
     char buffer[4096];
     uint32_t enum_offset = 0;
     struct constant *constants;
+    struct lineref *lineref;
 
     current_operation = OP_RAPIFY;
     strcpy(current_target, source);
@@ -771,10 +774,16 @@ int rapify_file(char *source, char *target) {
         constants[i].value = 0;
     }
 
+    lineref = (struct lineref *)malloc(sizeof(struct lineref));
+    lineref->num_files = 0;
+    lineref->num_lines = 0;
+    lineref->file_index = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
+    lineref->line_number = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
+
     for (i = 0; i < MAXINCLUDES; i++)
         include_stack[i][0] = 0;
 
-    success = preprocess(source, f_temp, constants);
+    success = preprocess(source, f_temp, constants, lineref);
 
     for (i = 0; i < MAXCONSTS && constants[i].value != 0; i++)
         free(constants[i].value);
@@ -804,7 +813,7 @@ int rapify_file(char *source, char *target) {
     fwrite("\0\0\0\0\x08\0\0\0", 8, 1, f_target);
     fwrite(&enum_offset, 4, 1, f_target); // this is replaced later
 
-    success = rapify_class(f_temp, f_target);
+    success = rapify_class(f_temp, f_target, lineref);
     if (success) {
         sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
         errorf("Failed to rapify %s,\n       dumping preprocessed config to %s.\n", source, dump_name);
@@ -845,6 +854,9 @@ int rapify_file(char *source, char *target) {
 #ifdef _WIN32
     DeleteFile(temp_name);
 #endif
+
+    free(lineref->line_number);
+    free(lineref);
 
     return 0;
 }

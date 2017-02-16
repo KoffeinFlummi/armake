@@ -435,7 +435,7 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
 }
 
 
-int preprocess(char *source, FILE *f_target, struct constant *constants) {
+int preprocess(char *source, FILE *f_target, struct constant *constants, struct lineref *lineref) {
     /*
      * Writes the contents of source into the target file pointer, while
      * recursively resolving constants and includes using the includefolder
@@ -447,6 +447,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
     extern int current_operation;
     extern char current_target[2048];
     extern char include_stack[MAXINCLUDES][1024];
+    int file_index;
     int line = 0;
     int i = 0;
     int j = 0;
@@ -500,6 +501,18 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
         fseek(f_source, 3, SEEK_SET);
     else
         fseek(f_source, 0, SEEK_SET);
+
+    file_index = lineref->num_files;
+    if (strchr(source, PATHSEP) == NULL)
+        strcpy(lineref->file_names[file_index], source);
+    else
+        strcpy(lineref->file_names[file_index], strrchr(source, PATHSEP) + 1);
+
+    lineref->num_files++;
+    if (lineref->num_files >= MAXINCLUDES) {
+        errorf("Number of included files exceeds MAXINCLUDES.\n");
+        return 1;
+    }
 
     // first constant is file name
     // @todo: what form?
@@ -753,7 +766,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
                 return 7;
             }
             free(buffer);
-            success = preprocess(actualpath, f_target, constants);
+            success = preprocess(actualpath, f_target, constants, lineref);
             if (success)
                 return success;
 
@@ -773,6 +786,17 @@ int preprocess(char *source, FILE *f_target, struct constant *constants) {
                 return success;
             }
             fputs(buffer, f_target);
+
+            lineref->file_index[lineref->num_lines] = file_index;
+            lineref->line_number[lineref->num_lines] = line;
+
+            lineref->num_lines++;
+            if (lineref->num_lines % LINEINTERVAL == 0) {
+                buffer = (char *)malloc(sizeof(uint32_t) * (lineref->num_lines + LINEINTERVAL));
+                memcpy(buffer, lineref->line_number, sizeof(uint32_t) * lineref->num_lines);
+                free(lineref->line_number);
+                lineref->line_number = (uint32_t *)buffer;
+            }
         }
         free(buffer);
     }

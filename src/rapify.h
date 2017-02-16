@@ -22,10 +22,10 @@
 #define MAXCLASSES 4096
 
 
-int rapify_token(FILE *f_source, FILE *f_target, char *name);
+int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lineref);
 
-int rapify_array(FILE *f_source, FILE *f_target);
+int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref);
 
-int rapify_class(FILE *f_source, FILE *f_target);
+int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref);
 
 int rapify_file(char *source, char *target);
