@@ -19,6 +19,11 @@
 #pragma once
 
 
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+
 #define MAXCONSTS 4096
 #define MAXARGS 32
 #define MAXINCLUDES 64

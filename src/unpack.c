@@ -156,7 +156,6 @@ int cmd_unpack() {
     FILE *f_target;
     int num_files;
     long i;
-    long inc_i;
     long j;
     long fp_tmp;
     char prefix[2048] = { 0 };
