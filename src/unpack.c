@@ -163,7 +163,6 @@ int cmd_unpack() {
     char full_path[2048];
     char buffer[2048];
     struct header *headers;
-    bool filtered_file_found;
 
     headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
 
@@ -239,6 +238,26 @@ int cmd_unpack() {
             continue;
         }
 
+        // check if file is excluded
+        for (j = 0; j < MAXEXCLUDEFILES && exclude_files[j][0] != 0; j++) {
+            if (matches_glob(headers[i].name, exclude_files[j]))
+                break;
+        }
+        if (exclude_files[j][0] != 0) {
+            fseek(f_source, headers[i].data_size, SEEK_CUR);
+            continue;
+        }
+
+        // check if file is included
+        for (j = 0; j < MAXINCLUDEFOLDERS && include_folders[j][0] != 0; j++) {
+            if (matches_glob(headers[i].name, include_folders[j]))
+                break;
+        }
+        if (include_folders[j][0] == 0 && j > 1) {
+            fseek(f_source, headers[i].data_size, SEEK_CUR);
+            continue;
+        }
+
         // replace pathseps on linux
 #ifndef _WIN32
         for (j = 0; j < strlen(headers[i].name); j++) {
@@ -246,18 +265,6 @@ int cmd_unpack() {
                 headers[i].name[j] = PATHSEP;
         }
 #endif
-
-        if (args.include) {
-            filtered_file_found = false;
-            for (inc_i = 0; inc_i < MAXINCLUDEFOLDERS && include_folders[inc_i][0] != 0; inc_i++) {
-                if (strlen(include_folders[inc_i]) <= strlen(headers[i].name) && strncmp(headers[i].name, include_folders[inc_i], strlen(headers[i].name)) == 0) {
-                    filtered_file_found = true;
-                    break;
-                }
-            }
-            if(!filtered_file_found) 
-                continue;
-        }
 
         // get full path
         strcpy(full_path, args.target);

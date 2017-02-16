@@ -4,7 +4,7 @@ Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
     armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>
     armake inspect <target>
-    armake unpack [-f] <source> <target>
+    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>
     armake cat <target> <name>
     armake derapify [-f] [-d <indentation>] <source> <target>
     armake keygen [-f] <target>
@@ -31,7 +31,9 @@ Options:
     -p --packonly   Don't binarize models, configs etc.
     -w --warning    Warning to disable (repeatable).
     -i --include    Folder to search for includes, defaults to CWD (repeatable).
+                        For unpack: pattern to include in output folder (repeatable).
     -x --exclude    Glob patterns to exclude from PBO (repeatable).
+                        For unpack: pattern to exclude from output folder (repeatable).
     -k --key        Private key to use for signing the PBO.
     -d --indent     String to use for indentation. "    " (4 spaces) by default.
     -z --compress   Compress final PAA where possible.

@@ -50,7 +50,9 @@ typedef struct {
     int sign;
     int unpack;
     /* arguments */
+    char *excludepattern;
     char *includefolder;
+    char *includepattern;
     char *indentation;
     char *name;
     char *paatype;

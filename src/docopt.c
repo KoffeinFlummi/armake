@@ -40,7 +40,7 @@ const char help_message[] =
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
 "    armake inspect <target>\n"
-"    armake unpack [-f] <source> <target>\n"
+"    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>\n"
 "    armake cat <target> <name>\n"
 "    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake keygen [-f] <target>\n"
@@ -67,7 +67,9 @@ const char help_message[] =
 "    -p --packonly   Don't binarize models, configs etc.\n"
 "    -w --warning    Warning to disable (repeatable).\n"
 "    -i --include    Folder to search for includes, defaults to CWD (repeatable).\n"
+"                        For unpack: pattern to include in output folder (repeatable).\n"
 "    -x --exclude    Glob patterns to exclude from PBO (repeatable).\n"
+"                        For unpack: pattern to exclude from output folder (repeatable).\n"
 "    -k --key        Private key to use for signing the PBO.\n"
 "    -d --indent     String to use for indentation. \"    \" (4 spaces) by default.\n"
 "    -z --compress   Compress final PAA where possible.\n"
@@ -89,7 +91,7 @@ const char usage_pattern[] =
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
 "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
 "    armake inspect <target>\n"
-"    armake unpack [-f] <source> <target>\n"
+"    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>\n"
 "    armake cat <target> <name>\n"
 "    armake derapify [-f] [-d <indentation>] <source> <target>\n"
 "    armake keygen [-f] <target>\n"
@@ -338,8 +340,12 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
     /* arguments */
     for (i=0; i < elements->n_arguments; i++) {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<includefolder>")) {
+        if (!strcmp(argument->name, "<excludepattern>")) {
+            args->excludepattern = argument->value;
+        } else if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
+        } else if (!strcmp(argument->name, "<includepattern>")) {
+            args->includepattern = argument->value;
         } else if (!strcmp(argument->name, "<indentation>")) {
             args->indentation = argument->value;
         } else if (!strcmp(argument->name, "<name>")) {
@@ -369,7 +375,7 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-        NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -386,7 +392,9 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"unpack", 0}
     };
     Argument arguments[] = {
+        {"<excludepattern>", NULL, NULL},
         {"<includefolder>", NULL, NULL},
+        {"<includepattern>", NULL, NULL},
         {"<indentation>", NULL, NULL},
         {"<name>", NULL, NULL},
         {"<paatype>", NULL, NULL},
@@ -409,7 +417,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {10, 9, 11, commands, arguments, options};
+    Elements elements = {10, 11, 11, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
