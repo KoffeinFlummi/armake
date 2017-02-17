@@ -113,7 +113,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
     if (includepath[0] != '\\') {
         strncpy(actualpath, origin, 2048);
         char *target = actualpath + strlen(actualpath) - 1;
-        while (*target != PATHSEP)
+        while (*target != PATHSEP && target >= actualpath)
             target--;
         strncpy(target + 1, includepath, 2046 - (target - actualpath));
 
