@@ -86,24 +86,23 @@ int cmd_inspect() {
     // read header extensions and prefix
     fseek(f_target, 1, SEEK_SET);
     fgets(buffer, 5, f_target);
-    if (strncmp(buffer, "sreV", 4) != 0) {
-        errorf("Unrecognized file format.\n");
-        return 3;
-    }
-
-    fseek(f_target, 21, SEEK_SET);
-    while (true) {
-        fp_tmp = ftell(f_target);
-        if (strcmp(buffer, "prefix") == 0) {
-            fgets(prefix, sizeof(prefix), f_target);
-            fseek(f_target, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-            strcpy(buffer, prefix);
-        } else {
-            fgets(buffer, sizeof(buffer), f_target);
-            fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+    if (strncmp(buffer, "sreV", 4) == 0) {
+        fseek(f_target, 21, SEEK_SET);
+        while (true) {
+            fp_tmp = ftell(f_target);
+            if (strcmp(buffer, "prefix") == 0) {
+                fgets(prefix, sizeof(prefix), f_target);
+                fseek(f_target, fp_tmp + strlen(prefix) + 1, SEEK_SET);
+                strcpy(buffer, prefix);
+            } else {
+                fgets(buffer, sizeof(buffer), f_target);
+                fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+            }
+            if (strlen(buffer) == 0)
+                break;
         }
-        if (strlen(buffer) == 0)
-            break;
+    } else {
+        fseek(f_target, 0, SEEK_SET);
     }
 
     printf("Prefix: \"%s\"\n", prefix);
@@ -188,24 +187,23 @@ int cmd_unpack() {
     // read header extensions and prefix
     fseek(f_source, 1, SEEK_SET);
     fgets(buffer, 5, f_source);
-    if (strncmp(buffer, "sreV", 4) != 0) {
-        errorf("Unrecognized file format.\n");
-        return 3;
-    }
-
-    fseek(f_source, 21, SEEK_SET);
-    while (true) {
-        fp_tmp = ftell(f_source);
-        if (strcmp(buffer, "prefix") == 0) {
-            fgets(prefix, sizeof(prefix), f_source);
-            fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-            strcpy(buffer, prefix);
-        } else {
-            fgets(buffer, sizeof(buffer), f_source);
-            fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+    if (strncmp(buffer, "sreV", 4) == 0) {
+        fseek(f_source, 21, SEEK_SET);
+        while (true) {
+            fp_tmp = ftell(f_source);
+            if (strcmp(buffer, "prefix") == 0) {
+                fgets(prefix, sizeof(prefix), f_source);
+                fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
+                strcpy(buffer, prefix);
+            } else {
+                fgets(buffer, sizeof(buffer), f_source);
+                fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+            }
+            if (strlen(buffer) == 0)
+                break;
         }
-        if (strlen(buffer) == 0)
-            break;
+    } else {
+        fseek(f_source, 0, SEEK_SET);
     }
 
     // read headers
@@ -358,24 +356,23 @@ int cmd_cat() {
     // read header extensions and prefix
     fseek(f_source, 1, SEEK_SET);
     fgets(buffer, 5, f_source);
-    if (strncmp(buffer, "sreV", 4) != 0) {
-        errorf("Unrecognized file format.\n");
-        return 3;
-    }
-
-    fseek(f_source, 21, SEEK_SET);
-    while (true) {
-        fp_tmp = ftell(f_source);
-        if (strcmp(buffer, "prefix") == 0) {
-            fgets(prefix, sizeof(prefix), f_source);
-            fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-            strcpy(buffer, prefix);
-        } else {
-            fgets(buffer, sizeof(buffer), f_source);
-            fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+    if (strncmp(buffer, "sreV", 4) == 0) {
+        fseek(f_source, 21, SEEK_SET);
+        while (true) {
+            fp_tmp = ftell(f_source);
+            if (strcmp(buffer, "prefix") == 0) {
+                fgets(prefix, sizeof(prefix), f_source);
+                fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
+                strcpy(buffer, prefix);
+            } else {
+                fgets(buffer, sizeof(buffer), f_source);
+                fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+            }
+            if (strlen(buffer) == 0)
+                break;
         }
-        if (strlen(buffer) == 0)
-            break;
+    } else {
+        fseek(f_source, 0, SEEK_SET);
     }
 
     // read headers
