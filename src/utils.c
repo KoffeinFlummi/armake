@@ -121,6 +121,7 @@ int get_line_number(FILE *f_source) {
     fp_start = ftell(f_source);
     fseek(f_source, 0, SEEK_SET);
 
+    line = 0;
     while (ftell(f_source) < fp_start) {
         if (fgetc(f_source) == '\n')
             line++;

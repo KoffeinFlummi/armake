@@ -282,6 +282,7 @@ int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref) {
 int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
     bool is_root;
     int i;
+    int line;
     int success = 0;
     int level = 0;
     char in_string = 0;
@@ -309,7 +310,9 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
         if (lookahead_word(f_source, buffer, sizeof(buffer)))
             return 1;
         if (strcmp(buffer, "class") != 0) {
-            errorf("Expected \"class\", got \"%s\".\n", buffer);
+            line = get_line_number(f_source);
+            errorf("Expected \"class\", got \"%s\" in %s:%i.\n", buffer,
+                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
             return 2;
         }
 
@@ -336,7 +339,9 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
         }
 
         if (strchr(buffer, '{') == NULL) {
-            errorf("Failed to find { for class \"%s\".\n", name);
+            line = get_line_number(f_source);
+            errorf("Failed to find { for class \"%s\" in %s:%i.\n", name,
+                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
             return 5;
         }
 
@@ -414,7 +419,9 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
             break;
         if (current != ' ' && current != '\t' && current != '\r' && current != '\n' && current != '}' &&
                 (current < 'a' || current > 'z') && (current < 'A' || current > 'Z')) {
-            errorf("Unexpected symbol after semi-colon: \"%c\".\n", current);
+            line = get_line_number(f_source);
+            errorf("Unexpected symbol after semi-colon: \"%c\" in %s:%i.\n", current,
+                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
             return 1;
         }
         fseek(f_source, -1, SEEK_CUR);
@@ -568,11 +575,15 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
             if (current == '+') {
                 fwrite("\x05\x01\0\0\0", 5, 1, f_target);
                 if (fgetc(f_source) != '=') {
-                    errorf("Expected \"=\" following \"+\".\n");
+                    line = get_line_number(f_source);
+                    errorf("Expected \"=\" following \"+\" in %s:%i.\n",
+                            lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
                     return 5;
                 }
             } else if (current != '=') {
-                errorf("Expected \"=\", got \"%c\".\n", current);
+                line = get_line_number(f_source);
+                errorf("Expected \"=\", got \"%c\" in %s:%i.\n", current,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
                 return 5;
             } else {
                 fputc(2, f_target);
@@ -593,7 +604,9 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
                 return 7;
             current = fgetc(f_source);
             if (current != ';') {
-                errorf("Expected \";\", got \"%c\".\n", current);
+                line = get_line_number(f_source);
+                errorf("Expected \";\", got \"%c\" in %s:%i.\n", current,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
                 return 8;
             }
 
@@ -610,15 +623,18 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
             return 4;
         current = fgetc(f_source);
         if (current != '=') {
-            errorf("Expected \"=\" after \"%s\", got \"%c\".\n", buffer, current);
+            line = get_line_number(f_source);
+            errorf("Expected \"=\" after \"%s\", got \"%c\" in %s:%i.\n", buffer, current,
+                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
             return 5;
         }
         if (skip_whitespace(f_source))
             return 6;
 
-        if (rapify_token(f_source, f_target, buffer, lineref)) {
+        success = rapify_token(f_source, f_target, buffer, lineref);
+        if (success) {
             errorf("Failed to rapify token \"%s\".\n", buffer);
-            return 7;
+            return success;
         }
     }
 
