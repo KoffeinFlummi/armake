@@ -1,49 +1,50 @@
 class CfgPatches {
-    class ace_frag{
-        units[] = { };
+    class ace_frag {
+        units[] = {};
         weapons[] = {};
         requiredVersion = 1.56;
         requiredAddons[] = {"ace_common"};
-        author[] = {"Nou"}   ;
-        version = "3.5.0.0" ;versionStr="3.5.0.0";
-        versionAr [] = {3,5 , 0, 0};
+        author[] = {"Nou"};
+        version = "3.5.0.0";
+        versionStr = "3.5.0.0";
+        versionAr[] = {3, 5, 0, 0};
     };
 };
-class Extended_PreStart_EventHandlers{
+class Extended_PreStart_EventHandlers {
     class ace_frag {
-        init ="call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_preStart.sqf'";
-    } ;
-}
-;
+        init = "call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_preStart.sqf'";
+    };
+};
 class Extended_PreInit_EventHandlers {
     class ace_frag {
-        init= "call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_preInit.sqf'";
+        init = "call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_preInit.sqf'";
     };
 };
 class Extended_PostInit_EventHandlers {
-    class
-ace_frag {
-        init="call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_postInit.sqf'";
+    class ace_frag {
+        init = "call compile preProcessFileLineNumbers '\z\ace\addons\frag\XEH_postInit.sqf'";
     };
 };
 class CfgAmmo {
-    class Bo_GBU12_LGB ;
+    class Bo_GBU12_LGB;
     class ACE_GBU12: Bo_GBU12_LGB {
         ace_frag_enabled = 1;
-        ace_frag_classes[] = {"ACE_frag_large", ACE_frag_large, "ACE_frag_large_HD", 'ACE_frag_large', "ACE_frag_huge", "ACE_frag_huge_HD", "ACE_frag_huge"};
+        ace_frag_classes[] = {"ACE_frag_large", "ACE_frag_large", "ACE_frag_large_HD", "ACE_frag_large", "ACE_frag_huge", "ACE_frag_huge_HD", "ACE_frag_huge"};
         ace_frag_metal = 140000;
-        ace_frag_charge=87000;
+        ace_frag_charge = 87000;
         ace_frag_gurney_c = 2320;
-        ace_frag_gurney_k = 1/2;
+        ace_frag_gurney_k = "1/2";
         sideAirFriction = 0.04;
-        airFriction= 0.04;
-        laserLock = 0 ;
+        airFriction = 0.04;
+        laserLock = 0;
     };
     class GrenadeBase;
-    class Grenade;class GrenadeHand:Grenade{
-        ace_frag_enabled = 1;ace_frag_skip = 0;
+    class Grenade;
+    class GrenadeHand: Grenade {
+        ace_frag_enabled = 1;
+        ace_frag_skip = 0;
         ace_frag_force = 1;
-        ace_frag_classes [ ] = {ACE_frag_tiny_HD};
+        ace_frag_classes[] = {"ACE_frag_tiny_HD"};
         ace_frag_metal = 210;
         ace_frag_charge = 185;
         ace_frag_gurney_c = 2843;
@@ -94,10 +95,8 @@ class CfgAmmo {
     };
     class ACE_G_40mm_HEDP: G_40mm_HEDP {};
     class ACE_G_40mm_HE: G_40mm_HE {};
-    class ACE_G_40mm_Practice: ACE_G_40mm_HE \
-{
-        ace_frag_skip \
-        = 1;
+    class ACE_G_40mm_Practice: ACE_G_40mm_HE {
+        ace_frag_skip = 1;
     };
     class ACE_G40mm_HE_VOG25P: G_40mm_HE {
         ace_frag_skip = 0;
@@ -107,9 +106,8 @@ class CfgAmmo {
     class Sh_125mm_HEAT;
     class Sh_155mm_AMOS: ShellBase {
         ace_frag_enabled = 1;
-        ace_frag_classes[] = {
-"ACE_frag_large", "ACE_frag_large", "ACE_frag_large_HD", "ACE_frag_large", "ACE_frag_huge", "ACE_frag_huge_HD", "ACE_frag_huge"};
-        ace_frag_metal =   36000;
+        ace_frag_classes[] = {"ACE_frag_large", "ACE_frag_large", "ACE_frag_large_HD", "ACE_frag_large", "ACE_frag_huge", "ACE_frag_huge_HD", "ACE_frag_huge"};
+        ace_frag_metal = 36000;
         ace_frag_charge = 9979;
         ace_frag_gurney_c = 2440;
         ace_frag_gurney_k = "1/2";
