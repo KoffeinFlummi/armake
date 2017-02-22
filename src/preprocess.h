@@ -27,7 +27,6 @@
 #define MAXCONSTS 4096
 #define MAXARGS 32
 #define MAXINCLUDES 64
-#define LINEBUFFSIZE 131072
 #define LINEINTERVAL 1024
 
 
@@ -53,6 +52,6 @@ bool matches_includepath(char *path, char *includepath, char *includefolder);
 
 int find_file(char *includepath, char *origin, char *actualpath);
 
-int resolve_macros(char *string, size_t buffsize, struct constant *constants);
+char * resolve_macros(char *string, size_t buffsize, struct constant *constants);
 
 int preprocess(char *source, FILE *f_target, struct constant *constants, struct lineref *lineref);

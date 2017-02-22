@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -250,11 +251,14 @@ int find_file(char *includepath, char *origin, char *actualpath) {
 }
 
 
-int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
+char * resolve_macros(char *string, size_t buffsize, struct constant *constants) {
+    /*
+     * Returns NULL on failure and a pointer to the resolved string on success.
+     */
+
     int i;
     int j;
     int level;
-    int success;
     char tmp[1024];
     char constant[1024];
     char replacement[262144];
@@ -265,7 +269,9 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
     char *ptr_args;
     char *ptr_args_end;
     char *ptr_arg_end;
+    char *ptr_temp;
     char in_string;
+    size_t size_temp;
 
     for (i = 0; i < MAXCONSTS; i++) {
         if (constants[i].value == 0)
@@ -373,7 +379,7 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
                     level = 0;
                     for (ptr_arg_end = ptr_args + 1; *ptr_arg_end != 0; ptr_arg_end++) {
                         if (ptr_arg_end > ptr_args_end)
-                            return 2;
+                            return NULL;
                         if (in_string != 0) {
                             if (*ptr_arg_end == in_string && *(ptr_arg_end - 1) != '\\')
                                 in_string = 0;
@@ -392,9 +398,8 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
 
                             trim(args[j], sizeof(args[j]));
 
-                            success = resolve_macros(args[j], sizeof(args[j]), constants);
-                            if (success)
-                                return success;
+                            if (resolve_macros(args[j], sizeof(args[j]), constants) == NULL)
+                                return NULL;
 
                             ptr_args = ptr_arg_end;
                             break;
@@ -423,15 +428,29 @@ int resolve_macros(char *string, size_t buffsize, struct constant *constants) {
                 }
             }
 
-            success = resolve_macros(replacement, sizeof(replacement), constants);
-            if (success)
-                return success;
+            if (resolve_macros(replacement, sizeof(replacement), constants) == NULL)
+                return NULL;
 
-            replace_string(string, buffsize, constant, replacement, 1);
+            // realloc if necessary
+            size_temp = buffsize;
+            if (size_temp == 0) {
+                size_temp = strlen(string) + 1;
+
+                ptr_temp = string - 1;
+                while ((ptr_temp = strstr(ptr_temp + 1, constant)) != NULL)
+                    size_temp += strlen(replacement) - strlen(constant);
+
+                if (size_temp > strlen(string) + 1)
+                    string = (char *)realloc(string, size_temp);
+                else
+                    size_temp = strlen(string) + 1;
+            }
+
+            replace_string(string, size_temp, constant, replacement, 1);
         }
     }
 
-    return 0;
+    return string;
 }
 
 
@@ -533,41 +552,40 @@ int preprocess(char *source, FILE *f_target, struct constant *constants, struct 
         constants[3].value = (char *)malloc(1);
 
     while (true) {
-        // get line
-        line++;
-        buffsize = LINEBUFFSIZE;
-        buffer = (char *)malloc(buffsize + 1);
-        if (getline(&buffer, &buffsize, f_source) == -1) {
-            free(buffer);
-            break;
-        }
-
-        // fix Windows line endings
-        if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {
-            buffer[strlen(buffer) - 2] = '\n';
-            buffer[strlen(buffer) - 1] = 0;
-        }
-
-        // add next lines if line ends with a backslash
-        while (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\\') {
-            if (strlen(buffer) >= buffsize) {
-                errorf("Line %i exceeds maximum length.\n", line);
-                return 1;
-            }
-            buffsize -= strlen(buffer);
-            ptr = (char *)malloc(buffsize + 1);
-            if (getline(&ptr, &buffsize, f_source) == -1)
+        // get line and add next lines if line ends with a backslash
+        buffer = NULL;
+        while (buffer == NULL || (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\\')) {
+            ptr = NULL;
+            buffsize = 0;
+            if (getline(&ptr, &buffsize, f_source) == -1) {
+                free(ptr);
+                ptr = NULL;
                 break;
-            strncpy(strrchr(buffer, '\\'), ptr, buffsize);
-            line++;
-            free(ptr);
+            }
 
-            // fix windows line endings again
+            line++;
+
+            if (buffer == NULL) {
+                buffer = ptr;
+            } else {
+                buffer = (char *)realloc(buffer, strlen(buffer) + 2 + buffsize);
+                strcpy(buffer + strlen(buffer) - 2, ptr);
+                free(ptr);
+            }
+
+            // Add trailing new line if necessary
+            if (strlen(buffer) >= 1 && buffer[strlen(buffer) - 1] != '\n')
+                strcat(buffer, "\n");
+
+            // fix windows line endings
             if (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\r') {
                 buffer[strlen(buffer) - 2] = '\n';
                 buffer[strlen(buffer) - 1] = 0;
             }
         }
+
+        if (buffer == NULL)
+            break;
 
         // Check for block comment delimiters
         for (i = 0; i < strlen(buffer); i++) {
@@ -605,7 +623,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants, struct 
         }
 
         // trim leading spaces
-        trim_leading(buffer, LINEBUFFSIZE);
+        trim_leading(buffer, strlen(buffer) + 1);
 
         // skip lines inside untrue ifs
         if (level > level_true) {
@@ -692,10 +710,9 @@ int preprocess(char *source, FILE *f_target, struct constant *constants, struct 
                 strncpy(valuebuffer, ptr, sizeof(valuebuffer));
                 valuebuffer[strlen(valuebuffer) - 1] = 0;
 
-                success = resolve_macros(valuebuffer, sizeof(valuebuffer), constants);
-                if (success) {
+                if (resolve_macros(valuebuffer, sizeof(valuebuffer), constants) == NULL) {
                     errorf("Failed to resolve macros in line %i of %s.\n", line, source);
-                    return success;
+                    return 3;
                 }
 
                 if (strnlen(valuebuffer, sizeof(valuebuffer)) == sizeof(valuebuffer)) {
@@ -781,8 +798,8 @@ int preprocess(char *source, FILE *f_target, struct constant *constants, struct 
         }
 
         if (buffer[0] != '#' && strlen(buffer) > 1) {
-            success = resolve_macros(buffer, buffsize, constants);
-            if (success) {
+            buffer = resolve_macros(buffer, 0, constants);
+            if (buffer == NULL) {
                 errorf("Failed to resolve macros in line %i of %s.\n", line, source);
                 return success;
             }
