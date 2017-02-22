@@ -36,6 +36,46 @@
 #include "rapify.h"
 
 
+#define SKIP_WHITESPACE(fp) if (skip_whitespace(fp)) { errorf("Unexpected EOF.\n"); return 1; }
+
+#define LOOKAHEAD_WORD(fp, buffer) \
+    if (lookahead_word(fp, buffer, sizeof(buffer))) { \
+        errorf("Unexpected EOF.\n"); \
+        return 6; \
+    }
+#define LOOKAHEAD_C(fp, var) \
+    var = lookahead_c(fp); \
+    if (var == -1) { \
+        errorf("Unexpected EOF.\n"); \
+        return 7; \
+    }
+
+#define GET_WORD(fp, buffer) \
+    LOOKAHEAD_WORD(fp, buffer); \
+    fseek(fp, strlen(buffer), SEEK_CUR);
+#define GET_C(fp, var) \
+    if (feof(fp)) { \
+        errorf("Unexpected EOF.\n"); \
+        return 4; \
+    } \
+    var = fgetc(fp);
+
+#define EXPECT_WORD(fp, buffer, word, lineref) \
+    if (strcmp(buffer, word) != 0) { \
+        errorf("Expected \"%s\", got \"%s\" in %s:%i.\n", \
+            word, buffer, lineref->file_names[lineref->file_index[get_line_number(fp)]], \
+            lineref->line_number[get_line_number(fp)]); \
+        return 3; \
+    }
+#define EXPECT_C(fp, var, c, lineref) \
+    if (var != c) { \
+        errorf("Expected '%c', got '%c' in %s:%i.\n", \
+            c, var, lineref->file_names[lineref->file_index[get_line_number(fp)]], \
+            lineref->line_number[get_line_number(fp)]); \
+        return 5; \
+    }
+
+
 int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lineref) {
     int i;
     int line;
@@ -279,428 +319,308 @@ int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref) {
 }
 
 
-int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref) {
-    bool is_root;
-    int i;
-    int line;
-    int success = 0;
-    int level = 0;
-    char in_string = 0;
-    char current = 0;
-    char last = 0;
-    char buffer[4096];
-    char tmp[4096];
-    char name[512];
-    char *ptr;
-    uint32_t fp_start;
-    uint32_t fp_tmp;
-    uint32_t fp_endaddress;
-    uint32_t classheaders[MAXCLASSES];
-    uint32_t num_entries = 0;
+int skip_to_semicolon(FILE *f_source) {
+    /*
+     * Skip ahead until after the closing ; after a class definition.
+     *
+     * Return 0 on success and a positive integer on failure.
+     */
 
-    is_root = (ftell(f_target) <= 16);
+    int level;
+    char in_string;
+    char c;
 
-    for (i = 0; i < MAXCLASSES; i++)
-        classheaders[i] = 0;
+    in_string = 0;
+    level = 0;
 
-    // if this is the first entry, write file "class"
-    if (is_root) {
-        fputc(0, f_target); // inherited class
-    } else {
-        if (lookahead_word(f_source, buffer, sizeof(buffer)))
-            return 1;
-        if (strcmp(buffer, "class") != 0) {
-            line = get_line_number(f_source);
-            errorf("Expected \"class\", got \"%s\" in %s:%i.\n", buffer,
-                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-            return 2;
-        }
-
-        fseek(f_source, 6, SEEK_CUR);
-        fp_tmp = ftell(f_source);
-        if (fgets(buffer, sizeof(buffer), f_source) == NULL)
-            return 3;
-
-        strncpy(name, buffer, sizeof(name));
-        trim_leading(name, sizeof(name));
-        for (ptr = name; *name != 0; ptr++) {
-            if (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n' ||
-                    *ptr == ':' || *ptr == '{') {
-                *ptr = 0;
-                break;
-            }
-        }
-
-        while (strchr(buffer, '{') == NULL &&
-                strlen(buffer) < sizeof(buffer) - 1) {
-            if (fgets(buffer + strlen(buffer),
-                    sizeof(buffer) - strlen(buffer), f_source) == NULL)
-                return 4;
-        }
-
-        if (strchr(buffer, '{') == NULL) {
-            line = get_line_number(f_source);
-            errorf("Failed to find { for class \"%s\" in %s:%i.\n", name,
-                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-            return 5;
-        }
-
-        if (strchr(buffer, ':') == NULL || strchr(buffer, '{') < strchr(buffer, ':')) {
-            fputc(0, f_target);
-        } else {
-            ptr = strchr(buffer, ':') + 1;
-            while (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-                ptr++;
-            strcpy(tmp, ptr);
-
-            ptr = tmp;
-            while (*ptr != ' ' && *ptr != '\t' && *ptr != '\n' && *ptr != '{')
-                ptr++;
-            *ptr = 0;
-
-            fwrite(tmp, strlen(tmp) + 1, 1, f_target);
-        }
-
-        fseek(f_source, fp_tmp + (strchr(buffer, '{') - buffer) + 1, SEEK_SET);
-    }
-
-    fp_start = ftell(f_source);
-
-    // FIRST ITERATION: get number of entries
     while (true) {
-        if (feof(f_source)) {
-            if (is_root) {
-                break;
-            } else {
-                errorf("Unexpected EOF in class \"%s\".\n", name);
-                return 1;
-            }
-        }
+        if (feof(f_source))
+            return 1;
 
-        last = current;
-        current = fgetc(f_source);
+        c = fgetc(f_source);
 
-        if (in_string != 0) {
-            if (current == in_string && last != '\\')
+        if (in_string) {
+            if (c == in_string)
                 in_string = 0;
-            else
-                continue;
-        } else {
-            if ((current == '"' || current == '\'') && last != '\\')
-                in_string = current;
+            continue;
+        }
+        if (c == '"' || c == '\'') {
+            in_string = c;
+            continue;
         }
 
-        if (current == '{')
+        if (c == '{')
             level++;
-        else if (current == '}')
+        else if (c == '}')
             level--;
 
-        if (level < 0) {
-            if (is_root) {
-                errorf("Unexpected end-of-class (}).\n");
-                return 1;
-            } else {
-                break;
-            }
-        }
+        if (c == ';' && level == 0)
+            return 0;
+    }
+}
 
-        if (level == 0 && current == ';')
-            num_entries++;
+
+bool check_name(char *name) {
+    int i;
+
+    if (strlen(name) == 0)
+        return false;
+
+    for (i = 0; i < strlen(name); i++) {
+        if (name[i] >= 'a' && name[i] <= 'z')
+            continue;
+        if (name[i] >= 'A' && name[i] <= 'Z')
+            continue;
+        if (name[i] >= '0' && name[i] <= '9')
+            continue;
+        if (name[i] == '_')
+            continue;
+
+        return false;
     }
 
-    write_compressed_int(num_entries, f_target);
+    return true;
+}
 
-    fseek(f_source, fp_start, SEEK_SET);
 
-    // SECOND ITERATION: write entries and class headers to file
-    while (true) {
-        current = fgetc(f_source);
-        if (current == EOF)
-            break;
-        if (current != ' ' && current != '\t' && current != '\r' && current != '\n' && current != '}' &&
-                (current < 'a' || current > 'z') && (current < 'A' || current > 'Z')) {
-            line = get_line_number(f_source);
-            errorf("Unexpected symbol after semi-colon: \"%c\" in %s:%i.\n", current,
-                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-            return 1;
+
+int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref, int level) {
+    /*
+     * Rapifies the current class in f_source and writes to f_target. Level
+     * should be 0 initially. When rapifying the root class, the source pointer
+     * should point to the start of the file, if not, it should be just after
+     * the classname and any whitespace following it, like so:
+     *
+     * class myclass : parentclass {
+     *               ^
+     *
+     * Returns 0 on success and a positive integer on failure.
+     */
+
+    int success;
+    int line;
+    long i;
+    long fp_end;
+    long fp_source_classes[MAXCLASSES];
+    long fp_target_classes[MAXCLASSES];
+    uint8_t type;
+    uint32_t num_entries;
+    uint32_t num_classes;
+    uint32_t fp_temp;
+    char word[1024];
+    char c;
+
+    if (level == 0) {
+        fputc(0, f_target); // inherited classname
+    } else {
+        GET_C(f_source, c);
+        if (c == ':') {
+            SKIP_WHITESPACE(f_source);
+            GET_WORD(f_source, word);
+
+            if (!check_name(word)) {
+                line = get_line_number(f_source);
+                errorf("Invalid characters in parent class name \"%s\" in %s:%i.\n", word,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+                return 3;
+            }
+            fwrite(word, strlen(word) + 1, 1, f_target);
+
+            SKIP_WHITESPACE(f_source);
+            GET_C(f_source, c);
+        } else {
+            fputc(0, f_target);
         }
-        fseek(f_source, -1, SEEK_CUR);
 
+        EXPECT_C(f_source, c, '{', lineref);
+    }
+
+    fp_temp = ftell(f_source);
+    num_entries = 0;
+    uint32_t fp_temp_2;
+    while (true) {
         if (skip_whitespace(f_source))
             break;
-
-        if (lookahead_word(f_source, buffer, sizeof(buffer)))
-            return 1;
-
-        trim_leading(buffer, sizeof(buffer));
-        if (strlen(buffer) == 0)
+        if (lookahead_c(f_source) == '}')
             break;
-
-        // class definitions
-        if (strcmp(buffer, "class") == 0) {
-            fseek(f_source, 5, SEEK_CUR);
-            if (skip_whitespace(f_source))
-                return 2;
-
-            fp_tmp = ftell(f_source);
-            if (fgets(buffer, sizeof(buffer), f_source) == NULL)
-                return 3;
-
-            while (strchr(buffer, ';') == NULL &&
-                    strchr(buffer, '{') == NULL &&
-                    strlen(buffer) < sizeof(buffer) - 1) {
-                if (fgets(buffer + strlen(buffer),
-                        sizeof(buffer) - strlen(buffer), f_source) == NULL)
-                    return 4;
-            }
-            fseek(f_source, fp_tmp, SEEK_SET);
-
-            if (strchr(buffer, '{') == NULL || (strchr(buffer, ';') != NULL &&
-                    strchr(buffer, ';') < strchr(buffer, '{'))) {
-                // extern class definition
-                fputc(3, f_target);
-
-                ptr = buffer;
-                while (*ptr != ' ' && *ptr != '\t' && *ptr != ';')
-                    ptr++;
-                *ptr = 0;
-                fwrite(buffer, strlen(buffer) + 1, 1, f_target);
-
-                // wkip to trailing semicolon
-                while (true) {
-                    if (feof(f_source))
-                        return 5;
-                    if (fgetc(f_source) == ';')
-                        break;
-                }
-
-                continue;
-            } else if (strchr(buffer, ';') == NULL || (strchr(buffer, '{') != NULL &&
-                    strchr(buffer, ';') > strchr(buffer, '{'))) {
-                // class body definition
-                fputc(0, f_target);
-
-                ptr = buffer;
-                while (*ptr != ' ' && *ptr != '\t' && *ptr != '\r' && *ptr != '\n' && *ptr != '{' && *ptr != ':')
-                    ptr++;
-                *ptr = 0;
-                fwrite(buffer, strlen(buffer) + 1, 1, f_target);
-
-                for (i = 0; i < MAXCLASSES && classheaders[i] != 0; i++);
-                classheaders[i] = ftell(f_target);
-                fwrite("\0\0\0\0", 4, 1, f_target);
-
-                // wkip to trailing semicolon
-                in_string = 0;
-                level = 0;
-                while (true) {
-                    if (feof(f_source))
-                        return 5;
-
-                    last = current;
-                    current = fgetc(f_source);
-
-                    if (in_string != 0) {
-                        if (current == in_string && last != '\\')
-                            in_string = 0;
-                        else
-                            continue;
-                    } else {
-                        if ((current == '"' || current == '\'') && last != '\\')
-                            in_string = current;
-                    }
-
-                    if (current == '{')
-                        level++;
-                    else if (current == '}')
-                        level--;
-
-                    if (level == 0 && current == ';')
-                        break;
-
-                    if (level < 0) {
-                        errorf("Unexpected end-of-class (}).\n");
-                        return 6;
-                    }
-                }
-
-                continue;
-            } else {
-                errorf("This should never happen. If it does, you broke the laws of logic (or I am an idiot).\n");
-                return 7;
-            }
+        num_entries++;
+        
+        if (false) {
+            fp_temp_2 = ftell(f_source);
+            fgets(word, sizeof(word), f_source);
+            fseek(f_source, fp_temp_2, SEEK_SET);
         }
 
-        // delete statement
-        if (strcmp(buffer, "delete") == 0) {
-            fputc(4, f_target);
+        if (skip_to_semicolon(f_source))
+            break;
+    }
+    write_compressed_int(num_entries, f_target);
+    fseek(f_source, fp_temp, SEEK_SET);
 
-            fseek(f_source, 6, SEEK_CUR);
+    num_classes = 0;
+    for (i = 0; i < num_entries; i++) {
+        SKIP_WHITESPACE(f_source);
 
-            if (skip_whitespace(f_source))
-                return 2;
+        LOOKAHEAD_C(f_source, c);
+        GET_WORD(f_source, word);
+        if (c == '}' || strlen(word) == 0) {
+            errorf("Less entries in class than expected (usually caused by wrong {}s or missing ;s).\n");
+            return 1;
+        }
 
-            if (lookahead_word(f_source, buffer, sizeof(buffer)))
-                return 2;
+        if (strcmp(word, "class") == 0)
+            type = 0;
+        else if (strcmp(word, "delete") == 0)
+            type = 4;
+        else
+            type = 1;
 
-            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
-
-            // wkip to trailing semicolon
-            while (true) {
-                if (feof(f_source))
-                    return 3;
-                if (fgetc(f_source) == ';')
-                    break;
+        // class
+        if (type == 0 || type == 4) {
+            GET_C(f_source, c);
+            if (c != ' ' && c != '\t' && c != '\r' && c != '\n') {
+                line = get_line_number(f_source);
+                errorf("Expected space after %s keyword, got '%c'.\n", word, c,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+                return 9;
             }
 
+            SKIP_WHITESPACE(f_source);
+            GET_WORD(f_source, word);
+
+            if (!check_name(word)) {
+                line = get_line_number(f_source);
+                errorf("Invalid characters in class name \"%s\" in %s:%i.\n", word,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+                return 12;
+            }
+
+            SKIP_WHITESPACE(f_source);
+            LOOKAHEAD_C(f_source, c);
+
+            // external class
+            if (c == ';') {
+                type = (type == 0) ? 3 : 4;
+
+                fseek(f_source, 1, SEEK_CUR);
+
+                fputc((char)type, f_target);
+                fwrite(word, strlen(word) + 1, 1, f_target);
+
+                continue;
+            } else if (type == 4) {
+                line = get_line_number(f_source);
+                errorf("Expected ';' after delete statement, got: '%c' in %s:%i.\n", c,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+                return 15;
+            }
+
+            if (num_classes >= MAXCLASSES) {
+                errorf("MAXCLASSES exceeded.\n");
+                return 16;
+            }
+
+            fp_source_classes[num_classes] = ftell(f_source);
+
+            fputc((char)type, f_target);
+            fp_target_classes[num_classes] = ftell(f_target);
+            fwrite(word, strlen(word) + 1, 1, f_target);
+            fwrite("\0\0\0\0", 4, 1, f_target);
+
+            if (skip_to_semicolon(f_source)) {
+                fseek(f_source, fp_source_classes[num_classes], SEEK_SET);
+                line = get_line_number(f_source);
+                errorf("Failed to skip to EOC for class \"%s\" in %s:%i.\n", word,
+                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+                return 17;
+            }
+
+            num_classes++;
             continue;
         }
+        
+        // variable or array
+        if (!check_name(word)) {
+            line = get_line_number(f_source);
+            errorf("Invalid characters in variable name \"%s\" in %s:%i.\n", word,
+                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
+            return 18;
+        }
 
-        // on the root level, nothing but classes is allowed
-        // @todo: ext, etc.?
-        //if (is_root)
-        //    return 2;
-
+        SKIP_WHITESPACE(f_source);
+        LOOKAHEAD_C(f_source, c);
+        
         // array
-        if (strlen(buffer) > 2 && strcmp(buffer + strlen(buffer) - 2, "[]") == 0) {
-            fseek(f_source, strlen(buffer), SEEK_CUR);
+        if (c == '[') {
+            type++;
 
-            buffer[strlen(buffer) - 2] = 0;
+            fseek(f_source, 1, SEEK_CUR);
+            SKIP_WHITESPACE(f_source);
+            GET_C(f_source, c);
+            EXPECT_C(f_source, c, ']', lineref);
+        }
 
-            if (skip_whitespace(f_source))
-                return 3;
-            if (feof(f_source))
-                return 4;
-            current = fgetc(f_source);
-            if (current == '+') {
-                fwrite("\x05\x01\0\0\0", 5, 1, f_target);
-                if (fgetc(f_source) != '=') {
-                    line = get_line_number(f_source);
-                    errorf("Expected \"=\" following \"+\" in %s:%i.\n",
-                            lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-                    return 5;
-                }
-            } else if (current != '=') {
-                line = get_line_number(f_source);
-                errorf("Expected \"=\", got \"%c\" in %s:%i.\n", current,
-                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-                return 5;
-            } else {
-                fputc(2, f_target);
-            }
-            if (skip_whitespace(f_source))
-                return 6;
+        SKIP_WHITESPACE(f_source);
+        GET_C(f_source, c);
+        if (type == 2 && c == '+') {
+            type = 5;
+            GET_C(f_source, c);
+        }
 
-            fwrite(buffer, strlen(buffer) + 1, 1, f_target);
+        EXPECT_C(f_source, c, '=', lineref);
+        SKIP_WHITESPACE(f_source);
+
+        fputc((char)type, f_target);
+
+        if (type == 2) {
+            fwrite(word, strlen(word) + 1, 1, f_target);
 
             success = rapify_array(f_source, f_target, lineref);
-            if (success) {
-                errorf("Failed to rapify array \"%s\".\n", buffer);
-                return success;
-            }
 
-            // find trailing semicolon
-            if (skip_whitespace(f_source))
-                return 7;
-            current = fgetc(f_source);
-            if (current != ';') {
-                line = get_line_number(f_source);
-                errorf("Expected \";\", got \"%c\" in %s:%i.\n", current,
-                        lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-                return 8;
-            }
-
-            continue;
+            SKIP_WHITESPACE(f_source);
+            GET_C(f_source, c);
+            EXPECT_C(f_source, c, ';', lineref);
+        } else {
+            success = rapify_token(f_source, f_target, word, lineref);
         }
 
-        // token
-        fseek(f_source, strlen(buffer), SEEK_CUR);
-        fputc(1, f_target);
-
-        if (skip_whitespace(f_source))
-            return 3;
-        if (feof(f_source))
-            return 4;
-        current = fgetc(f_source);
-        if (current != '=') {
-            line = get_line_number(f_source);
-            errorf("Expected \"=\" after \"%s\", got \"%c\" in %s:%i.\n", buffer, current,
-                    lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
-            return 5;
-        }
-        if (skip_whitespace(f_source))
-            return 6;
-
-        success = rapify_token(f_source, f_target, buffer, lineref);
         if (success) {
-            errorf("Failed to rapify token \"%s\".\n", buffer);
+            errorf("Failed to rapify variable \"%s\".\n", word);
             return success;
         }
     }
 
-    fp_endaddress = ftell(f_target);
-    fwrite("\0\0\0\0", 4, 1, f_target);
+    if (level > 0) {
+        SKIP_WHITESPACE(f_source);
+        GET_C(f_source, c);
+        EXPECT_C(f_source, c, '}', lineref);
+        SKIP_WHITESPACE(f_source);
+        GET_C(f_source, c);
+        EXPECT_C(f_source, c, ';', lineref);
+    }
 
-    fseek(f_source, fp_start, SEEK_SET);
+    fp_end = ftell(f_source);
 
-    // THIRD ITERACTION: write class bodies to file recursively
-    for (i = 0; i < MAXCLASSES && classheaders[i] != 0; i++) {
-        while (true) {
-            if (skip_whitespace(f_source))
-                return 7;
-            if (lookahead_word(f_source, buffer, sizeof(buffer)))
-                return 8;
+    for (i = 0; i < num_classes; i++) {
+        fseek(f_source, fp_source_classes[i], SEEK_SET);
 
-            if (strcmp(buffer, "class") == 0) {
-                fp_tmp = ftell(f_source);
-                if (fgets(buffer, sizeof(buffer), f_source) == NULL)
-                    return 9;
-                while (strchr(buffer, ';') == NULL &&
-                        strchr(buffer, '{') == NULL &&
-                        strlen(buffer) < sizeof(buffer) - 1) {
-                    if (fgets(buffer + strlen(buffer),
-                            sizeof(buffer) - strlen(buffer), f_source) == NULL)
-                        return 10;
-                }
-                fseek(f_source, fp_tmp, SEEK_SET);
+        fp_temp = ftell(f_target);
+        fseek(f_target, fp_target_classes[i], SEEK_SET);
 
-                if (strchr(buffer, ';') == NULL)
-                    break;
-                if (strchr(buffer, '}') != NULL && strchr(buffer, '{') < strchr(buffer, ';'))
-                    break;
+        GET_WORD(f_target, word);
 
-                strcpy(buffer, "class"); // reset buffer
-            }
-
-            if (strlen(buffer) == 0)
-                fseek(f_source, 1, SEEK_CUR);
-            else
-                fseek(f_source, strlen(buffer), SEEK_CUR);
-        }
-
-        fp_tmp = ftell(f_target);
-        fseek(f_target, classheaders[i], SEEK_SET);
-        fwrite(&fp_tmp, 4, 1, f_target);
+        fseek(f_target, 1, SEEK_CUR);
+        fwrite(&fp_temp, sizeof(uint32_t), 1, f_target);
         fseek(f_target, 0, SEEK_END);
 
-        fp_tmp = ftell(f_source);
-        fseek(f_source, 6, SEEK_CUR);
-        skip_whitespace(f_source);
-        lookahead_word(f_source, name, sizeof(name));
-        fseek(f_source, fp_tmp, SEEK_SET);
-
-        success = rapify_class(f_source, f_target, lineref);
+        success = rapify_class(f_source, f_target, lineref, level + 1);
         if (success) {
-            errorf("Failed to rapify class \"%s\".\n", name);
+            errorf("Failed to rapify class \"%s\".\n", word);
             return success;
         }
     }
 
-    // write end address
-    fp_tmp = ftell(f_target);
-    fseek(f_target, fp_endaddress, SEEK_SET);
-    fwrite(&fp_tmp, 4, 1, f_target);
-    fseek(f_target, 0, SEEK_END);
+    fseek(f_source, fp_end, SEEK_SET);
 
     return 0;
 }
@@ -817,9 +737,31 @@ int rapify_file(char *source, char *target) {
         return success;
     }
 
+#if 0
+    FILE *f_dump;
+
+    sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
+    printf("Done with preprocessing, dumping preprocessed config to %s.\n", dump_name);
+
+    f_dump = fopen(dump_name, "wb");
+    fseek(f_temp, 0, SEEK_END);
+    datasize = ftell(f_temp);
+
+    fseek(f_temp, 0, SEEK_SET);
+    for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+        fread(buffer, sizeof(buffer), 1, f_temp);
+        fwrite(buffer, sizeof(buffer), 1, f_dump);
+    }
+
+    fread(buffer, datasize - i, 1, f_temp);
+    fwrite(buffer, datasize - i, 1, f_dump);
+
+    fclose(f_dump);
+#endif
+
     // Rapify file
     fseek(f_temp, 0, SEEK_SET);
-    f_target = fopen(target, "wb");
+    f_target = fopen(target, "wb+");
     if (!f_target) {
         errorf("Failed to open %s.\n", target);
         fclose(f_temp);
@@ -829,7 +771,7 @@ int rapify_file(char *source, char *target) {
     fwrite("\0\0\0\0\x08\0\0\0", 8, 1, f_target);
     fwrite(&enum_offset, 4, 1, f_target); // this is replaced later
 
-    success = rapify_class(f_temp, f_target, lineref);
+    success = rapify_class(f_temp, f_target, lineref, 0);
     if (success) {
         sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
         errorf("Failed to rapify %s,\n       dumping preprocessed config to %s.\n", source, dump_name);

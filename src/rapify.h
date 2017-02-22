@@ -29,6 +29,6 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lin
 
 int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref);
 
-int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref);
+int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref, int level);
 
 int rapify_file(char *source, char *target);

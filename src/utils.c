@@ -235,10 +235,10 @@ void trim_leading(char *string, size_t buffsize) {
 
     char tmp[buffsize];
     char *ptr = tmp;
-    strncpy(tmp, string, buffsize - 2);
+    strncpy(tmp, string, buffsize);
     while (*ptr == ' ' || *ptr == '\t')
         ptr++;
-    strncpy(string, ptr, buffsize - (2 + ptr - tmp));
+    strncpy(string, ptr, buffsize - (ptr - tmp));
 }
 
 
@@ -309,7 +309,7 @@ char lookahead_c(FILE *f) {
      * Gets the next character for the given file pointer without changing
      * the file pointer position.
      *
-     * Returns a char on success, -1 on failure.
+     * Returns a char on success, 1 on failure.
      */
 
     char result;
@@ -347,11 +347,12 @@ int lookahead_word(FILE *f, char *buffer, size_t buffsize) {
 
     for (i = 0; i < buffsize; i++) {
         if (buffer[i] == 0)
-            return 3;
-        if (buffer[i] <= ' ' || buffer[i] == '\t' || buffer[i] == '\n' ||
+            break;
+        if (buffer[i] <= ' ' || buffer[i] == '\t' || buffer[i] == '\r' || buffer[i] == '\n' ||
                 buffer[i] == ',' || buffer[i] == ';' || buffer[i] == '{' ||
                 buffer[i] == '}' || buffer[i] == '(' || buffer[i] == ')' ||
-                buffer[i] == '=') {
+                buffer[i] == '=' || buffer[i] == '[' || buffer[i] == ']' ||
+                buffer[i] == ':') {
             buffer[i] = 0;
             break;
         }
@@ -377,7 +378,9 @@ int skip_whitespace(FILE *f) {
         if (feof(f))
             return 1;
         current = fgetc(f);
-    } while (current == ' ' || current == '\t' || current == '\n');
+        if (feof(f))
+            return 1;
+    } while (current == ' ' || current == '\t' || current == '\r' || current == '\n');
 
     fseek(f, -1, SEEK_CUR);
     return 0;
