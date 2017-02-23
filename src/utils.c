@@ -269,27 +269,30 @@ void replace_string(char *string, size_t buffsize, char *search, char *replace, 
     if (strstr(string, search) == NULL)
         return;
 
-    char *tmp = malloc(buffsize);
-    char *ptr;
-    int i = 0;
+    char *tmp;
+    char *ptr_old;
+    char *ptr_next;
+    char *ptr_tmp;
+    int i;
+
+    tmp = malloc(buffsize);
     strncpy(tmp, string, buffsize);
 
-    for (ptr = string; *ptr != 0; ptr++) {
-        if (strlen(ptr) < strlen(search))
+    ptr_old = string;
+    ptr_tmp = tmp;
+
+    for (i = 0;; i++) {
+        ptr_next = strstr(ptr_old, search);
+        ptr_tmp += (ptr_next - ptr_old);
+        if (ptr_next == NULL || (i >= max && max != 0))
             break;
 
-        if (strncmp(ptr, search, strlen(search)) == 0) {
-            i++;
-            strncpy(ptr, replace, buffsize - (ptr - string));
-            ptr += strlen(replace);
-            strncpy(ptr, tmp + (ptr - string) - (strlen(replace) - strlen(search)),
-                    buffsize - (ptr - string));
+        strncpy(ptr_next, replace, buffsize - (ptr_next - string));
+        ptr_next += strlen(replace);
+        ptr_tmp += strlen(search);
+        strncpy(ptr_next, ptr_tmp, buffsize - (ptr_next - string));
 
-            strncpy(tmp, string, buffsize);
-        }
-
-        if (max != 0 && i >= max)
-            break;
+        ptr_old = ptr_next;
     }
 
     free(tmp);
