@@ -57,6 +57,8 @@ char current_target[2048];
 
 void warningf(char *format, ...);
 
+bool warning_muted(char *name);
+
 void nwarningf(char *name, char *format, ...);
 
 void errorf(char *format, ...);
@@ -83,7 +85,7 @@ void trim_leading(char *string, size_t buffsize);
 
 void trim(char *string, size_t buffsize);
 
-void replace_string(char *string, size_t buffsize, char *search, char *replace, int max);
+void replace_string(char *string, size_t buffsize, char *search, char *replace, int max, bool macro);
 
 void quote(char *string);
 

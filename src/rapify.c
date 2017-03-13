@@ -171,7 +171,7 @@ int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lin
 
         unescape_string(buffer, sizeof(buffer));
     } else if (buffer[0] != '"' && buffer[0] != '\'') {
-        line = get_line_number(f_source);
+        line = warning_muted("unquoted-string") ? 0 : get_line_number(f_source);
         if (name == NULL)
             nwarningf("unquoted-string", "String in array is not quoted properly in %s:%i.\n", lineref->file_names[lineref->file_index[line]], lineref->line_number[line]);
         else

@@ -71,17 +71,25 @@ void warningf(char *format, ...) {
 }
 
 
-void nwarningf(char *name, char *format, ...) {
+bool warning_muted(char *name) {
     extern char muted_warnings[MAXWARNINGS][512];
     int i;
+
+    for (i = 0; i < MAXWARNINGS; i++) {
+        if (strcmp(muted_warnings[i], name) == 0)
+            return true;
+    }
+    return false;
+}
+
+
+void nwarningf(char *name, char *format, ...) {
     char buffer[4096];
     char temp[4096];
     va_list argptr;
 
-    for (i = 0; i < MAXWARNINGS; i++) {
-        if (strcmp(muted_warnings[i], name) == 0)
-            return;
-    }
+    if (warning_muted(name))
+        return;
 
     va_start(argptr, format);
     vsprintf(buffer, format, argptr);
@@ -259,7 +267,7 @@ void trim(char *string, size_t buffsize) {
 }
 
 
-void replace_string(char *string, size_t buffsize, char *search, char *replace, int max) {
+void replace_string(char *string, size_t buffsize, char *search, char *replace, int max, bool macro) {
     /*
      * Replaces the search string with the given replacement in string.
      * max is the maximum number of occurrences to be replaced. 0 means
@@ -274,6 +282,7 @@ void replace_string(char *string, size_t buffsize, char *search, char *replace, 
     char *ptr_next;
     char *ptr_tmp;
     int i;
+    bool quote;
 
     tmp = malloc(buffsize);
     strncpy(tmp, string, buffsize);
@@ -287,9 +296,23 @@ void replace_string(char *string, size_t buffsize, char *search, char *replace, 
         if (ptr_next == NULL || (i >= max && max != 0))
             break;
 
+        quote = false;
+        if (macro && ptr_next > string + 1 && *(ptr_next - 2) == '#' && *(ptr_next - 1) == '#')
+            ptr_next -= 2;
+        else if ((quote = macro && (ptr_next > string && *(ptr_next - 1) == '#')))
+            *(ptr_next - 1) = '"';
+
         strncpy(ptr_next, replace, buffsize - (ptr_next - string));
         ptr_next += strlen(replace);
+
+        if (quote)
+            *(ptr_next++) = '"';
+
         ptr_tmp += strlen(search);
+
+        if (macro && *ptr_tmp == '#' && *(ptr_tmp + 1) == '#')
+            ptr_tmp += 2;
+
         strncpy(ptr_next, ptr_tmp, buffsize - (ptr_next - string));
 
         ptr_old = ptr_next;

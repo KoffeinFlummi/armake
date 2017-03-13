@@ -262,8 +262,6 @@ char * resolve_macros(char *string, size_t buffsize, struct constant *constants)
     char tmp[1024];
     char constant[1024];
     char replacement[262144];
-    char argsearch[1024];
-    char argquote[1024];
     char args[MAXARGS][1024];
     char *ptr;
     char *ptr_args;
@@ -409,22 +407,9 @@ char * resolve_macros(char *string, size_t buffsize, struct constant *constants)
 
                 // replace arguments with values
                 for (j = 0; j < MAXARGS && constants[i].arguments[j][0] != 0; j++) {
-                    replace_string(args[j], sizeof(args[j]), constants[i].arguments[j], "\x11TOKENARG\x11", 0);
-
-                    sprintf(argsearch, "##%s##", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
-                    sprintf(argsearch, "%s##", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
-                    sprintf(argsearch, "##%s", constants[i].arguments[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, args[j], 0);
-
-                    sprintf(argsearch, "#%s", constants[i].arguments[j]);
-                    sprintf(argquote, "\"%s\"", args[j]);
-                    replace_string(replacement, sizeof(replacement), argsearch, argquote, 0);
-
-                    replace_string(replacement, sizeof(replacement), constants[i].arguments[j], args[j], 0);
-
-                    replace_string(replacement, sizeof(replacement), "\x11TOKENARG\x11", constants[i].arguments[j], 0);
+                    replace_string(args[j], sizeof(args[j]), constants[i].arguments[j], "\x11TOKENARG\x11", 0, false);
+                    replace_string(replacement, sizeof(replacement), constants[i].arguments[j], args[j], 0, true);
+                    replace_string(replacement, sizeof(replacement), "\x11TOKENARG\x11", constants[i].arguments[j], 0, false);
                 }
             }
 
@@ -446,7 +431,7 @@ char * resolve_macros(char *string, size_t buffsize, struct constant *constants)
                     size_temp = strlen(string) + 1;
             }
 
-            replace_string(string, size_temp, constant, replacement, 1);
+            replace_string(string, size_temp, constant, replacement, 1, false);
         }
     }
 
