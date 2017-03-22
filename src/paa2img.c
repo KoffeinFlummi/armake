@@ -46,8 +46,11 @@ int dxt12img(unsigned char *input, unsigned char *output, int width, int height)
 
     int i;
     int j;
+    uint8_t c[4][3];
+    unsigned int clookup[16];
+    unsigned int x, y, index;
 
-    typedef struct dxt1block {
+    struct dxt1block {
         uint16_t c0 : 16;
         uint16_t c1 : 16;
         uint8_t cl3 : 2;
@@ -66,24 +69,17 @@ int dxt12img(unsigned char *input, unsigned char *output, int width, int height)
         uint8_t cl14 : 2;
         uint8_t cl13 : 2;
         uint8_t cl12 : 2;
-    } dxt1block_t;
+    } block;
 
     for (i = 0; i < (width * height) / 2; i += 8) {
-        dxt1block_t block;
         memcpy(&block, input + i, 8);
 
-        uint8_t c[4][3] = {
-            {
-                255 * ((63488 & block.c0) >> 11) / 31,
-                255 * ((2016 & block.c0) >> 5) / 63,
-                255 * (31 & block.c0) / 31
-            },
-            {
-                255 * ((63488 & block.c1) >> 11) / 31,
-                255 * ((2016 & block.c1) >> 5) / 63,
-                255 * (31 & block.c1) / 31
-            }
-        };
+        c[0][0] = 255 * ((63488 & block.c0) >> 11) / 31;
+        c[0][1] = 255 * ((2016 & block.c0) >> 5) / 63;
+        c[0][2] = 255 * (31 & block.c0) / 31;
+        c[1][0] = 255 * ((63488 & block.c1) >> 11) / 31;
+        c[1][1] = 255 * ((2016 & block.c1) >> 5) / 63;
+        c[1][2] = 255 * (31 & block.c1) / 31;
         c[2][0] = (2 * c[0][0] + 1 * c[1][0]) / 3;
         c[2][1] = (2 * c[0][1] + 1 * c[1][1]) / 3;
         c[2][2] = (2 * c[0][2] + 1 * c[1][2]) / 3;
@@ -91,25 +87,31 @@ int dxt12img(unsigned char *input, unsigned char *output, int width, int height)
         c[3][1] = (1 * c[0][1] + 2 * c[1][1]) / 3;
         c[3][2] = (1 * c[0][2] + 2 * c[1][2]) / 3;
 
-        unsigned int clookup[16] = {
-            block.cl0, block.cl1, block.cl2, block.cl3,
-            block.cl4, block.cl5, block.cl6, block.cl7,
-            block.cl8, block.cl9, block.cl10, block.cl11,
-            block.cl12, block.cl13, block.cl14, block.cl15
-        };
+        clookup[0] = block.cl0;
+        clookup[1] = block.cl1;
+        clookup[2] = block.cl2;
+        clookup[3] = block.cl3;
+        clookup[4] = block.cl4;
+        clookup[5] = block.cl5;
+        clookup[6] = block.cl6;
+        clookup[7] = block.cl7;
+        clookup[8] = block.cl8;
+        clookup[9] = block.cl9;
+        clookup[10] = block.cl10;
+        clookup[11] = block.cl11;
+        clookup[12] = block.cl12;
+        clookup[13] = block.cl13;
+        clookup[14] = block.cl14;
+        clookup[15] = block.cl15;
 
-        unsigned int x, y, index;
         for (j = 0; j < 16; j++) {
             x = ((i / 8) % (width / 4)) * 4 + 3 - (j % 4);
-            y = ((i / 8) / (height / 4)) * 4 + (j / 4);
+            y = ((i / 8) / (width / 4)) * 4 + (j / 4);
             index = (y * width + x) * 4;
-            char pixel[4] = {
-                c[clookup[j]][0],
-                c[clookup[j]][1],
-                c[clookup[j]][2],
-                255
-            };
-            memcpy(output + index, pixel, 4);
+            *(output + index + 0) = c[clookup[j]][0];
+            *(output + index + 1) = c[clookup[j]][1];
+            *(output + index + 2) = c[clookup[j]][2];
+            *(output + index + 3) = 255;
         }
     }
 
@@ -122,11 +124,16 @@ int dxt52img(unsigned char *input, unsigned char *output, int width, int height)
 
     int i;
     int j;
+    uint8_t a[8];
+    unsigned int alookup[16];
+    uint8_t c[4][3];
+    unsigned int clookup[16];
+    unsigned int x, y, index;
 
     /* For some reason, directly unpacking the alpha lookup table into the 16
      * 3-bit arrays didn't work, so i'm reading it into one 64bit integer and
      * unpacking it manually later. @todo */
-    typedef struct dxt5block {
+    struct dxt5block {
         uint8_t a0 : 8;
         uint8_t a1 : 8;
         uint64_t al : 48;
@@ -148,14 +155,14 @@ int dxt52img(unsigned char *input, unsigned char *output, int width, int height)
         uint8_t cl14 : 2;
         uint8_t cl13 : 2;
         uint8_t cl12 : 2;
-    } dxt5block_t;
+    } block;
 
     for (i = 0; i < width * height; i += 16) {
-        dxt5block_t block;
         memcpy(&block, input + i, 16);
 
-        uint8_t a[8] = {block.a0, block.a1};
-        if (block.a0 > block.a1) { // @todo, this shouldn't be necessary
+        a[0] = block.a0;
+        a[1] = block.a1;
+        if (block.a0 > block.a1) {
             a[2] = (6 * block.a0 + 1 * block.a1) / 7;
             a[3] = (5 * block.a0 + 2 * block.a1) / 7;
             a[4] = (4 * block.a0 + 3 * block.a1) / 7;
@@ -172,37 +179,29 @@ int dxt52img(unsigned char *input, unsigned char *output, int width, int height)
         }
 
         // This is ugly, retarded and shouldn't be necessary. See above.
-        unsigned int alookup[16] = {
-            (block.al & 3584) >> 9,
-            (block.al & 448) >> 6,
-            (block.al & 56) >> 3,
-            (block.al & 7) >> 0,
-            (block.al & 14680064) >> 21,
-            (block.al & 1835008) >> 18,
-            (block.al & 229376) >> 15,
-            (block.al & 28672) >> 12,
-            (block.al & 60129542144) >> 33,
-            (block.al & 7516192768) >> 30,
-            (block.al & 939524096) >> 27,
-            (block.al & 117440512) >> 24,
-            (block.al & 246290604621824) >> 45,
-            (block.al & 30786325577728) >> 42,
-            (block.al & 3848290697216) >> 39,
-            (block.al & 481036337152) >> 36
-        };
+        alookup[0]  = (block.al & 3584) >> 9;
+        alookup[1]  = (block.al & 448) >> 6;
+        alookup[2]  = (block.al & 56) >> 3;
+        alookup[3]  = (block.al & 7) >> 0;
+        alookup[4]  = (block.al & 14680064) >> 21;
+        alookup[5]  = (block.al & 1835008) >> 18;
+        alookup[6]  = (block.al & 229376) >> 15;
+        alookup[7]  = (block.al & 28672) >> 12;
+        alookup[8]  = (block.al & 60129542144) >> 33;
+        alookup[9]  = (block.al & 7516192768) >> 30;
+        alookup[10] = (block.al & 939524096) >> 27;
+        alookup[11] = (block.al & 117440512) >> 24;
+        alookup[12] = (block.al & 246290604621824) >> 45;
+        alookup[13] = (block.al & 30786325577728) >> 42;
+        alookup[14] = (block.al & 3848290697216) >> 39;
+        alookup[15] = (block.al & 481036337152) >> 36;
 
-        uint8_t c[4][3] = {
-            {
-                255 * ((63488 & block.c0) >> 11) / 31,
-                255 * ((2016 & block.c0) >> 5) / 63,
-                255 * (31 & block.c0) / 31
-            },
-            {
-                255 * ((63488 & block.c1) >> 11) / 31,
-                255 * ((2016 & block.c1) >> 5) / 63,
-                255 * (31 & block.c1) / 31
-            }
-        };
+        c[0][0] = 255 * ((63488 & block.c0) >> 11) / 31;
+        c[0][1] = 255 * ((2016 & block.c0) >> 5) / 63;
+        c[0][2] = 255 * (31 & block.c0) / 31;
+        c[1][0] = 255 * ((63488 & block.c1) >> 11) / 31;
+        c[1][1] = 255 * ((2016 & block.c1) >> 5) / 63;
+        c[1][2] = 255 * (31 & block.c1) / 31;
         c[2][0] = (2 * c[0][0] + 1 * c[1][0]) / 3;
         c[2][1] = (2 * c[0][1] + 1 * c[1][1]) / 3;
         c[2][2] = (2 * c[0][2] + 1 * c[1][2]) / 3;
@@ -210,25 +209,31 @@ int dxt52img(unsigned char *input, unsigned char *output, int width, int height)
         c[3][1] = (1 * c[0][1] + 2 * c[1][1]) / 3;
         c[3][2] = (1 * c[0][2] + 2 * c[1][2]) / 3;
 
-        unsigned int clookup[16] = {
-            block.cl0, block.cl1, block.cl2, block.cl3,
-            block.cl4, block.cl5, block.cl6, block.cl7,
-            block.cl8, block.cl9, block.cl10, block.cl11,
-            block.cl12, block.cl13, block.cl14, block.cl15
-        };
+        clookup[0] = block.cl0;
+        clookup[1] = block.cl1;
+        clookup[2] = block.cl2;
+        clookup[3] = block.cl3;
+        clookup[4] = block.cl4;
+        clookup[5] = block.cl5;
+        clookup[6] = block.cl6;
+        clookup[7] = block.cl7;
+        clookup[8] = block.cl8;
+        clookup[9] = block.cl9;
+        clookup[10] = block.cl10;
+        clookup[11] = block.cl11;
+        clookup[12] = block.cl12;
+        clookup[13] = block.cl13;
+        clookup[14] = block.cl14;
+        clookup[15] = block.cl15;
 
-        unsigned int x, y, index;
         for (j = 0; j < 16; j++) {
             x = ((i / 16) % (width / 4)) * 4 + 3 - (j % 4);
-            y = ((i / 16) / (height / 4)) * 4 + (j / 4);
+            y = ((i / 16) / (width / 4)) * 4 + (j / 4);
             index = (y * width + x) * 4;
-            char pixel[4] = {
-                c[clookup[j]][0],
-                c[clookup[j]][1],
-                c[clookup[j]][2],
-                a[alookup[j]]
-            };
-            memcpy(output + index, pixel, 4);
+            *(output + index + 0) = c[clookup[j]][0];
+            *(output + index + 1) = c[clookup[j]][1];
+            *(output + index + 2) = c[clookup[j]][2];
+            *(output + index + 3) = a[alookup[j]];
         }
     }
 
