@@ -375,7 +375,7 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
 
     FindClose(handle);
 
-     return 0;
+    return 0;
 
 #else
 
