@@ -78,5 +78,5 @@ This isn't official BI software. As such, it may not compile certain addons corr
         <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="max-width:100%;">
     </a>
     <br>
-    <b>BTC</b> 1G3RbQr2JHeYDB8YGifkF42aaaMmjRKYyo
+    <b>BTC</b> 1K3mKJDJYgJcQFavLL9zHBCGfKj6gmZC7J
 </p>
