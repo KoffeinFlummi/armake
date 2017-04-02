@@ -55,6 +55,10 @@ int current_operation;
 char current_target[2048];
 
 
+void infof(char *format, ...);
+
+void debugf(char *format, ...);
+
 void warningf(char *format, ...);
 
 bool warning_muted(char *name);

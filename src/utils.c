@@ -30,6 +30,42 @@
 #include "utils.h"
 
 
+void infof(char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+#ifdef _WIN32
+    fprintf(stdout, "info: %s", buffer);
+#else
+    fprintf(stdout, "%sinfo:%s %s", COLOR_GREEN, COLOR_RESET, buffer);
+#endif
+
+    fflush(stdout);
+}
+
+
+void debugf(char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+#ifdef _WIN32
+    fprintf(stdout, "debug: %s", buffer);
+#else
+    fprintf(stdout, "%sdebug:%s %s", COLOR_CYAN, COLOR_RESET, buffer);
+#endif
+
+    fflush(stdout);
+}
+
+
 void warningf(char *format, ...) {
     extern int current_operation;
     extern char current_target[2048];
