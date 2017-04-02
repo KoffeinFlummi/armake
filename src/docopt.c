@@ -84,6 +84,14 @@ const char help_message[] =
 "\n"
 "    Example: \"-w unquoted-string\" disables warnings about improperly quoted\n"
 "             strings.\n"
+"\n"
+"BI tools on Windows:\n"
+"    Since armake's P3D converter is not finished yet, armake attempts to find\n"
+"    and use BI's binarize.exe on Windows systems. If you don't want this to\n"
+"    happen and use armake's instead, pass the environment variable NATIVEBIN.\n"
+"\n"
+"    Since binarize.exe's output is usually excessively verbose, it is hidden\n"
+"    by default. Pass BIOUTPUT to display it.\n"
 "";
 
 const char usage_pattern[] =

@@ -225,7 +225,9 @@ int cmd_build() {
     }
 
     // remove trailing slash in source
-    if (args.source[strlen(args.source) - 1] == PATHSEP)
+    if (args.source[strlen(args.source) - 1] == '\\')
+        args.source[strlen(args.source) - 1] = 0;
+    if (args.source[strlen(args.source) - 1] == '/')
         args.source[strlen(args.source) - 1] = 0;
 
     f_target = fopen(args.target, "wb");
