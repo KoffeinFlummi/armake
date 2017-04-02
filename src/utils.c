@@ -104,6 +104,8 @@ void warningf(char *format, ...) {
         fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
     else if (current_operation == OP_DERAPIFY)
         fprintf(stderr, "    (encountered while derapifying %s)\n", filename);
+
+    fflush(stderr);
 }
 
 
@@ -155,6 +157,8 @@ void errorf(char *format, ...) {
 #else
     fprintf(stderr, "%serror:%s %s", COLOR_RED, COLOR_RESET, buffer);
 #endif
+
+    fflush(stderr);
 }
 
 
