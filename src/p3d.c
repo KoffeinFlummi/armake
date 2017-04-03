@@ -58,6 +58,13 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
     bool empty;
     uint32_t tagg_len;
 
+    fseek(f_source, 0, SEEK_SET);
+
+    fread(buffer, 4, 1, f_source);
+    buffer[4] = 0;
+    if (stricmp(buffer, "MLOD"))
+        return -1;
+
     fseek(f_source, 12, SEEK_SET);
 
     for (i = 0; i < num_lods; i++) {

@@ -48,3 +48,11 @@ Warnings:
 
     Example: "-w unquoted-string" disables warnings about improperly quoted
              strings.
+
+BI tools on Windows:
+    Since armake's P3D converter is not finished yet, armake attempts to find
+    and use BI's binarize.exe on Windows systems. If you don't want this to
+    happen and use armake's instead, pass the environment variable NATIVEBIN.
+
+    Since binarize.exe's output is usually excessively verbose, it is hidden
+    by default. Pass BIOUTPUT to display it.
