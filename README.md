@@ -1,7 +1,7 @@
 armake
 ======
 
-[![](https://img.shields.io/travis/KoffeinFlummi/armake.svg?style=flat-square)](https://travis-ci.org/KoffeinFlummi/armake)
+[![](https://img.shields.io/travis/KoffeinFlummi/armake/master.svg?style=flat-square)](https://travis-ci.org/KoffeinFlummi/armake)
 [![](https://img.shields.io/badge/license-GPLv2-red.svg?style=flat-square)](https://github.com/KoffeinFlummi/armake/blob/master/LICENSE)
 [![](https://img.shields.io/github/tag/KoffeinFlummi/armake.svg?style=flat-square)](https://github.com/KoffeinFlummi/armake/releases)
 [![](https://img.shields.io/badge/AUR-armake-blue.svg?style=flat-square)](https://aur.archlinux.org/packages/armake)
