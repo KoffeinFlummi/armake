@@ -34,8 +34,7 @@
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 void RSA_get0_key(const RSA *r,
-                const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
-{
+        const BIGNUM **n, const BIGNUM **e, const BIGNUM **d) {
   if (n != NULL)
       *n = r->n;
   if (e != NULL)
@@ -44,8 +43,7 @@ void RSA_get0_key(const RSA *r,
       *d = r->d;
 }
 
-void RSA_get0_factors(const RSA *r, const BIGNUM **p, const BIGNUM **q)
-{
+void RSA_get0_factors(const RSA *r, const BIGNUM **p, const BIGNUM **q) {
     if (p != NULL)
         *p = r->p;
     if (q != NULL)
@@ -53,9 +51,7 @@ void RSA_get0_factors(const RSA *r, const BIGNUM **p, const BIGNUM **q)
 }
 
 void RSA_get0_crt_params(const RSA *r,
-                         const BIGNUM **dmp1, const BIGNUM **dmq1,
-                         const BIGNUM **iqmp)
-{
+        const BIGNUM **dmp1, const BIGNUM **dmq1, const BIGNUM **iqmp) {
     if (dmp1 != NULL)
         *dmp1 = r->dmp1;
     if (dmq1 != NULL)
@@ -94,7 +90,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
      */
 
     RSA *rsa;
-    BIGNUM *exponent;
+    BIGNUM *exponent, *n, *p, *q, *dmp1, *dmq1, *iqmp, *d;
     uint32_t exponent_le;
     uint32_t exponent_be;
     uint32_t length;
@@ -145,8 +141,6 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite("RSA2", 4, 1, f_private);
     fwrite(&length, sizeof(length), 1, f_private);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_private);
-
-    const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp, *d;
 
     RSA_get0_key(rsa, &n, NULL, &d);
     RSA_get0_factors(rsa, &p, &q);
