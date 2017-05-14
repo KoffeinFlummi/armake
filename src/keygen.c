@@ -32,6 +32,39 @@
 #include "keygen.h"
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+void RSA_get0_key(const RSA *r,
+                const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+{
+  if (n != NULL)
+      *n = r->n;
+  if (e != NULL)
+      *e = r->e;
+  if (d != NULL)
+      *d = r->d;
+}
+
+void RSA_get0_factors(const RSA *r, const BIGNUM **p, const BIGNUM **q)
+{
+    if (p != NULL)
+        *p = r->p;
+    if (q != NULL)
+        *q = r->q;
+}
+
+void RSA_get0_crt_params(const RSA *r,
+                         const BIGNUM **dmp1, const BIGNUM **dmq1,
+                         const BIGNUM **iqmp)
+{
+    if (dmp1 != NULL)
+        *dmp1 = r->dmp1;
+    if (dmq1 != NULL)
+        *dmq1 = r->dmq1;
+    if (iqmp != NULL)
+        *iqmp = r->iqmp;
+}
+#endif
+
 int custom_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen) {
     int len;
     int result;
@@ -86,6 +119,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
 #else
     char rand_buffer[256];
     FILE *f_random;
+
     f_random = fopen("/dev/urandom", "rb");
     do {
         fread(rand_buffer, sizeof(rand_buffer), 1, f_random);
@@ -112,25 +146,31 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(&length, sizeof(length), 1, f_private);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_private);
 
-    custom_bn2lebinpad(rsa->n, buffer, length / 8);
+    const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp, *d;
+
+    RSA_get0_key(rsa, &n, NULL, &d);
+    RSA_get0_factors(rsa, &p, &q);
+    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+
+    custom_bn2lebinpad(n, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_private);
 
-    custom_bn2lebinpad(rsa->p, buffer, length / 8);
+    custom_bn2lebinpad(p, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    custom_bn2lebinpad(rsa->q, buffer, length / 8);
+    custom_bn2lebinpad(q, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    custom_bn2lebinpad(rsa->dmp1, buffer, length / 8);
+    custom_bn2lebinpad(dmp1, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    custom_bn2lebinpad(rsa->dmq1, buffer, length / 8);
+    custom_bn2lebinpad(dmq1, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    custom_bn2lebinpad(rsa->iqmp, buffer, length / 8);
+    custom_bn2lebinpad(iqmp, buffer, length / 8);
     fwrite(buffer, length / 16, 1, f_private);
 
-    custom_bn2lebinpad(rsa->d, buffer, length / 8);
+    custom_bn2lebinpad(d, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_private);
 
     fclose(f_private);
@@ -148,7 +188,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(&length, sizeof(length), 1, f_public);
     fwrite(&exponent_le, sizeof(exponent_le), 1, f_public);
 
-    custom_bn2lebinpad(rsa->n, buffer, length / 8);
+    custom_bn2lebinpad(n, buffer, length / 8);
     fwrite(buffer, length / 8, 1, f_public);
 
     fclose(f_public);
