@@ -90,7 +90,8 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
      */
 
     RSA *rsa;
-    BIGNUM *exponent, *n, *p, *q, *dmp1, *dmq1, *iqmp, *d;
+    BIGNUM *exponent;
+    const BIGNUM *n, *p, *q, *dmp1, *dmq1, *iqmp, *d;
     uint32_t exponent_le;
     uint32_t exponent_be;
     uint32_t length;
