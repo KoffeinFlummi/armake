@@ -881,7 +881,8 @@ int derapify_file(char *source, char *target) {
         f_source = tmpfile();
 #endif
         if (!f_source) {
-            errorf("Failed to open temp file.\n");
+            errorf("Failed to open source file.\n");
+            fclose(f_temp);
 #ifdef _WIN32
             DeleteFile(temp_name);
 #endif
@@ -911,6 +912,7 @@ int derapify_file(char *source, char *target) {
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "\0raP", 4) != 0) {
         errorf("Source file is not a rapified config.\n");
+        fclose(f_source);
         fclose(f_temp);
 #ifdef _WIN32
         DeleteFile(temp_name);

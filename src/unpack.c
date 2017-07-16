@@ -125,6 +125,7 @@ int cmd_inspect() {
     }
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
+        fclose(f_target);
         return 4;
     }
 
@@ -181,6 +182,7 @@ int cmd_unpack() {
     // create folder
     if (create_folders(args.target)) {
         errorf("Failed to create output folder %s.\n", args.target);
+        fclose(f_source);
         return 2;
     }
 
@@ -224,6 +226,7 @@ int cmd_unpack() {
     }
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
+        fclose(f_source);
         return 4;
     }
 
@@ -274,6 +277,7 @@ int cmd_unpack() {
             *strrchr(buffer, PATHSEP) = 0;
             if (create_folders(buffer)) {
                 errorf("Failed to create folder %s.\n", buffer);
+                fclose(f_source);
                 return 5;
             }
         }
@@ -281,11 +285,13 @@ int cmd_unpack() {
         // open target file
         if (access(full_path, F_OK) != -1 && !args.force) {
             errorf("File %s already exists and --force was not set.\n", full_path);
+            fclose(f_source);
             return 6;
         }
         f_target = fopen(full_path, "wb");
         if (!f_target) {
             errorf("Failed to open file %s.\n", full_path);
+            fclose(f_source);
             return 7;
         }
 
@@ -398,11 +404,13 @@ int cmd_cat() {
 
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
+        fclose(f_source);
         return 4;
     }
 
     if (file_index == -1) {
         errorf("PBO does not contain the file %s.\n", args.target);
+        fclose(f_source);
         return 5;
     }
 
