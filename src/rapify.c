@@ -661,6 +661,7 @@ int rapify_file(char *source, char *target) {
         f_target = fopen(target, "wb");
         if (!f_target) {
             errorf("Failed to open %s.\n", target);
+            fclose(f_temp);
             return 2;
         }
 

@@ -113,8 +113,10 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
             SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
     } while (strlen(buffer) > 0);
 
-    if (!SHA1Result(&sha))
+    if (!SHA1Result(&sha)) {
+        fclose(f_pbo);
         return 1;
+    }
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
@@ -178,8 +180,11 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     fseek(f_pbo, 0, SEEK_END);
 
-    if (!SHA1Result(&sha))
+    if (!SHA1Result(&sha)) {
+        fclose(f_pbo);
         return 1;
+    }
+
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
@@ -197,8 +202,10 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     if (strlen(prefix) > 1)
         SHA1Input(&sha, (unsigned char *)prefix, strlen(prefix));
 
-    if (!SHA1Result(&sha))
+    if (!SHA1Result(&sha)) {
+        fclose(f_pbo);
         return 1;
+    }
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
@@ -212,8 +219,10 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     if (strlen(prefix) > 1)
         SHA1Input(&sha, (unsigned char *)prefix, strlen(prefix));
 
-    if (!SHA1Result(&sha))
+    if (!SHA1Result(&sha)) {
+        fclose(f_pbo);
         return 1;
+    }
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
@@ -222,8 +231,10 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     // read private key data
     f_privatekey = fopen(path_privatekey, "rb");
-    if (!f_privatekey)
+    if (!f_privatekey) {
+        fclose(f_pbo);
         return 1;
+    }
 
     fread(keyname, sizeof(keyname), 1, f_privatekey);
     fseek(f_privatekey, strlen(keyname) + 1, SEEK_SET);
@@ -269,8 +280,11 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     // write to file
     f_signature = fopen(path_signature, "wb");
-    if (!f_signature)
+    if (!f_signature) {
+        fclose(f_privatekey);
+        fclose(f_pbo);
         return 1;
+    }
 
     fwrite(keyname, strlen(keyname) + 1, 1, f_signature);
     temp = keylength / 8 + 20;

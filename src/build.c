@@ -149,8 +149,10 @@ int write_data_to_pbo(char *root, char *source, char *target) {
     datasize = ftell(f_source);
 
     f_target = fopen(target, "ab");
-    if (!f_target)
+    if (!f_target) {
+        fclose(f_source);
         return -2;
+    }
 
     fseek(f_source, 0, SEEK_SET);
     for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {

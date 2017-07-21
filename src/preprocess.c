@@ -516,6 +516,7 @@ int preprocess(char *source, FILE *f_target, struct constant *constants, struct 
     lineref->num_files++;
     if (lineref->num_files >= MAXINCLUDES) {
         errorf("Number of included files exceeds MAXINCLUDES.\n");
+        fclose(f_source);
         return 1;
     }
 
