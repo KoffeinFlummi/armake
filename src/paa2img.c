@@ -249,8 +249,8 @@ int paa2img(char *source, char *target) {
      */
 
     FILE *f;
-    char taggsig[4];
-    char taggname[4];
+    char taggsig[5];
+    char taggname[5];
     unsigned char *compresseddata;
     unsigned char *imgdata;
     unsigned char *outputdata;

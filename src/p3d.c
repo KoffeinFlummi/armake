@@ -1791,6 +1791,7 @@ int mlod2odol(char *source, char *target) {
     num_lods = read_lods(f_source, mlod_lods, num_lods);
     if (num_lods < 0) {
         errorf("Failed to read LODs.\n");
+        free(mlod_lods);
         fclose(f_temp);
         fclose(f_source);
 #ifdef _WIN32

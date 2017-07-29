@@ -80,6 +80,7 @@ int cmd_inspect() {
     f_target = fopen(args.target, "rb");
     if (!f_target) {
         errorf("Failed to open %s.\n", args.target);
+        free(headers);
         return 1;
     }
 
@@ -126,6 +127,7 @@ int cmd_inspect() {
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
         fclose(f_target);
+        free(headers);
         return 4;
     }
 
@@ -176,6 +178,7 @@ int cmd_unpack() {
     f_source = fopen(args.source, "rb");
     if (!f_source) {
         errorf("Failed to open %s.\n", args.source);
+        free(headers);
         return 1;
     }
 
@@ -183,6 +186,7 @@ int cmd_unpack() {
     if (create_folders(args.target)) {
         errorf("Failed to create output folder %s.\n", args.target);
         fclose(f_source);
+        free(headers);
         return 2;
     }
 
@@ -227,6 +231,7 @@ int cmd_unpack() {
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
         fclose(f_source);
+        free(headers);
         return 4;
     }
 
@@ -356,6 +361,7 @@ int cmd_cat() {
     f_source = fopen(args.source, "rb");
     if (!f_source) {
         errorf("Failed to open %s.\n", args.source);
+        free(headers);
         return 1;
     }
 
@@ -405,12 +411,14 @@ int cmd_cat() {
     if (num_files > MAXFILES) {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
         fclose(f_source);
+        free(headers);
         return 4;
     }
 
     if (file_index == -1) {
         errorf("PBO does not contain the file %s.\n", args.target);
         fclose(f_source);
+        free(headers);
         return 5;
     }
 
