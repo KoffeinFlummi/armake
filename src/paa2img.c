@@ -277,6 +277,7 @@ int paa2img(char *source, char *target) {
         taggsig[4] = 0x00;
         if (strcmp(taggsig, "GGAT")) {
             errorf("Failed to find MIPMAP pointer.\n");
+            fclose(f);
             return 2;
         }
 
