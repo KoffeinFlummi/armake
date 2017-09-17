@@ -634,7 +634,6 @@ int rapify_file(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    extern char include_stack[MAXINCLUDES][1024];
     FILE *f_temp;
     FILE *f_target;
     int i;
@@ -643,7 +642,6 @@ int rapify_file(char *source, char *target) {
     char dump_name[2048];
     char buffer[4096];
     uint32_t enum_offset = 0;
-    struct constant *constants;
     struct lineref *lineref;
 
     current_operation = OP_RAPIFY;
@@ -703,28 +701,13 @@ int rapify_file(char *source, char *target) {
         return 1;
     }
 
-    // Write original file to temp and pre process
-    constants = (struct constant *)malloc(MAXCONSTS * sizeof(struct constant));
-    for (i = 0; i < MAXCONSTS; i++) {
-        constants[i].name[0] = 0;
-        constants[i].arguments[0][0] = 0;
-        constants[i].value = 0;
-    }
-
     lineref = (struct lineref *)malloc(sizeof(struct lineref));
     lineref->num_files = 0;
     lineref->num_lines = 0;
     lineref->file_index = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
     lineref->line_number = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
 
-    for (i = 0; i < MAXINCLUDES; i++)
-        include_stack[i][0] = 0;
-
-    success = preprocess(source, f_temp, constants, lineref);
-
-    for (i = 0; i < MAXCONSTS && constants[i].value != 0; i++)
-        free(constants[i].value);
-    free(constants);
+    success = preprocess(source, f_temp, lineref);
 
     current_operation = OP_RAPIFY;
     strcpy(current_target, source);

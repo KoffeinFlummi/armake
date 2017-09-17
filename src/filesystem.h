@@ -34,6 +34,8 @@
 size_t getline(char **lineptr, size_t *n, FILE *stream);
 #endif
 
+int get_temp_name(char *target, char *suffix);
+
 int create_folder(char *path);
 
 int create_folders(char *path);

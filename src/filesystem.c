@@ -93,6 +93,18 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
 #endif
 
 
+int get_temp_name(char *target, char *suffix) {
+#ifdef _WIN32
+    if (!GetTempFileName(".", "amk", 0, target)) { return 1; }
+    strcat(target, suffix);
+#else
+    strcpy(target, "amk_XXXXXX");
+    strcat(target, suffix);
+    return mkstemps(target, strlen(suffix)) == -1;
+#endif
+}
+
+
 int create_folder(char *path) {
     /*
      * Create the given folder. Returns -2 if the directory already exists,
