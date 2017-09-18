@@ -33,6 +33,11 @@ bin/*
 *.dSYM/
 vgcore.*
 
+# Generated files
+*.tab.h
+*.tab.c
+*.yy.c
+
 # Tmp
 tmp/*
 

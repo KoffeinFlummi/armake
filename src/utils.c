@@ -92,8 +92,8 @@ void warningf(char *format, ...) {
         fprintf(stderr, "    (encountered while building %s)\n", filename);
     else if (current_operation == OP_PREPROCESS)
         fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
-    else if (current_operation == OP_RAPIFY)
-        fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
+    //else if (current_operation == OP_RAPIFY)
+    //    fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
     else if (current_operation == OP_P3D)
         fprintf(stderr, "    (encountered while converting %s)\n", filename);
     else if (current_operation == OP_MODELCONFIG)
