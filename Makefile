@@ -22,6 +22,7 @@ $(BIN)/armake: \
     @echo " LINK $(BIN)/armake$(EXT)"
     @$(CC) $(CFLAGS) -o $(BIN)/armake$(EXT) \
         $(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
+        $(SRC)/rapify.tab.o $(SRC)/rapify.yy.o \
         $(patsubst %.c, %.o, $(wildcard $(LIB)/*.c)) \
         $(CLIBS)
 
