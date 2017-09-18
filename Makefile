@@ -29,7 +29,10 @@ $(LIB)/%.o: $(LIB)/%.c
     @$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
 test: $(BIN)/armake
-    @./test/runall.sh
+    @./test/run.sh
+
+test-%: $(BIN)/armake
+    @./test/run.sh $@
 
 install: $(BIN)/armake
     mkdir -p $(DESTDIR)/usr/bin
