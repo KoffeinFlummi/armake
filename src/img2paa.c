@@ -292,7 +292,10 @@ int img2paa(char *source, char *target) {
 
             memcpy(tmp, outputdata, datalen);
 
-            lzo_init();
+            if (lzo_init() != LZO_E_OK) {
+                errorf("Failed to initialize LZO for compression.\n");
+                return 6;
+	    }
             if (lzo1x_1_compress(tmp, in_len, outputdata, &out_len, workmem) != LZO_E_OK) {
                 errorf("Failed to compress image data.\n");
                 return 6;
