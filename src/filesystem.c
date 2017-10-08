@@ -380,6 +380,7 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
 #else
 
     struct dirent **namelist;
+    struct stat st;
     char next[2048];
     int i;
     int n;
@@ -399,19 +400,15 @@ int traverse_directory_recursive(char *root, char *cwd, int (*callback)(char *, 
         strcat(next, "/");
         strcat(next, namelist[i]->d_name);
 
-        switch (namelist[i]->d_type) {
-            case DT_DIR:
-                success = traverse_directory_recursive(root, next, callback, third_arg);
-                if (success)
-                    goto cleanup;
-                break;
+        stat(next, &st);
 
-            case DT_REG:
-                success = callback(root, next, third_arg);
-                if (success)
-                    goto cleanup;
-                break;
-        }
+        if (S_ISDIR(st.st_mode))
+            success = traverse_directory_recursive(root, next, callback, third_arg);
+        else
+            success = callback(root, next, third_arg);
+
+        if (success)
+            goto cleanup;
     }
 
 cleanup:
