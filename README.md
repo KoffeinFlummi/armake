@@ -15,7 +15,7 @@ A cross-platform, open-source C implementation of Arma modding tools (PAA conver
 
 #### Designed for Automation
 
-armake is designed to be used in conjunction with tools like make to build larger projects. It deliberately does not provide a mechaism for building entire projects - composed of multiple PBO files - in one call. armake itself also does not do any threading. However, it is safe to run multiple armake instances at the same time, so you can use make to run, say, 4 armake instances simultaneously with `make -j4`. For examples of Makefiles that use armake, check out [ACE3](https://github.com/acemod/ACE3/blob/armake/Makefile) and [ACRE2](https://github.com/IDI-Systems/acre2/blob/armake/Makefile).
+armake is designed to be used in conjunction with tools like make to build larger projects. It deliberately does not provide a mechanism for building entire projects - composed of multiple PBO files - in one call. armake itself also does not do any threading. However, it is safe to run multiple armake instances at the same time, so you can use make to run, say, 4 armake instances simultaneously with `make -j4`. For examples of Makefiles that use armake, check out [ACE3](https://github.com/acemod/ACE3/blob/armake/Makefile) and [ACRE2](https://github.com/IDI-Systems/acre2/blob/armake/Makefile).
 
 #### Decent Errors & Warnings
 
@@ -25,7 +25,7 @@ armake aims to provide developers with expressive and useful error messages, wit
 
 To enable armake to run on non-Windows systems without hacky workarounds, and because it's a terrible idea in general, armake does not make use of the P-drive for finding include files. Instead - like with other compilers - you provide the folders to search for includes in the armake call.
 
-#### Determinisim
+#### Determinism
 
 Unlike other Arma modding tools, armake includes no timestamp information in the built files. This means that - given two identical source folders - armake will produce the exact same output, bit for bit. This means that your team doesn't have to distribute a single build to make sure you're each testing the same PBOs, you can simply build it in multiple places and compare file hashes. This doesn't include cryptographic operations of course.
 
