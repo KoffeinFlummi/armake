@@ -46,10 +46,10 @@ clean:
     rm -rf $(BIN) $(SRC)/*.o $(LIB)/*.o armake_*
 
 win32:
-    "$(MAKE)" CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w32.exe
+    "$(MAKE)" CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lws2_32 -lwsock32 -lole32 -lgdi32 -static" EXT=_w32.exe
 
 win64:
-    "$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w64.exe
+    "$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lws2_32 -lwsock32 -lole32 -lgdi32 -static" EXT=_w64.exe
 
 docopt:
     mkdir tmp || rm -rf tmp/*
