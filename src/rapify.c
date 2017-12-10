@@ -572,7 +572,7 @@ int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref, int le
 
         fputc((char)type, f_target);
 
-        if (type == 2) {
+        if (type == 2 || type == 5) {
             fwrite(word, strlen(word) + 1, 1, f_target);
 
             success = rapify_array(f_source, f_target, lineref);

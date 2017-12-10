@@ -788,9 +788,6 @@ int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
             }
             fputs(";\n", f_target);
         } else if (type == 2 || type == 5) {
-            if (type == 5)
-                fseek(f_source, 4, SEEK_CUR);
-
             fp_tmp = ftell(f_source);
             fgets(buffer, sizeof(buffer), f_source);
             fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
