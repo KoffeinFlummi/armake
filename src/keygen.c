@@ -109,6 +109,11 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     exponent = BN_bin2bn((unsigned char *)&exponent_be, sizeof(exponent_be), NULL);
 
     // seed PRNG
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    do {
+        RAND_poll();
+    } while (RAND_status() != 1);
+#else
 #ifdef _WIN32
     do {
         RAND_screen();
@@ -123,6 +128,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
         RAND_seed(rand_buffer, sizeof(rand_buffer));
     } while (RAND_status() != 1);
     fclose(f_random);
+#endif
 #endif
 
     // generate keypair

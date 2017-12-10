@@ -11,7 +11,7 @@ EXT =
 CC = gcc
 FLEX = flex
 BISON = bison
-CFLAGS = -Wall -Wno-misleading-indentation -DVERSION=\"v$(VERSION)\" -std=gnu89 -ggdb
+CFLAGS = -Wall -Wno-misleading-indentation -DVERSION=\"v$(VERSION)\" -std=gnu89 -fPIC -ggdb
 CLIBS = -I$(LIB) -lm -lcrypto
 
 $(BIN)/armake: \
@@ -63,10 +63,10 @@ clean:
     rm -rf $(BIN) $(SRC)/*.o $(SRC)/*.tab.* $(SRC)/*.yy.c $(LIB)/*.o armake_*
 
 win32:
-    "$(MAKE)" CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w32.exe
+    "$(MAKE)" CC=i686-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lws2_32 -lwsock32 -lole32 -lgdi32 -static" EXT=_w32.exe
 
 win64:
-    "$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lole32 -lgdi32 -static" EXT=_w64.exe
+    "$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lws2_32 -lwsock32 -lole32 -lgdi32 -static" EXT=_w64.exe
 
 docopt:
     mkdir tmp || rm -rf tmp/*
