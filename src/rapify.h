@@ -25,10 +25,76 @@
 #define MAXCLASSES 4096
 
 
-int rapify_token(FILE *f_source, FILE *f_target, char *name, struct lineref *lineref);
+enum {
+    TYPE_CLASS,
+    TYPE_VAR,
+    TYPE_ARRAY,
+    TYPE_ARRAY_EXPANSION,
+    TYPE_STRING,
+    TYPE_INT,
+    TYPE_FLOAT
+};
 
-int rapify_array(FILE *f_source, FILE *f_target, struct lineref *lineref);
+struct definitions {
+    struct definition *head;
+};
 
-int rapify_class(FILE *f_source, FILE *f_target, struct lineref *lineref, int level);
+struct definition {
+    int type;
+    void *content;
+    struct definition *next;
+};
+
+struct class {
+    char *name;
+    char *parent;
+    bool is_delete;
+    long offset_location;
+    struct definitions *content;
+};
+
+struct variable {
+    int type;
+    char *name;
+    struct expression *expression;
+};
+
+struct expression {
+    int type;
+    int32_t int_value;
+    float float_value;
+    char *string_value;
+    struct expression *head;
+    struct expression *next;
+};
+
+
+struct class *parse_file(FILE *f, struct lineref *lineref);
+
+struct definitions *new_definitions();
+
+struct definitions *add_definition(struct definitions *head, int type, void *content);
+
+struct class *new_class(char *name, char *parent, struct definitions *content, bool is_delete);
+
+struct variable *new_variable(int type, char *name, struct expression *expression);
+
+struct expression *new_expression(int type, void *value);
+
+struct expression *add_expression(struct expression *head, struct expression *new);
+
+void free_expression(struct expression *expr);
+
+void free_variable(struct variable *var);
+
+void free_definition(struct definition *definition);
+
+void free_class(struct class *class);
+
+void rapify_expression(struct expression *expr, FILE *f_target);
+
+void rapify_variable(struct variable *var, FILE *f_target);
+
+void rapify_class(struct class *class, FILE *f_target);
 
 int rapify_file(char *source, char *target);

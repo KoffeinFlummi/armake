@@ -31,9 +31,18 @@
 
 
 struct constant {
-    char name[256];
-    char arguments[MAXARGS][512];
+    char *name;
     char *value;
+    int num_args;
+    int num_occurences;
+    int (*occurrences)[2];
+    struct constant *next;
+    struct constant *last;
+};
+
+struct constants {
+    struct constant *head;
+    struct constant *tail;
 };
 
 struct lineref {
@@ -48,10 +57,20 @@ struct lineref {
 char include_stack[MAXINCLUDES][1024];
 
 
+struct constants *constants_init();
+bool constants_parse(struct constants *constants, char *definition);
+void constants_remove(struct constants *constants, char *name);
+struct constant *constants_find(struct constants *constants, char *name, int len);
+char *constants_preprocess(struct constants *constants, char *source);
+void constants_free(struct constants *constants);
+
+char *constant_value(struct constants *constants, struct constant *constant, int num_args, char **args);
+void constant_free(struct constant *constant);
+
 bool matches_includepath(char *path, char *includepath, char *includefolder);
 
 int find_file(char *includepath, char *origin, char *actualpath);
 
 char * resolve_macros(char *string, size_t buffsize, struct constant *constants);
 
-int preprocess(char *source, FILE *f_target, struct constant *constants, struct lineref *lineref);
+int preprocess(char *source, FILE *f_target, struct constants *constants, struct lineref *lineref);

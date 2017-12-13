@@ -19,6 +19,11 @@
 #pragma once
 
 
+#include <stdint.h>
+
+#include "docopt.h"
+
+
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -39,9 +44,6 @@
 #define OP_UNPACK 7
 #define OP_DERAPIFY 8
 #define OP_IMAGE 9
-
-
-#include "docopt.h"
 
 
 struct point {
