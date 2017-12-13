@@ -17,6 +17,7 @@
  */
 
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -36,6 +37,403 @@
 #include "filesystem.h"
 #include "utils.h"
 #include "preprocess.h"
+
+
+#define IS_MACRO_CHAR(x) ( (x) == '_' || \
+    ((x) >= 'a' && (x) <= 'z') || \
+    ((x) >= 'A' && (x) <= 'Z') || \
+    ((x) >= '0' && (x) <= '9') )
+
+
+struct constants *constants_init() {
+    struct constants *c = (struct constants *)malloc(sizeof(struct constants));
+    c->head = NULL;
+    c->tail = NULL;
+    return c;
+}
+
+bool constants_parse(struct constants *constants, char *definition) {
+    struct constant *c = (struct constant *)malloc(sizeof(struct constant));
+    char *ptr = definition;
+    char *argstr;
+    char *tok;
+    char *start;
+    char **args;
+    int i;
+    int len;
+    bool quoted;
+
+    while (IS_MACRO_CHAR(*ptr))
+        ptr++;
+
+    c->name = strndup(definition, ptr - definition);
+
+    c->num_args = 0;
+    if (*ptr == '(') {
+        argstr = strdup(ptr + 1);
+        if (strchr(argstr, ')') == NULL) {
+            errorf("Missing ) in argument list of \"%s\".\n", c->name);
+            return false;
+        }
+        *strchr(argstr, ')') = 0;
+        ptr += strlen(argstr) + 2;
+
+        args = (char **)malloc(sizeof(char *) * 4);
+
+        tok = strtok(argstr, ",");
+        while (tok) {
+            if (c->num_args % 4 == 0)
+                args = (char **)realloc(args, sizeof(char *) * (c->num_args + 4));
+            args[c->num_args] = strdup(tok);
+            trim(args[c->num_args], strlen(args[c->num_args]) + 1);
+            c->num_args++;
+            tok = strtok(NULL, ",");
+        }
+
+        free(argstr);
+    }
+
+    while (*ptr == ' ' || *ptr == '\t')
+        ptr++;
+    
+    c->num_occurences = 0;
+    if (c->num_args > 0) {
+        c->occurrences = (int (*)[2])malloc(sizeof(int) * 4 * 2);
+        c->value = strdup("");
+        len = 0;
+
+        while (true) {
+            quoted = false;
+
+            // Non-tokens
+            start = ptr;
+            while (*ptr != 0 && !IS_MACRO_CHAR(*ptr) && *ptr != '#')
+                ptr++;
+
+            while (len == 0 && (*start == ' ' || *start == '\t'))
+                start++;
+
+            if (ptr - start > 0) {
+                len += ptr - start;
+                c->value = (char *)realloc(c->value, len + 1);
+                strncat(c->value, start, ptr - start);
+            }
+
+            quoted = *ptr == '#';
+            if (quoted) {
+                ptr++;
+                if (*ptr == '#') {
+                    errorf("Leading token concatenation operators (##) are not allowed or necessary.\n");
+                    return false;
+                }
+            }
+
+            if (*ptr == 0)
+                break;
+
+            // Potential tokens
+            start = ptr;
+            while (IS_MACRO_CHAR(*ptr))
+                ptr++;
+
+            tok = strndup(start, ptr - start);
+            for (i = 0; i < c->num_args; i++) {
+                if (strcmp(tok, args[i]) == 0)
+                    break;
+            }
+
+            if (i == c->num_args) {
+                if (quoted) {
+                    errorf("Stringizing is only allowed for arguments.\n");
+                    return false;
+                }
+                len += ptr - start;
+                c->value = (char *)realloc(c->value, len + 1);
+                strcat(c->value, tok);
+            } else {
+                if (c->num_occurences > 0 && c->num_occurences % 4 == 0)
+                    c->occurrences = (int (*)[2])realloc(c->occurrences, sizeof(int) * 2 * (c->num_occurences + 4));
+                c->occurrences[c->num_occurences][0] = i;
+
+                if (quoted) {
+                    c->occurrences[c->num_occurences][1] = len + 1;
+                    len += 2;
+                    c->value = (char *)realloc(c->value, len + 1);
+                    strcat(c->value, "\"\"");
+                } else {
+                    c->occurrences[c->num_occurences][1] = len;
+                }
+
+                c->num_occurences++;
+            }
+
+            free(tok);
+
+            // Handle concatenation
+            if (*ptr == '#' && *(ptr + 1) == '#') {
+                if (quoted) {
+                    errorf("Token concatenations cannot be stringized.\n");
+                    return false;
+                }
+
+                ptr += 2;
+                if (!IS_MACRO_CHAR(*ptr)) {
+                    errorf("Trailing token concatenation operators (##) are not allowed or necessary.\n");
+                    return false;
+                }
+            }
+        }
+
+        ptr = c->value + (strlen(c->value) - 1);
+        while ((c->num_occurences == 0 || c->occurrences[c->num_occurences - 1][1] < (ptr - c->value)) &&
+                ptr > c->value && (*ptr == ' ' || *ptr == '\t'))
+            ptr--;
+
+        *(ptr + 1) = 0;
+    } else {
+        c->occurrences = NULL;
+        c->value = strdup(ptr);
+        trim(c->value, strlen(c->value) + 1);
+    }
+
+    c->last = constants->tail;
+    c->next = NULL;
+    if (constants->tail == NULL) {
+        constants->head = constants->tail = c;
+    } else {
+        constants->tail->next = c;
+        constants->tail = c;
+    }
+
+    if (c->num_args > 0) {
+        for (i = 0; i < c->num_args; i++)
+            free(args[i]);
+        free(args);
+    }
+
+    return true;
+}
+
+void constants_remove(struct constants *constants, char *name) {
+    struct constant *c = constants_find(constants, name, 0);
+    if (c == NULL)
+        return;
+
+    if (c->next == NULL)
+        constants->tail = c->last;
+    else
+        c->next->last = c->last;
+
+    if (c->last == NULL)
+        constants->head = c->next;
+    else
+        c->last->next = c->next;
+
+    constant_free(c);
+}
+
+struct constant *constants_find(struct constants *constants, char *name, int len) {
+    struct constant *c = constants->head;
+
+    while (c != NULL) {
+        if (len <= 0 && strcmp(c->name, name) == 0)
+            break;
+        if (len > 0 && strlen(c->name) == len && strncmp(c->name, name, len) == 0)
+            break;
+        c = c->next;
+    }
+
+    return c;
+}
+
+char *constants_preprocess(struct constants *constants, char *source) {
+    char *ptr = source;
+    char *start;
+    char *result;
+    char *value;
+    char **args;
+    int i;
+    int len = 0;
+    int num_args;
+    int level;
+    char in_string;
+    struct constant *c;
+
+    result = (char *)malloc(1);
+    result[0] = 0;
+
+    while (true) {
+        // Non-tokens
+        start = ptr;
+        while (*ptr != 0 && !IS_MACRO_CHAR(*ptr))
+            ptr++;
+
+        if (ptr - start > 0) {
+            len += ptr - start;
+            result = (char *)realloc(result, len + 1);
+            strncat(result, start, ptr - start);
+        }
+
+        if (*ptr == 0)
+            break;
+
+        // Potential tokens
+        start = ptr;
+        while (IS_MACRO_CHAR(*ptr))
+            ptr++;
+
+        c = constants_find(constants, start, ptr - start);
+        if (c == NULL || (c->num_args > 0 && *ptr != '(')) {
+            len += ptr - start;
+            result = (char *)realloc(result, len + 1);
+            strncat(result, start, ptr - start);
+            continue;
+        }
+
+        args = NULL;
+        num_args = 0;
+        if (*ptr == '(') {
+            args = (char **)malloc(sizeof(char *) * 4);
+            ptr++;
+            start = ptr;
+
+            in_string = 0;
+            level = 0;
+            while (*ptr != 0) {
+                if (in_string) {
+                    if (*ptr == in_string)
+                        in_string = 0;
+                } else if ((*ptr == '"' || *ptr == '\'') && *(ptr - 1) != '\\') {
+                    in_string = *ptr;
+                } else if (*ptr == '(') {
+                    level++;
+                } else if (level > 0 && *ptr == ')') {
+                    level--;
+                } else if (level == 0 && (*ptr == ',' || *ptr == ')')) {
+                    if (num_args > 0 && num_args % 4 == 0)
+                        args = (char **)realloc(args, sizeof(char *) * (num_args + 4));
+                    args[num_args] = strndup(start, ptr - start);
+                    num_args++;
+                    if (*ptr == ')') {
+                        break;
+                    }
+                    start = ptr + 1;
+                }
+                ptr++;
+            }
+
+            if (*ptr == 0) {
+                errorf("Incomplete argument list for macro \"%s\".\n", c->name);
+                return NULL;
+            } else {
+                ptr++;
+            }
+        }
+
+        value = constant_value(constants, c, num_args, args);
+        if (!value)
+            return NULL;
+
+        if (args) {
+            for (i = 0; i < num_args; i++)
+                free(args[i]);
+            free(args);
+        }
+
+        len += strlen(value);
+        result = (char *)realloc(result, len + 1);
+        strcat(result, value);
+
+        free(value);
+    }
+
+    free(source);
+    
+    return result;
+}
+
+void constants_free(struct constants *constants) {
+    struct constant *c = constants->head;
+    struct constant *next;
+
+    while (c != NULL) {
+        next = c->next;
+        constant_free(c);
+        c = next;
+    }
+    free(constants);
+}
+
+char *constant_value(struct constants *constants, struct constant *constant, int num_args, char **args) {
+    int i;
+    char *result;
+    char *ptr;
+    char *tmp;
+
+    if (num_args != constant->num_args) {
+        if (num_args)
+            errorf("Macro \"%s\" expects %i arguments, %i given.\n", constant->name, constant->num_args, num_args);
+        return NULL;
+    }
+
+    for (i = 0; i < num_args; i++) {
+        args[i] = constants_preprocess(constants, args[i]);
+        trim(args[i], strlen(args[i]) + 1);
+        if (args[i] == NULL)
+            return NULL;
+    }
+
+    if (num_args == 0) {
+        result = strdup(constant->value);
+    } else {
+        result = strdup("");
+        ptr = constant->value;
+        for (i = 0; i < constant->num_occurences; i++) {
+            tmp = strndup(ptr, constant->occurrences[i][1] - (ptr - constant->value));
+            result = (char *)realloc(result, strlen(result) + strlen(tmp) + strlen(args[constant->occurrences[i][0]]) + 1);
+            strcat(result, tmp);
+            free(tmp);
+            strcat(result, args[constant->occurrences[i][0]]);
+            ptr = constant->value + constant->occurrences[i][1];
+        }
+        result = (char *)realloc(result, strlen(result) + strlen(ptr) + 1);
+        strcat(result, ptr);
+    }
+
+    result = constants_preprocess(constants, result);
+    trim(result, strlen(result) + 1);
+
+    return result;
+}
+
+void constant_free(struct constant *constant) {
+    free(constant->name);
+    free(constant->value);
+    if (constant->occurrences != NULL)
+        free(constant->occurrences);
+    free(constant);
+}
+
+bool is_number(char *var) {
+    // [-+]?[0-9]+
+    // [-+]?[0-9]*\.[0-9]+
+
+    if (*var == '-' || *var == '+')
+        var++;
+    while (*var >= '0' && *var <= '9')
+        var++;
+    if (*var == '.') {
+        var++;
+        if (*var == 0)
+            return false;
+        while (*var != 0) {
+            if (*var < '0' || *var > '9')
+                return false;
+            var++;
+        }
+    }
+    return *var == 0;
+}
 
 
 bool matches_includepath(char *path, char *includepath, char *includefolder) {
@@ -251,7 +649,7 @@ int find_file(char *includepath, char *origin, char *actualpath) {
 }
 
 
-int preprocess_prepare(char *source, FILE *f_target, struct lineref *lineref) {
+int preprocess(char *source, FILE *f_target, struct constants *constants, struct lineref *lineref) {
     /*
      * Writes the contents of source into the target file pointer, while
      * recursively resolving constants and includes using the includefolder
@@ -263,15 +661,19 @@ int preprocess_prepare(char *source, FILE *f_target, struct lineref *lineref) {
     extern int current_operation;
     extern char current_target[2048];
     extern char include_stack[MAXINCLUDES][1024];
-    bool in_comment = false;
-    bool update_line = false;
+    int file_index;
     int line = 0;
     int i = 0;
     int j = 0;
+    int level = 0;
+    int level_true = 0;
+    int level_comment = 0;
     int success;
     size_t buffsize;
     char *buffer;
     char *ptr;
+    char *directive;
+    char *directive_args;
     char in_string = 0;
     char includepath[2048];
     char actualpath[2048];
@@ -279,11 +681,6 @@ int preprocess_prepare(char *source, FILE *f_target, struct lineref *lineref) {
 
     current_operation = OP_PREPROCESS;
     strcpy(current_target, source);
-
-    if (include_stack[i][0] == 0)
-        fprintf(f_target, "# 1 \"%s\"\n", source);
-    else
-        fprintf(f_target, "# 1 \"%s\" 1\n", source);
 
     for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++) {
         if (strcmp(source, include_stack[i]) == 0) {
@@ -317,14 +714,40 @@ int preprocess_prepare(char *source, FILE *f_target, struct lineref *lineref) {
     else
         fseek(f_source, 0, SEEK_SET);
 
+    file_index = lineref->num_files;
+    if (strchr(source, PATHSEP) == NULL)
+        strcpy(lineref->file_names[file_index], source);
+    else
+        strcpy(lineref->file_names[file_index], strrchr(source, PATHSEP) + 1);
+
+    lineref->num_files++;
+    if (lineref->num_files >= MAXINCLUDES) {
+        errorf("Number of included files exceeds MAXINCLUDES.\n");
+        fclose(f_source);
+        return 1;
+    }
+
+    // first constant is file name
+    // @todo
+    // strcpy(constants[0].name, "__FILE__");
+    // if (constants[0].value == 0)
+    //     constants[0].value = (char *)malloc(1024);
+    // snprintf(constants[0].value, 1024, "\"%s\"", source);
+
+    // strcpy(constants[1].name, "__LINE__");
+
+    // strcpy(constants[2].name, "__EXEC");
+    // if (constants[2].value == 0)
+    //     constants[2].value = (char *)malloc(1);
+
+    // strcpy(constants[3].name, "__EVAL");
+    // if (constants[3].value == 0)
+    //     constants[3].value = (char *)malloc(1);
+
     while (true) {
         // get line and add next lines if line ends with a backslash
         buffer = NULL;
-        update_line = false;
         while (buffer == NULL || (strlen(buffer) >= 2 && buffer[strlen(buffer) - 2] == '\\')) {
-            if (buffer != NULL)
-                update_line = true;
-
             ptr = NULL;
             buffsize = 0;
             if (getline(&ptr, &buffsize, f_source) == -1) {
@@ -365,189 +788,158 @@ int preprocess_prepare(char *source, FILE *f_target, struct lineref *lineref) {
                 else
                     continue;
             } else {
-                if (!in_comment &&
+                if (level_comment == 0 &&
                         (buffer[i] == '"' || buffer[i] == '\'') &&
                         (i == 0 || buffer[i-1] != '\\'))
                     in_string = buffer[i];
             }
 
-            if (buffer[i] == '/' && buffer[i+1] == '/' && !in_comment) {
+            if (buffer[i] == '/' && buffer[i+1] == '/') {
                 buffer[i+1] = 0;
                 buffer[i] = '\n';
             } else if (buffer[i] == '/' && buffer[i+1] == '*') {
-                in_comment = true;
+                level_comment++;
                 buffer[i] = ' ';
                 buffer[i+1] = ' ';
             } else if (buffer[i] == '*' && buffer[i+1] == '/') {
-                in_comment = false;
+                level_comment--;
+                if (level_comment < 0)
+                    level_comment = 0;
                 buffer[i] = ' ';
                 buffer[i+1] = ' ';
             }
 
-            if (in_comment && buffer[i] != '\n') {
+            if (level_comment > 0) {
                 buffer[i] = ' ';
+                continue;
             }
         }
 
         // trim leading spaces
         trim_leading(buffer, strlen(buffer) + 1);
 
-        if (!in_comment && strlen(buffer) >= 11 && strncmp(buffer, "#include", 8) == 0) {
-            for (i = 0; i < strlen(buffer) ; i++) {
-                if (buffer[i] == '<' || buffer[i] == '>')
-                    buffer[i] = '"';
+        // skip lines inside untrue ifs
+        if (level > level_true) {
+            if ((strlen(buffer) < 5 || strncmp(buffer, "#else", 5) != 0) &&
+                    (strlen(buffer) < 6 || strncmp(buffer, "#endif", 6) != 0)) {
+                free(buffer);
+                continue;
             }
-            if (strchr(buffer, '"') == NULL) {
-                errorf("Failed to parse #include in line %i in %s.\n", line, source);
-                return 5;
-            }
-            strncpy(includepath, strchr(buffer, '"') + 1, sizeof(includepath));
-            if (strchr(includepath, '"') == NULL) {
-                errorf("Failed to parse #include in line %i in %s.\n", line, source);
-                return 6;
-            }
-            *strchr(includepath, '"') = 0;
-            if (find_file(includepath, source, actualpath)) {
-                errorf("Failed to find %s.\n", includepath);
-                return 7;
-            }
-            free(buffer);
-            success = preprocess_prepare(actualpath, f_target, lineref);
-            if (success)
-                return success;
-
-            current_operation = OP_PREPROCESS;
-            strcpy(current_target, source);
-
-            fprintf(f_target, "# %i \"%s\" 2\n", line + 1, source);
-
-            for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++);
-            include_stack[i - 1][0] = 0;
-
-            continue;
-        } else {
-            fputs(buffer, f_target);
-
-            if (update_line)
-                fprintf(f_target, "# %i \"%s\"\n", line + 1, source);
         }
 
-        free(buffer);
-    }
+        // second constant is line number
+        // @todo
+        // if (constants[1].value == 0)
+        //     constants[1].value = (char *)malloc(16);
+        // sprintf(constants[1].value, "%i", line - 1);
 
-    fclose(f_source);
+        if (level_comment == 0 && buffer[0] == '#') {
+            ptr = buffer+1;
+            while (*ptr == ' ' || *ptr == '\t')
+                ptr++;
 
-    return 0;
-}
+            directive = (char *)malloc(strlen(ptr) + 1);
+            strcpy(directive, ptr);
+            *(strchrnul(directive, ' ')) = 0;
+            *(strchrnul(directive, '\n')) = 0;
 
+            ptr += strlen(directive);
+            while (*ptr == ' ' || *ptr == '\t')
+                ptr++;
+            directive_args = ptr;
+            *(strchrnul(directive_args, '\n')) = 0;
 
-int preprocess(char *source, FILE *f_target, struct lineref *lineref) {
-    extern char include_stack[MAXINCLUDES][1024];
-    int i;
-    int exitcode;
-    int line;
-    int current_file;
-    char *buffer;
-    char filename[1024];
-    char temp1[1024];
-    char temp2[1024];
-    char command[1024];
-    size_t buffsize;
-    FILE *f_temp;
-
-    if (get_temp_name(temp1, ".cpp") || get_temp_name(temp2, ".cpp")) {
-        errorf("Failed to generate temp file.\n");
-        return 1;
-    }
-
-    f_temp = fopen(temp1, "wb");
-    if (!f_temp) {
-        errorf("Failed to open temp file.\n");
-        remove_file(temp1);
-        remove_file(temp2);
-        return 1;
-    }
-
-    for (i = 0; i < MAXINCLUDES; i++)
-        include_stack[i][0] = 0;
-
-    if (preprocess_prepare(source, f_temp, lineref)) {
-        errorf("Failed to prepare file for preprocessing.\n");
-        remove_file(temp1);
-        remove_file(temp2);
-        return 1;
-    }
-
-    fclose(f_temp);
-
-    snprintf(command, sizeof(command), "gcc -E -o %s %s", temp2, temp1);
-    exitcode = system(command);
-    if (exitcode) {
-        errorf("GCC returned exit code %i.\n", exitcode);
-        //remove_file(temp1);
-        remove_file(temp2);
-        return 1;
-    }
-
-    if (remove_file(temp1)) {
-        errorf("Failed to remove temp file.\n");
-        return 1;
-    }
-
-    f_temp = fopen(temp2, "rb");
-    if (!f_temp) {
-        errorf("Failed to open temp file.\n");
-        remove_file(temp2);
-        return 1;
-    }
-
-    buffer = NULL;
-    buffsize = 0;
-    line = 0;
-    while (getline(&buffer, &buffsize, f_temp) != -1) {
-        if (buffer[0] == '#') {
-            current_file = -1;
-            sscanf(buffer, "# %i \"%1023c", &line, filename);
-            if (strchr(filename, '"') != NULL)
-                *(strchr(filename, '"')) = 0;
-
-            for (i = 0; i < lineref->num_files; i++) {
-                if (strcmp(lineref->file_names[i], filename) == 0) {
-                    break;
+            if (strcmp(directive, "include") == 0) {
+                for (i = 0; i < strlen(directive_args) ; i++) {
+                    if (directive_args[i] == '<' || directive_args[i] == '>')
+                        directive_args[i] = '"';
                 }
+                if (strchr(directive_args, '"') == NULL) {
+                    errorf("Failed to parse #include in line %i in %s.\n", line, source);
+                    return 5;
+                }
+                strncpy(includepath, strchr(directive_args, '"') + 1, sizeof(includepath));
+                if (strchr(includepath, '"') == NULL) {
+                    errorf("Failed to parse #include in line %i in %s.\n", line, source);
+                    return 6;
+                }
+                *strchr(includepath, '"') = 0;
+                if (find_file(includepath, source, actualpath)) {
+                    errorf("Failed to find %s.\n", includepath);
+                    return 7;
+                }
+
+                free(directive);
+                free(buffer);
+
+                success = preprocess(actualpath, f_target, constants, lineref);
+
+                for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++);
+                include_stack[i - 1][0] = 0;
+
+                current_operation = OP_PREPROCESS;
+                strcpy(current_target, source);
+
+                if (success)
+                    return success;
+                continue;
+            } else if (strcmp(directive, "define") == 0) {
+                if (!constants_parse(constants, directive_args)) {
+                    errorf("Failed to parse macro definition in line %i of %s.\n", line, source);
+                    return 3;
+                }
+            } else if (strcmp(directive, "undef") == 0) {
+                constants_remove(constants, directive_args);
+            } else if (strcmp(directive, "ifdef") == 0) {
+                level++;
+                if (constants_find(constants, directive_args, 0))
+                    level_true++;
+            } else if (strcmp(directive, "ifndef") == 0) {
+                level++;
+                if (!constants_find(constants, directive_args, 0))
+                    level_true++;
+            } else if (strcmp(directive, "else") == 0) {
+               if (level == level_true)
+                   level_true--;
+               else
+                   level_true = level;
+            } else if (strcmp(directive, "endif") == 0) {
+               if (level == 0) {
+                   errorf("Unexpected #endif in line %i of %s.\n", line, source);
+                   return 4;
+               }
+               if (level == level_true)
+                   level_true--;
+               level--;
+            } else {
+                errorf("Unknown preprocessor directive \"%s\" in line %i of %s.\n", directive, line, source);
+                return 5;
             }
 
-            current_file = i;
-
-            if (i == lineref->num_files) {
-                strcpy(lineref->file_names[current_file], filename);
-                lineref->num_files++;
+            free(directive);
+        } else if (strlen(buffer) > 1) {
+            buffer = constants_preprocess(constants, buffer);
+            if (buffer == NULL) {
+                errorf("Failed to resolve macros in line %i of %s.\n", line, source);
+                return success;
             }
-        } else {
+
             fputs(buffer, f_target);
 
-            lineref->file_index[lineref->num_lines] = current_file;
+            lineref->file_index[lineref->num_lines] = file_index;
             lineref->line_number[lineref->num_lines] = line;
-            lineref->num_lines++;
 
-            if (lineref->num_lines % LINEINTERVAL) {
+            lineref->num_lines++;
+            if (lineref->num_lines % LINEINTERVAL == 0) {
                 lineref->file_index = (uint32_t *)realloc(lineref->file_index, 4 * (lineref->num_lines + LINEINTERVAL));
                 lineref->line_number = (uint32_t *)realloc(lineref->line_number, 4 * (lineref->num_lines + LINEINTERVAL));
             }
         }
 
         free(buffer);
-        buffer = NULL;
-        buffsize = 0;
-        line++;
     }
-    free(buffer);
 
-    fclose(f_temp);
-    if (remove_file(temp2)) {
-        errorf("Failed to remove temp file.\n");
-        return 1;
-    }
+    fclose(f_source);
 
     return 0;
 }

@@ -29,9 +29,10 @@
 #include "rapify.h"
 #include "rapify.tab.h"
 
-bool allow_unquoted_string = false;
-bool allow_name = false;
-bool last_was_name = false;
+bool allow_val = false;
+bool allow_arr = false;
+bool last_was_class = false;
+bool tmp;
 
 #define YY_NO_INPUT
 #define YY_NO_UNPUT
@@ -40,9 +41,9 @@ bool last_was_name = false;
     yylloc.first_line = yylloc.last_line = yylineno;
 
 #define RESET_VARS \
-    allow_unquoted_string = false; \
-    allow_name = false; \
-    last_was_name = false
+    allow_val = false; \
+    allow_arr = false; \
+    last_was_class = false;
 %}
 
 %%
@@ -50,44 +51,44 @@ bool last_was_name = false;
 [ \t] {}
 \n {}
 
-";" {RESET_VARS; allow_name = true; return T_SEMICOLON;}
-":" {RESET_VARS; allow_name = true; return T_COLON;}
-"," {RESET_VARS; allow_unquoted_string = true; return T_COMMA;}
+";" {RESET_VARS; return T_SEMICOLON;}
+":" {tmp = last_was_class; RESET_VARS; last_was_class = tmp; return T_COLON;}
+"," {RESET_VARS; allow_arr = true; return T_COMMA;}
 "+" {RESET_VARS; return T_PLUS;}
-"=" {RESET_VARS; allow_unquoted_string = true; return T_EQUALS;}
+"=" {RESET_VARS; allow_val = true; return T_EQUALS;}
 "]" {RESET_VARS; return T_RBRACKET;}
 "[" {RESET_VARS; return T_LBRACKET;}
 "}" {RESET_VARS; return T_RBRACE;}
-"{" {
-    bool is_class = last_was_name;
-    RESET_VARS;
-    allow_unquoted_string = !is_class;
-    allow_name = is_class;
-    return T_LBRACE;
-}
+"{" {tmp = !last_was_class; RESET_VARS; allow_arr = tmp; return T_LBRACE;}
 
-"class" {
-    RESET_VARS;
-    allow_name = true;
-    return T_CLASS;
-}
+"class" {RESET_VARS; last_was_class = true; return T_CLASS;}
+"delete" {RESET_VARS; return T_DELETE;}
 
-"delete" {
-    RESET_VARS; 
-    allow_name = true;
-    return T_DELETE;
-}
-
--?[0-9]+ {
+\s*[-+]?[0-9]+ {
+    if (!allow_val && !allow_arr)
+        REJECT;
     RESET_VARS;
     yylval.int_value = atol(yytext);
     return T_INT;
 }
 
--?[0-9]+\.[0-9]+ {
+\s*[-+]?0x[0-9]+ {
+    RESET_VARS;
+    yylval.int_value = strtol(yytext, NULL, 16);
+    return T_INT;
+}
+
+\s*[-+]?[0-9]*\.[0-9]+ {
     RESET_VARS;
     yylval.float_value = atof(yytext);
     return T_FLOAT;
+}
+
+\s*[-+]?([0-9]*\.)?[0-9]+[eE][-+]?[0-9]+ {
+    RESET_VARS;
+    yylval.string_value = (char *)malloc(yyleng + 1);
+    strcpy(yylval.string_value, yytext);
+    return T_STRING;
 }
 
 \"(\\.|\"\"|[^"])*\"    {
@@ -106,31 +107,63 @@ bool last_was_name = false;
     return T_STRING;
 }
 
-([^"class""delete" \t\n\\\"';,=\{\}]([^\n\\\"';,=\{\}]*[^ \t\n\\\"';,=\{\}])?) {
-    if (!allow_unquoted_string) {
+[^;{"' \t\n][^;{\n]*/[ \t\n]*; {
+    if (!allow_val)
         REJECT;
-    }
+
+    trim(yytext, yyleng + 1);
+
+    char *endptr;
+    strtof(yytext, &endptr);
+    if (*endptr == 0)
+        REJECT;
 
     if (!warning_muted("unquoted-string"))
-        fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylineno]], yylineno);
+        fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno]);
     nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
     yylval.string_value = (char *)malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
+    trim(yylval.string_value, yyleng + 1);
     return T_STRING;
 }
 
-[a-zA-Z][a-zA-Z0-9_]* {
-    if (!allow_name) {
+[^;,{"'} \t\n][^;,{}\n]*/[ \t\n]*[,}] {
+    if (!allow_arr)
         REJECT;
-    }
+
+    trim(yytext, yyleng + 1);
+
+    char *endptr;
+    strtof(yytext, &endptr);
+    if (*endptr == 0)
+        REJECT;
+
+    if (!warning_muted("unquoted-string"))
+        fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno]);
+    nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
-    last_was_name = true;
+    yylval.string_value = (char *)malloc(yyleng + 1);
+    strcpy(yylval.string_value, yytext);
+    trim(yylval.string_value, yyleng + 1);
+    return T_STRING;
+}
+
+[a-zA-Z0-9_]+ {
+    if (allow_arr || allow_val)
+        REJECT;
+
+    tmp = last_was_class;
+    RESET_VARS;
+    last_was_class = tmp;
+
     yylval.string_value = (char *)malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     return T_NAME;
 }
+
+. {}
 
 %%

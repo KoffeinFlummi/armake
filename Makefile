@@ -22,7 +22,6 @@ $(BIN)/armake: \
     @echo " LINK $(BIN)/armake$(EXT)"
     @$(CC) $(CFLAGS) -o $(BIN)/armake$(EXT) \
         $(patsubst %.c, %.o, $(wildcard $(SRC)/*.c)) \
-        $(SRC)/rapify.tab.o $(SRC)/rapify.yy.o \
         $(patsubst %.c, %.o, $(wildcard $(LIB)/*.c)) \
         $(CLIBS)
 
@@ -33,6 +32,14 @@ $(SRC)/rapify.tab.c: $(SRC)/rapify.y
 $(SRC)/rapify.yy.c: $(SRC)/rapify.l $(SRC)/rapify.tab.c
     @echo " FLEX $(SRC)/rapify.l"
     @$(FLEX) -o $(SRC)/rapify.yy.c $(SRC)/rapify.l
+
+$(SRC)/rapify.tab.o: $(SRC)/rapify.tab.c
+    @echo "  CC  $<"
+    @$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
+
+$(SRC)/rapify.yy.o: $(SRC)/rapify.yy.c
+    @echo "  CC  $<"
+    @$(CC) $(CFLAGS) -o $@ -c $< $(CLIBS)
 
 $(SRC)/%.o: $(SRC)/%.c $(SRC)/rapify.tab.c $(SRC)/rapify.yy.c
     @echo "  CC  $<"

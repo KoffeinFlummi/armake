@@ -31,6 +31,7 @@
 extern int yylex(struct class **result, struct lineref *lineref);
 extern int yyparse();
 extern FILE* yyin;
+extern int yylineno;
 
 void yyerror(struct class **result, struct lineref *lineref, const char* s);
 %}
@@ -65,18 +66,18 @@ void yyerror(struct class **result, struct lineref *lineref, const char* s);
 %locations
 
 %%
-start: definitions { *result = new_class(NULL, NULL, $1); }
+start: definitions { *result = new_class(NULL, NULL, $1, false); }
 
 definitions:  /* empty */ { $$ = new_definitions(); }
             | definitions class { $$ = add_definition($1, TYPE_CLASS, $2); }
             | definitions variable { $$ = add_definition($1, TYPE_VAR, $2); }
 ;
 
-class:        T_CLASS T_NAME T_LBRACE definitions T_RBRACE T_SEMICOLON { $$ = new_class($2, NULL, $4); }
-            | T_CLASS T_NAME T_COLON T_NAME T_LBRACE definitions T_RBRACE T_SEMICOLON { $$ = new_class($2, $4, $6); }
-            | T_CLASS T_NAME T_SEMICOLON { $$ = new_class($2, NULL, 0); }
-            | T_CLASS T_NAME T_COLON T_NAME T_SEMICOLON { $$ = new_class($2, $4, 0); }
-            | T_DELETE T_NAME T_SEMICOLON { $$ = new_class($2, NULL, (struct definitions *)-1); }
+class:        T_CLASS T_NAME T_LBRACE definitions T_RBRACE T_SEMICOLON { $$ = new_class($2, NULL, $4, false); }
+            | T_CLASS T_NAME T_COLON T_NAME T_LBRACE definitions T_RBRACE T_SEMICOLON { $$ = new_class($2, $4, $6, false); }
+            | T_CLASS T_NAME T_SEMICOLON { $$ = new_class($2, NULL, NULL, false); }
+            | T_CLASS T_NAME T_COLON T_NAME T_SEMICOLON { $$ = new_class($2, $4, 0, false); }
+            | T_DELETE T_NAME T_SEMICOLON { $$ = new_class($2, NULL, NULL, true); }
 ;
 
 variable:     T_NAME T_EQUALS expression T_SEMICOLON { $$ = new_variable(TYPE_VAR, $1, $3); }
@@ -88,6 +89,7 @@ expression:   T_INT { $$ = new_expression(TYPE_INT, &$1); }
             | T_FLOAT { $$ = new_expression(TYPE_FLOAT, &$1); }
             | T_STRING { $$ = new_expression(TYPE_STRING, $1); }
             | T_LBRACE expressions T_RBRACE { $$ = new_expression(TYPE_ARRAY, $2); }
+            | T_LBRACE expressions T_COMMA T_RBRACE { $$ = new_expression(TYPE_ARRAY, $2); }
             | T_LBRACE T_RBRACE { $$ = new_expression(TYPE_ARRAY, NULL); }
 ;
 
@@ -99,10 +101,11 @@ expressions:  expression { $$ = $1; }
 struct class *parse_file(FILE *f, struct lineref *lineref) {
     struct class *result;
 
+    yylineno = 0;
     yyin = f;
 
 #if YYDEBUG == 1
-    //yydebug = 1;
+    yydebug = 1;
 #endif
 
     do { 
@@ -131,7 +134,7 @@ void yyerror(struct class **result, struct lineref *lineref,  const char* s) {
         line++;
     }
 
-    fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylloc.first_line]], yylloc.first_line);
+    fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylloc.first_line]], lineref->line_number[yylloc.first_line]);
     errorf("%s\n", s);
 
     fprintf(stderr, " %s", buffer);

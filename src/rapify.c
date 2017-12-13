@@ -74,12 +74,13 @@ struct definitions *add_definition(struct definitions *head, int type, void *con
 }
 
 
-struct class *new_class(char *name, char *parent, struct definitions *content) {
+struct class *new_class(char *name, char *parent, struct definitions *content, bool is_delete) {
     struct class *result;
 
     result = (struct class *)malloc(sizeof(struct class));
     result->name = name;
     result->parent = parent;
+    result->is_delete = is_delete;
     result->content = content;
 
     return result;
@@ -214,11 +215,24 @@ void rapify_expression(struct expression *expr, FILE *f_target) {
 
 
 void rapify_variable(struct variable *var, FILE *f_target) {
+    struct expression *tmp;
+    uint32_t num_entries;
+
     if (var->type == TYPE_VAR) {
         fputc(1, f_target);
         fputc((char)((var->expression->type == TYPE_STRING) ? 0 : ((var->expression->type == TYPE_FLOAT) ? 1 : 2 )), f_target);
     } else {
         fputc((char)((var->type == TYPE_ARRAY) ? 2 : 5), f_target);
+        if (var->type == TYPE_ARRAY_EXPANSION) {
+            num_entries = 0;
+            tmp = var->expression->head;
+            while (tmp != NULL) {
+                num_entries++;
+                tmp = tmp->next;
+            }
+
+            fwrite(&num_entries, 4, 1, f_target);
+        }
     }
 
     fwrite(var->name, strlen(var->name) + 1, 1, f_target);
@@ -231,9 +245,9 @@ void rapify_class(struct class *class, FILE *f_target) {
     uint32_t fp_temp;
     uint32_t num_entries = 0;
 
-    if (class->content == NULL || class->content == (struct definitions *)-1) {
+    if (class->content == NULL) {
         // extern or delete class
-        fputc((char)((class->content == NULL) ? 3 : 4), f_target);
+        fputc((char)(class->is_delete ? 4 : 3), f_target);
         fwrite(class->name, strlen(class->name) + 1, 1, f_target);
         return;
     }
@@ -256,7 +270,7 @@ void rapify_class(struct class *class, FILE *f_target) {
         if (tmp->type == TYPE_VAR) {
             rapify_variable((struct variable *)tmp->content, f_target);
         } else {
-            if (((struct class *)(tmp->content))->content > 0) {
+            if (((struct class *)(tmp->content))->content != NULL) {
                 fputc(0, f_target);
                 fwrite(((struct class *)(tmp->content))->name,
                     strlen(((struct class *)(tmp->content))->name) + 1, 1, f_target);
@@ -272,7 +286,7 @@ void rapify_class(struct class *class, FILE *f_target) {
 
     tmp = class->content->head;
     while (tmp != NULL) {
-        if (tmp->type == TYPE_CLASS && ((struct class *)(tmp->content))->content > 0) {
+        if (tmp->type == TYPE_CLASS && ((struct class *)(tmp->content))->content != NULL) {
             fp_temp = ftell(f_target);
             fseek(f_target, ((struct class *)(tmp->content))->offset_location, SEEK_SET);
             fwrite(&fp_temp, sizeof(uint32_t), 1, f_target);
@@ -300,6 +314,7 @@ int rapify_file(char *source, char *target) {
     int success;
     char buffer[4096];
     uint32_t enum_offset = 0;
+    struct constants *constants;
     struct lineref *lineref;
 
     current_operation = OP_RAPIFY;
@@ -359,13 +374,18 @@ int rapify_file(char *source, char *target) {
         return 1;
     }
 
+    for (i = 0; i < MAXINCLUDES; i++)
+        include_stack[i][0] = 0;
+
+    constants = constants_init();
+
     lineref = (struct lineref *)malloc(sizeof(struct lineref));
     lineref->num_files = 0;
     lineref->num_lines = 0;
     lineref->file_index = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
     lineref->line_number = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
 
-    success = preprocess(source, f_temp, lineref);
+    success = preprocess(source, f_temp, constants, lineref);
 
     current_operation = OP_RAPIFY;
     strcpy(current_target, source);
@@ -382,6 +402,7 @@ int rapify_file(char *source, char *target) {
 #if 0
     FILE *f_dump;
 
+    char dump_name[2048];
     sprintf(dump_name, "armake_preprocessed_%u.dump", (unsigned)time(NULL));
     printf("Done with preprocessing, dumping preprocessed config to %s.\n", dump_name);
 
@@ -434,6 +455,8 @@ int rapify_file(char *source, char *target) {
 #ifdef _WIN32
     DeleteFile(temp_name);
 #endif
+
+    constants_free(constants);
 
     free(lineref->file_index);
     free(lineref->line_number);

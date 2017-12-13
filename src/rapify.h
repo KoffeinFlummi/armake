@@ -48,6 +48,7 @@ struct definition {
 struct class {
     char *name;
     char *parent;
+    bool is_delete;
     long offset_location;
     struct definitions *content;
 };
@@ -74,7 +75,7 @@ struct definitions *new_definitions();
 
 struct definitions *add_definition(struct definitions *head, int type, void *content);
 
-struct class *new_class(char *name, char *parent, struct definitions *content);
+struct class *new_class(char *name, char *parent, struct definitions *content, bool is_delete);
 
 struct variable *new_variable(int type, char *name, struct expression *expression);
 
