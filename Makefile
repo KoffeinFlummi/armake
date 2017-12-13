@@ -32,7 +32,7 @@ $(SRC)/rapify.tab.c: $(SRC)/rapify.y
 
 $(SRC)/rapify.yy.c: $(SRC)/rapify.l $(SRC)/rapify.tab.c
     @echo " FLEX $(SRC)/rapify.l"
-    @$(FLEX) -o $(SRC)/rapify.yy.c $(SRC)/rapify.l
+    @$(FLEX) -w -o $(SRC)/rapify.yy.c $(SRC)/rapify.l
 
 $(SRC)/rapify.tab.o: $(SRC)/rapify.tab.c
     @echo "  CC  $<"
