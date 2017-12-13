@@ -8,7 +8,32 @@ armake
 [![](https://img.shields.io/badge/PPA-koffeinflummi%2Farmake-orange.svg?style=flat-square)](https://launchpad.net/~koffeinflummi/+archive/ubuntu/armake)
 
 
-A C implementation of Arma modding tools (PAA conversion, binarization/rapification, PBO packing). (WIP)
+A cross-platform, open-source C implementation of Arma modding tools (PAA conversion, binarization & rapification, PBO packing, key generation and signing). It aims to provide a complete reimplementation of the entire process, but is able to use the official BI tools on Windows for building P3Ds if it can find them, as P3D conversion is still incomplete (and most likely will never be fully complete). Terrains and RTMs are not supported at the moment (I recommend binarizing RTMs once and then using the binarized version in your repo for now).
+
+
+### Features
+
+#### Designed for Automation
+
+armake is designed to be used in conjunction with tools like make to build larger projects. It deliberately does not provide a mechanism for building entire projects - composed of multiple PBO files - in one call. armake itself also does not do any threading. However, it is safe to run multiple armake instances at the same time, so you can use make to run, say, 4 armake instances simultaneously with `make -j4`. For examples of Makefiles that use armake, check out [ACE3](https://github.com/acemod/ACE3/blob/armake/Makefile) and [ACRE2](https://github.com/IDI-Systems/acre2/blob/armake/Makefile).
+
+#### Decent Errors & Warnings
+
+armake aims to provide developers with expressive and useful error messages, without trying to be smarter than them. It allows disabling most warnings and tries to only error out if a complete build is impossible or impractical.
+
+#### No P-drive
+
+To enable armake to run on non-Windows systems without hacky workarounds, and because it's a terrible idea in general, armake does not make use of the P-drive for finding include files. Instead - like with other compilers - you provide the folders to search for includes in the armake call.
+
+#### Determinism
+
+Unlike other Arma modding tools, armake includes no timestamp information in the built files. This means that - given two identical source folders - armake will produce the exact same output, bit for bit. This means that your team doesn't have to distribute a single build to make sure you're each testing the same PBOs, you can simply build it in multiple places and compare file hashes. This doesn't include cryptographic operations of course.
+
+Note that there can be newline differences in different instances of the same git repo, depending on your settings. While they don't matter for config rapification, files with weird newlines copied into the PBO directly might ruin your PBO's hash comparison.
+
+#### Speed
+
+armake is usually quite a bit faster than BI's Addon Builder, especially when building multi-PBO projects with multiple armake instances. It should however be noted that at the moment, armake _does less_ than Addon Builder. Once armake reaches a more stable state, I'll put some benchmarks here.
 
 
 ### Setup
@@ -21,8 +46,8 @@ $ sudo make install
 ```
 
 **Dependencies:**
-- An FTS library (glibc has one)
-- OpenSSL
+- GCC
+- OpenSSL development libraries (`libssl-dev` on Ubuntu)
 
 #### Arch Linux
 
@@ -45,10 +70,28 @@ $ sudo apt-get install armake
 
 ### Usage
 
-See `$ armake --help` or [src/usage](https://github.com/KoffeinFlummi/armake/blob/master/src/usage).
+```
+armake
+
+Usage:
+    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>
+    armake inspect <target>
+    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>
+    armake cat <target> <name>
+    armake derapify [-f] [-d <indentation>] <source> <target>
+    armake keygen [-f] <target>
+    armake sign [-f] <privatekey> <target>
+    armake paa2img [-f] <source> <target>
+    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>
+    armake (-h | --help)
+    armake (-v | --version)
+```
+
+See `armake --help` for more.
 
 
-### Credits & Thanks
+### Thanks
 
 - [Mikero](https://dev.withsix.com/projects/mikero-pbodll) for his great documentation of the various file formats used.
 - [T_D](https://github.com/Braini01) for great documentation, lots of pointers and even some code contributions.
@@ -78,5 +121,5 @@ This isn't official BI software. As such, it may not compile certain addons corr
         <img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" style="max-width:100%;">
     </a>
     <br>
-    <b>BTC</b> 1K3mKJDJYgJcQFavLL9zHBCGfKj6gmZC7J
+    <b>BTC</b> 18bKjgqZ6E6sQFPNQL4SnCFNB9pLN2PJRk
 </p>
