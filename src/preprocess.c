@@ -123,8 +123,10 @@ bool constants_parse(struct constants *constants, char *definition) {
             if (quoted) {
                 ptr++;
                 if (*ptr == '#') {
-                    errorf("Leading token concatenation operators (##) are not allowed or necessary.\n");
-                    return false;
+                    nwarningf("excessive-concatenation", "Leading or trailing token concatenation operators (##) are not allowed or necessary.");
+                    *ptr = ' ';
+                    *(ptr - 1) = ' ';
+                    quoted = false;
                 }
             }
 
@@ -178,8 +180,9 @@ bool constants_parse(struct constants *constants, char *definition) {
 
                 ptr += 2;
                 if (!IS_MACRO_CHAR(*ptr)) {
-                    errorf("Trailing token concatenation operators (##) are not allowed or necessary.\n");
-                    return false;
+                    nwarningf("excessive-concatenation", "Leading or trailing token concatenation operators (##) are not allowed or necessary.");
+                    *(ptr - 1) = ' ';
+                    *(ptr - 2) = ' ';
                 }
             }
         }
