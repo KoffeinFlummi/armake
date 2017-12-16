@@ -40,6 +40,9 @@
 #include "utils.h"
 
 
+bool warned_bi_not_found = false;
+
+
 #ifdef _WIN32
 bool file_exists(char *path) {
     unsigned long attrs = GetFileAttributes(path);
@@ -274,6 +277,7 @@ int binarize(char *source, char *target) {
     char fileext[64];
 #ifdef _WIN32
     int success;
+    extern bool warned_bi_not_found;
 #endif
 
     if (strchr(source, '.') == NULL)
@@ -291,6 +295,10 @@ int binarize(char *source, char *target) {
         success = attempt_bis_binarize(source, target);
         if (success >= 0)
             return success;
+        if (!warned_bi_not_found) {
+            warningf("Failed to find BI tools, using internal binarizer.\n");
+            warned_bi_not_found = true;
+        }
 #endif
         return mlod2odol(source, target);
     }
