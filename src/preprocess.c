@@ -798,7 +798,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                     in_string = buffer[i];
             }
 
-            if (buffer[i] == '/' && buffer[i+1] == '/') {
+            if (buffer[i] == '/' && buffer[i+1] == '/' && level_comment == 0) {
                 buffer[i+1] = 0;
                 buffer[i] = '\n';
             } else if (buffer[i] == '/' && buffer[i+1] == '*') {
