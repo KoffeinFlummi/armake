@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "utils.h"
+#include "filesystem.h"
 #include "preprocess.h"
 #include "rapify.h"
 

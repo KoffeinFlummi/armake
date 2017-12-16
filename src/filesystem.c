@@ -72,6 +72,7 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
         if ((p - bufptr) > (size - 1)) {
             size = size + 128;
             bufptr = realloc(bufptr, size);
+            p = bufptr + size - 128;
             if (bufptr == NULL)
                 return -1;
         }
@@ -97,6 +98,7 @@ int get_temp_name(char *target, char *suffix) {
 #ifdef _WIN32
     if (!GetTempFileName(".", "amk", 0, target)) { return 1; }
     strcat(target, suffix);
+    return 0;
 #else
     strcpy(target, "amk_XXXXXX");
     strcat(target, suffix);

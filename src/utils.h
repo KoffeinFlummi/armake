@@ -57,6 +57,14 @@ int current_operation;
 char current_target[2048];
 
 
+#ifdef _WIN32
+char *strndup(const char *s, size_t n);
+
+char *strchrnul(const char *s, int c);
+#else
+int stricmp(char *a, char *b);
+#endif
+
 void infof(char *format, ...);
 
 void debugf(char *format, ...);
@@ -74,10 +82,6 @@ int get_line_number(FILE *f_source);
 void reverse_endianness(void *ptr, size_t buffsize);
 
 bool matches_glob(char *string, char *pattern);
-
-#ifndef _WIN32
-int stricmp(char *a, char *b);
-#endif
 
 bool float_equal(float f1, float f2, float precision);
 

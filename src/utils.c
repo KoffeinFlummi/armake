@@ -30,6 +30,48 @@
 #include "utils.h"
 
 
+#ifdef _WIN32
+
+char *strndup(const char *s, size_t n) {
+    char *result = (char *)malloc(n + 1);
+    strncpy(result, s, n);
+    result[n] = 0;
+    return result;
+}
+
+char *strchrnul(const char *s, int c) {
+    char *result = strchr(s, c);
+    if (result != NULL)
+        return result;
+    return (char *)s + strlen(s);
+}
+
+#else
+
+int stricmp(char *a, char *b) {
+    int d;
+    char a_lower;
+    char b_lower;
+
+    for (;; a++, b++) {
+        a_lower = *a;
+        b_lower = *b;
+
+        if (a_lower >= 'A' && a_lower <= 'Z')
+            a_lower -= 'A' - 'a';
+
+        if (b_lower >= 'A' && b_lower <= 'Z')
+            b_lower -= 'A' - 'a';
+
+        d = a_lower - b_lower;
+        if (d != 0 || !*a)
+            return d;
+    }
+}
+
+#endif
+
+
 void infof(char *format, ...) {
     char buffer[4096];
     va_list argptr;
@@ -222,30 +264,6 @@ bool matches_glob(char *string, char *pattern) {
 
     return (*ptr1 == *ptr2);
 }
-
-
-#ifndef _WIN32
-int stricmp(char *a, char *b) {
-    int d;
-    char a_lower;
-    char b_lower;
-
-    for (;; a++, b++) {
-        a_lower = *a;
-        b_lower = *b;
-
-        if (a_lower >= 'A' && a_lower <= 'Z')
-            a_lower -= 'A' - 'a';
-
-        if (b_lower >= 'A' && b_lower <= 'Z')
-            b_lower -= 'A' - 'a';
-
-        d = a_lower - b_lower;
-        if (d != 0 || !*a)
-            return d;
-    }
-}
-#endif
 
 
 bool float_equal(float f1, float f2, float precision) {
