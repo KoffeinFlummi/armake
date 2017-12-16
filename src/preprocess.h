@@ -58,8 +58,8 @@ char include_stack[MAXINCLUDES][1024];
 
 
 struct constants *constants_init();
-bool constants_parse(struct constants *constants, char *definition);
-void constants_remove(struct constants *constants, char *name);
+bool constants_parse(struct constants *constants, char *definition, int line);
+bool constants_remove(struct constants *constants, char *name);
 struct constant *constants_find(struct constants *constants, char *name, int len);
 char *constants_preprocess(struct constants *constants, char *source);
 void constants_free(struct constants *constants);

@@ -52,9 +52,10 @@ struct constants *constants_init() {
     return c;
 }
 
-bool constants_parse(struct constants *constants, char *definition) {
+bool constants_parse(struct constants *constants, char *definition, int line) {
     struct constant *c = (struct constant *)malloc(sizeof(struct constant));
     char *ptr = definition;
+    char *name;
     char *argstr;
     char *tok;
     char *start;
@@ -66,7 +67,12 @@ bool constants_parse(struct constants *constants, char *definition) {
     while (IS_MACRO_CHAR(*ptr))
         ptr++;
 
-    c->name = strndup(definition, ptr - definition);
+    name = strndup(definition, ptr - definition);
+
+    if (constants_remove(constants, name))
+        nwarningf("redefinition-wo-undef", "Constant \"%s\" is being redefined without an #undef in line %i.\n", name, line);
+
+    c->name = name;
 
     c->num_args = 0;
     if (*ptr == '(') {
@@ -214,10 +220,10 @@ bool constants_parse(struct constants *constants, char *definition) {
     return true;
 }
 
-void constants_remove(struct constants *constants, char *name) {
+bool constants_remove(struct constants *constants, char *name) {
     struct constant *c = constants_find(constants, name, 0);
     if (c == NULL)
-        return;
+        return false;
 
     if (c->next == NULL)
         constants->tail = c->last;
@@ -230,6 +236,8 @@ void constants_remove(struct constants *constants, char *name) {
         c->last->next = c->next;
 
     constant_free(c);
+
+    return true;
 }
 
 struct constant *constants_find(struct constants *constants, char *name, int len) {
@@ -884,7 +892,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                     return success;
                 continue;
             } else if (strcmp(directive, "define") == 0) {
-                if (!constants_parse(constants, directive_args)) {
+                if (!constants_parse(constants, directive_args, line)) {
                     errorf("Failed to parse macro definition in line %i of %s.\n", line, source);
                     return 3;
                 }
