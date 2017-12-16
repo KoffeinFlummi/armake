@@ -422,27 +422,6 @@ void constant_free(struct constant *constant) {
     free(constant);
 }
 
-bool is_number(char *var) {
-    // [-+]?[0-9]+
-    // [-+]?[0-9]*\.[0-9]+
-
-    if (*var == '-' || *var == '+')
-        var++;
-    while (*var >= '0' && *var <= '9')
-        var++;
-    if (*var == '.') {
-        var++;
-        if (*var == 0)
-            return false;
-        while (*var != 0) {
-            if (*var < '0' || *var > '9')
-                return false;
-            var++;
-        }
-    }
-    return *var == 0;
-}
-
 
 bool matches_includepath(char *path, char *includepath, char *includefolder) {
     /*
