@@ -1,8 +1,11 @@
 #define VERSIONAR {3,5, 0, 0}
 #define FOO(x  , y ) #x z x_y x##_##y
 #define QUOTE(x) #x
+#define DOUBLES(x,y) x##_##y
+#define ADDON DOUBLES(ace, frag)
+
 class CfgPatches {
-    class ace_frag{
+    class ADDON{
         units[] = { };
         weapons[] = {};
         requiredVersion = 1.56;

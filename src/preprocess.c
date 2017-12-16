@@ -130,9 +130,20 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
             quoted = *ptr == '#';
             if (quoted) {
                 ptr++;
+
+                if (*ptr == '#') {
+                    lnwarningf(current_target, line, "excessive-concatenation",
+                            "Leading token concatenation operators (##) are not necessary.\n");
+                    quoted = false;
+                    ptr++;
+                }
+
+                while (*ptr == '#' && *(ptr + 1) == '#')
+                    ptr += 2;
+
                 if (*ptr == '#') {
                     lerrorf(current_target, line,
-                            "Leading token concatenation operators (##) are not allowed or necessary.\n");
+                            "Token concatenations cannot be stringized.\n");
                     return false;
                 }
             }
@@ -179,7 +190,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
             free(tok);
 
             // Handle concatenation
-            if (*ptr == '#' && *(ptr + 1) == '#') {
+            while (*ptr == '#' && *(ptr + 1) == '#') {
                 if (quoted) {
                     lerrorf(current_target, line,
                             "Token concatenations cannot be stringized.\n");
@@ -187,11 +198,9 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
                 }
 
                 ptr += 2;
-                if (!IS_MACRO_CHAR(*ptr)) {
-                    lerrorf(current_target, line,
-                            "Trailing token concatenation operators (##) are not allowed or necessary.\n");
-                    return false;
-                }
+                if (!IS_MACRO_CHAR(*ptr))
+                    lnwarningf(current_target, line, "excessive-concatenation",
+                            "Trailing token concatenation operators (##) are not necessary.\n");
             }
         }
 
