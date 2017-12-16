@@ -33,8 +33,12 @@ Note that there can be newline differences in different instances of the same gi
 
 #### Speed
 
-armake is usually quite a bit faster than BI's Addon Builder, especially when building multi-PBO projects with multiple armake instances. It should however be noted that at the moment, armake _does less_ than Addon Builder. Once armake reaches a more stable state, I'll put some benchmarks here.
-
+<p align="center">
+    <a href="https://i.imgur.com/PtOBaIK.png">
+        <img src="https://i.imgur.com/PtOBaIK.png" style="max-width:100%;">
+    </a><br/>
+    (Tests ran on a 2 core Windows VM using PboProject v2.24.6.43 and armake commit <code>54079138</code>)
+</p>
 
 ### Setup
 
