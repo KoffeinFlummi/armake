@@ -118,9 +118,8 @@ bool tmp;
     if (*endptr == 0)
         REJECT;
 
-    if (!warning_muted("unquoted-string"))
-        fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno]);
-    nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
+    lnwarningf(lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno],
+            "unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
     yylval.string_value = (char *)malloc(yyleng + 1);
@@ -140,9 +139,8 @@ bool tmp;
     if (*endptr == 0)
         REJECT;
 
-    if (!warning_muted("unquoted-string"))
-        fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno]);
-    nwarningf("unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
+    lnwarningf(lineref->file_names[lineref->file_index[yylineno]], lineref->line_number[yylineno],
+            "unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
     yylval.string_value = (char *)malloc(yyleng + 1);

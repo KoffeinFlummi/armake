@@ -70,7 +70,8 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
     name = strndup(definition, ptr - definition);
 
     if (constants_remove(constants, name))
-        nwarningf("redefinition-wo-undef", "Constant \"%s\" is being redefined without an #undef in line %i.\n", name, line);
+        lnwarningf(current_target, line, "redefinition-wo-undef",
+                "Constant \"%s\" is being redefined without an #undef.\n", name);
 
     c->name = name;
 
@@ -78,7 +79,8 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
     if (*ptr == '(') {
         argstr = strdup(ptr + 1);
         if (strchr(argstr, ')') == NULL) {
-            errorf("Missing ) in argument list of \"%s\".\n", c->name);
+            lerrorf(current_target, line,
+                    "Missing ) in argument list of \"%s\".\n", c->name);
             return false;
         }
         *strchr(argstr, ')') = 0;
@@ -129,7 +131,8 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
             if (quoted) {
                 ptr++;
                 if (*ptr == '#') {
-                    errorf("Leading token concatenation operators (##) are not allowed or necessary.\n");
+                    lerrorf(current_target, line,
+                            "Leading token concatenation operators (##) are not allowed or necessary.\n");
                     return false;
                 }
             }
@@ -150,7 +153,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
 
             if (i == c->num_args) {
                 if (quoted) {
-                    errorf("Stringizing is only allowed for arguments.\n");
+                    lerrorf(current_target, line, "Stringizing is only allowed for arguments.\n");
                     return false;
                 }
                 len += ptr - start;
@@ -178,13 +181,15 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
             // Handle concatenation
             if (*ptr == '#' && *(ptr + 1) == '#') {
                 if (quoted) {
-                    errorf("Token concatenations cannot be stringized.\n");
+                    lerrorf(current_target, line,
+                            "Token concatenations cannot be stringized.\n");
                     return false;
                 }
 
                 ptr += 2;
                 if (!IS_MACRO_CHAR(*ptr)) {
-                    errorf("Trailing token concatenation operators (##) are not allowed or necessary.\n");
+                    lerrorf(current_target, line,
+                            "Trailing token concatenation operators (##) are not allowed or necessary.\n");
                     return false;
                 }
             }
@@ -254,7 +259,7 @@ struct constant *constants_find(struct constants *constants, char *name, int len
     return c;
 }
 
-char *constants_preprocess(struct constants *constants, char *source) {
+char *constants_preprocess(struct constants *constants, char *source, int line) {
     char *ptr = source;
     char *start;
     char *result;
@@ -331,14 +336,15 @@ char *constants_preprocess(struct constants *constants, char *source) {
             }
 
             if (*ptr == 0) {
-                errorf("Incomplete argument list for macro \"%s\".\n", c->name);
+                lerrorf(current_target, line,
+                        "Incomplete argument list for macro \"%s\".\n", c->name);
                 return NULL;
             } else {
                 ptr++;
             }
         }
 
-        value = constant_value(constants, c, num_args, args);
+        value = constant_value(constants, c, num_args, args, line);
         if (!value)
             return NULL;
 
@@ -372,7 +378,8 @@ void constants_free(struct constants *constants) {
     free(constants);
 }
 
-char *constant_value(struct constants *constants, struct constant *constant, int num_args, char **args) {
+char *constant_value(struct constants *constants, struct constant *constant,
+        int num_args, char **args, int line) {
     int i;
     char *result;
     char *ptr;
@@ -380,12 +387,13 @@ char *constant_value(struct constants *constants, struct constant *constant, int
 
     if (num_args != constant->num_args) {
         if (num_args)
-            errorf("Macro \"%s\" expects %i arguments, %i given.\n", constant->name, constant->num_args, num_args);
+            lerrorf(current_target, line,
+                    "Macro \"%s\" expects %i arguments, %i given.\n", constant->name, constant->num_args, num_args);
         return NULL;
     }
 
     for (i = 0; i < num_args; i++) {
-        args[i] = constants_preprocess(constants, args[i]);
+        args[i] = constants_preprocess(constants, args[i], line);
         trim(args[i], strlen(args[i]) + 1);
         if (args[i] == NULL)
             return NULL;
@@ -408,7 +416,7 @@ char *constant_value(struct constants *constants, struct constant *constant, int
         strcat(result, ptr);
     }
 
-    result = constants_preprocess(constants, result);
+    result = constants_preprocess(constants, result, line);
     trim(result, strlen(result) + 1);
 
     return result;
@@ -842,17 +850,17 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                         directive_args[i] = '"';
                 }
                 if (strchr(directive_args, '"') == NULL) {
-                    errorf("Failed to parse #include in line %i in %s.\n", line, source);
+                    lerrorf(source, line, "Failed to parse #include.\n");
                     return 5;
                 }
                 strncpy(includepath, strchr(directive_args, '"') + 1, sizeof(includepath));
                 if (strchr(includepath, '"') == NULL) {
-                    errorf("Failed to parse #include in line %i in %s.\n", line, source);
+                    lerrorf(source, line, "Failed to parse #include.\n");
                     return 6;
                 }
                 *strchr(includepath, '"') = 0;
                 if (find_file(includepath, source, actualpath)) {
-                    errorf("Failed to find %s.\n", includepath);
+                    lerrorf(source, line, "Failed to find %s.\n", includepath);
                     return 7;
                 }
 
@@ -872,7 +880,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                 continue;
             } else if (strcmp(directive, "define") == 0) {
                 if (!constants_parse(constants, directive_args, line)) {
-                    errorf("Failed to parse macro definition in line %i of %s.\n", line, source);
+                    lerrorf(source, line, "Failed to parse macro definition.\n");
                     return 3;
                 }
             } else if (strcmp(directive, "undef") == 0) {
@@ -892,22 +900,22 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                    level_true = level;
             } else if (strcmp(directive, "endif") == 0) {
                if (level == 0) {
-                   errorf("Unexpected #endif in line %i of %s.\n", line, source);
+                   lerrorf(source, line, "Unexpected #endif.\n");
                    return 4;
                }
                if (level == level_true)
                    level_true--;
                level--;
             } else {
-                errorf("Unknown preprocessor directive \"%s\" in line %i of %s.\n", directive, line, source);
+                lerrorf(source, line, "Unknown preprocessor directive \"%s\".\n", directive);
                 return 5;
             }
 
             free(directive);
         } else if (strlen(buffer) > 1) {
-            buffer = constants_preprocess(constants, buffer);
+            buffer = constants_preprocess(constants, buffer, line);
             if (buffer == NULL) {
-                errorf("Failed to resolve macros in line %i of %s.\n", line, source);
+                lerrorf(source, line, "Failed to resolve macros.\n");
                 return success;
             }
 

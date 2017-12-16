@@ -135,8 +135,8 @@ void yyerror(struct class **result, struct lineref *lineref,  const char* s) {
         line++;
     }
 
-    fprintf(stderr, "In file %s:%i: ", lineref->file_names[lineref->file_index[yylloc.first_line]], lineref->line_number[yylloc.first_line]);
-    errorf("%s\n", s);
+    lerrorf(lineref->file_names[lineref->file_index[yylloc.first_line]],
+            lineref->line_number[yylloc.first_line], "%s\n", s);
 
     fprintf(stderr, " %s", buffer);
 }

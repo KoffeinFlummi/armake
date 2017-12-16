@@ -70,12 +70,15 @@ void infof(char *format, ...);
 void debugf(char *format, ...);
 
 void warningf(char *format, ...);
+void lwarningf(char *file, int line, char *format, ...);
 
 bool warning_muted(char *name);
 
 void nwarningf(char *name, char *format, ...);
+void lnwarningf(char *file, int line, char *name, char *format, ...);
 
 void errorf(char *format, ...);
+void lerrorf(char *file, int line, char *format, ...);
 
 int get_line_number(FILE *f_source);
 

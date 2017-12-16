@@ -132,8 +132,8 @@ void warningf(char *format, ...) {
 
     if (current_operation == OP_BUILD)
         fprintf(stderr, "    (encountered while building %s)\n", filename);
-    else if (current_operation == OP_PREPROCESS)
-        fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
+    //else if (current_operation == OP_PREPROCESS)
+    //    fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
     //else if (current_operation == OP_RAPIFY)
     //    fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
     else if (current_operation == OP_P3D)
@@ -148,6 +148,20 @@ void warningf(char *format, ...) {
         fprintf(stderr, "    (encountered while derapifying %s)\n", filename);
 
     fflush(stderr);
+}
+
+
+void lwarningf(char *file, int line, char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "In file %s:%i: ", file, line);
+
+    warningf(buffer);
 }
 
 
@@ -184,6 +198,21 @@ void nwarningf(char *name, char *format, ...) {
 }
 
 
+void lnwarningf(char *file, int line, char *name, char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    if (!warning_muted(name))
+        fprintf(stderr, "In file %s:%i: ", file, line);
+
+    nwarningf(name, buffer);
+}
+
+
 void errorf(char *format, ...) {
     extern int current_operation;
     extern char current_target[2048];
@@ -201,6 +230,20 @@ void errorf(char *format, ...) {
 #endif
 
     fflush(stderr);
+}
+
+
+void lerrorf(char *file, int line, char *format, ...) {
+    char buffer[4096];
+    va_list argptr;
+
+    va_start(argptr, format);
+    vsprintf(buffer, format, argptr);
+    va_end(argptr);
+
+    fprintf(stderr, "In file %s:%i: ", file, line);
+
+    errorf(buffer);
 }
 
 
