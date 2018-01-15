@@ -44,6 +44,16 @@
     ((x) >= 'A' && (x) <= 'Z') || \
     ((x) >= '0' && (x) <= '9') )
 
+#if __APPLE__
+char *strchrnul(const char *s, int c)
+{
+    char *first = strchr(s, c);
+    if (first != NULL)
+        return first;
+
+    return s + strlen(s);
+}
+#endif
 
 struct constants *constants_init() {
     struct constants *c = (struct constants *)malloc(sizeof(struct constants));
