@@ -45,8 +45,7 @@
     ((x) >= '0' && (x) <= '9') )
 
 #if __APPLE__
-char *strchrnul(const char *s, int c)
-{
+char *strchrnul(const char *s, int c) {
     char *first = strchr(s, c);
     if (first != NULL)
         return first;
