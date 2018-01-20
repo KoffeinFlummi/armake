@@ -219,6 +219,7 @@ int img2paa(char *source, char *target) {
 
     if (width % 4 != 0 || height % 4 != 0) {
         errorf("Dimensions are no multiple of 4.\n");
+        stbi_image_free(imgdata);
         return 2;
     }
 
@@ -230,6 +231,7 @@ int img2paa(char *source, char *target) {
     f_target = fopen(target, "wb");
     if (!f_target) {
         errorf("Failed to open target file.\n");
+        free(imgdata);
         return 3;
     }
 
@@ -269,16 +271,22 @@ int img2paa(char *source, char *target) {
             case DXT1:
                 if (img2dxt1(imgdata, outputdata, width, height)) {
                     errorf("Failed to convert image data to DXT1.\n");
+                    free(outputdata);
+                    free(imgdata);
                     return 5;
                 }
                 break;
             case DXT5:
                 if (img2dxt5(imgdata, outputdata, width, height)) {
                     errorf("Failed to convert image data to DXT5.\n");
+                    free(outputdata);
+                    free(imgdata);
                     return 5;
                 }
                 break;
             default:
+                free(outputdata);
+                free(imgdata);
                 return 5;
         }
 
@@ -294,10 +302,18 @@ int img2paa(char *source, char *target) {
 
             if (lzo_init() != LZO_E_OK) {
                 errorf("Failed to initialize LZO for compression.\n");
+                free(workmem);
+                free(tmp);
+                free(outputdata);
+                free(imgdata);
                 return 6;
 	    }
             if (lzo1x_1_compress(tmp, in_len, outputdata, &out_len, workmem) != LZO_E_OK) {
                 errorf("Failed to compress image data.\n");
+                free(workmem);
+                free(tmp);
+                free(outputdata);
+                free(imgdata);
                 return 6;
             }
 
@@ -329,6 +345,8 @@ int img2paa(char *source, char *target) {
         tmp = (unsigned char *)malloc(width * height * 4);
         if (!stbir_resize_uint8(imgdata, width * 2, height * 2, 0, tmp, width, height, 0, 4)) {
             errorf("Failed to resize image.\n");
+            free(tmp);
+            free(imgdata);
             return 7;
         }
         free(imgdata);
