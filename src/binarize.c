@@ -116,7 +116,7 @@ int attempt_bis_binarize(char *source, char *target) {
 
     fclose(f_source);
 
-    memset(dependencies, 0, MAXTEXTURES * sizeof(dependencies));
+    memset(dependencies, 0, sizeof(dependencies));
     for (i = 0; i < num_lods; i++) {
         for (j = 0; j < mlod_lods[i].num_faces; j++) {
             if (strlen(mlod_lods[i].faces[j].texture_name) > 0 && mlod_lods[i].faces[j].texture_name[0] != '#') {
