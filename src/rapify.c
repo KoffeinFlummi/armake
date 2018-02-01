@@ -329,6 +329,10 @@ int rapify_file(char *source, char *target) {
 
     fread(buffer, 4, 1, f_temp);
     if (strncmp(buffer, "\0raP", 4) == 0) {
+        if ((strcmp(source, target)) == 0) {
+            fclose(f_temp);
+            return 0;
+        }
         f_target = fopen(target, "wb");
         if (!f_target) {
             errorf("Failed to open %s.\n", target);
