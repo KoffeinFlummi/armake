@@ -854,6 +854,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
             directive = (char *)malloc(strlen(ptr) + 1);
             strcpy(directive, ptr);
             *(strchrnul(directive, ' ')) = 0;
+            *(strchrnul(directive, '\t')) = 0;
             *(strchrnul(directive, '\n')) = 0;
 
             ptr += strlen(directive);
