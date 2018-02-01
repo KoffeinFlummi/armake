@@ -320,14 +320,20 @@ int paa2img(char *source, char *target) {
         out_len = imgdatalen;
         if (lzo_init() != LZO_E_OK) {
             errorf("Failed to initialize LZO for decompression.\n");
+            free(imgdata);
+            free(compresseddata);
             return 3;
 	}
         if (lzo1x_decompress(compresseddata, datalen, imgdata, &out_len, NULL) != LZO_E_OK) {
             errorf("Failed to decompress LZO data.\n");
+            free(imgdata);
+            free(compresseddata);
             return 3;
         }
     } else if (compression == COMP_LZSS) {
         errorf("LZSS compression support is not implemented.\n");
+        free(imgdata);
+        free(compresseddata);
         return 3;
     } else {
         memcpy(imgdata, compresseddata, imgdatalen);
@@ -341,29 +347,43 @@ int paa2img(char *source, char *target) {
         case DXT1:
             if (dxt12img(imgdata, outputdata, width, height)) {
                 errorf("DXT1 decoding failed.\n");
+                free(outputdata);
+                free(imgdata);
                 return 4;
             }
             break;
         case DXT3:
             errorf("DXT3 support is not implemented.\n");
+            free(outputdata);
+            free(imgdata);
             return 4;
         case DXT5:
             if (dxt52img(imgdata, outputdata, width, height)) {
                 errorf("DXT5 decoding failed.\n");
+                free(outputdata);
+                free(imgdata);
                 return 4;
             }
             break;
         case ARGB4444:
             errorf("ARGB4444 support is not implemented.\n");
+            free(outputdata);
+            free(imgdata);
             return 4;
         case ARGB1555:
             errorf("ARGB1555 support is not implemented.\n");
+            free(outputdata);
+            free(imgdata);
             return 4;
         case AI88:
             errorf("GRAY / AI88 support is not implemented.\n");
+            free(outputdata);
+            free(imgdata);
             return 4;
         default:
             errorf("Unrecognized PAA type.\n");
+            free(outputdata);
+            free(imgdata);
             return 4;
     }
 
@@ -371,6 +391,7 @@ int paa2img(char *source, char *target) {
 
     if (!stbi_write_png(args.target, width, height, 4, outputdata, width * 4)) {
         errorf("Failed to write image to output.\n");
+        free(outputdata);
         return 5;
     }
 
