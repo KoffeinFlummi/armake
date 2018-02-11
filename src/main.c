@@ -24,6 +24,7 @@
 #include <stdbool.h>
 
 #include "args.h"
+#include "utils.h"
 #include "img2paa.h"
 #include "paa2img.h"
 #include "binarize.h"
@@ -101,9 +102,9 @@ void append(char ***array, int *num, char *value) {
     (*num)++;
 
     if (*array == NULL)
-        *array = (char **)malloc(sizeof(char *));
+        *array = (char **)safe_malloc(sizeof(char *));
     else
-        *array = (char **)realloc(*array, sizeof(char *) * *num);
+        *array = (char **)safe_realloc(*array, sizeof(char *) * *num);
 
     (*array)[*num - 1] = value;
 }

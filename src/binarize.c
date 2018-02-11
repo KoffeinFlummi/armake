@@ -108,7 +108,7 @@ int attempt_bis_binarize(char *source, char *target) {
 
     fseek(f_source, 8, SEEK_SET);
     fread(&num_lods, 4, 1, f_source);
-    mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
+    mlod_lods = (struct mlod_lod *)safe_malloc(sizeof(struct mlod_lod) * num_lods);
     num_lods = read_lods(f_source, mlod_lods, num_lods);
     fflush(stdout);
     if (num_lods < 0)
@@ -127,7 +127,7 @@ int attempt_bis_binarize(char *source, char *target) {
                         break;
                 }
                 if (k < MAXTEXTURES && dependencies[k] == 0) {
-                    dependencies[k] = (char *)malloc(2048);
+                    dependencies[k] = (char *)safe_malloc(2048);
                     strcpy(dependencies[k], mlod_lods[i].faces[j].texture_name);
                 }
             }
@@ -139,7 +139,7 @@ int attempt_bis_binarize(char *source, char *target) {
                         break;
                 }
                 if (k < MAXTEXTURES && dependencies[k] == 0) {
-                    dependencies[k] = (char *)malloc(2048);
+                    dependencies[k] = (char *)safe_malloc(2048);
                     strcpy(dependencies[k], mlod_lods[i].faces[j].material_name);
                 }
             }

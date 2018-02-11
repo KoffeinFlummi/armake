@@ -39,7 +39,7 @@
 struct definitions *new_definitions() {
     struct definitions *result;
 
-    result = (struct definitions *)malloc(sizeof(struct definitions));
+    result = (struct definitions *)safe_malloc(sizeof(struct definitions));
     result->head = NULL;
 
     return result;
@@ -50,7 +50,7 @@ struct definitions *add_definition(struct definitions *head, int type, void *con
     struct definition *definition;
     struct definition *tmp;
 
-    definition = (struct definition *)malloc(sizeof(struct definition));
+    definition = (struct definition *)safe_malloc(sizeof(struct definition));
     definition->type = type;
     definition->content = content;
     definition->next = NULL;
@@ -76,7 +76,7 @@ struct definitions *add_definition(struct definitions *head, int type, void *con
 struct class *new_class(char *name, char *parent, struct definitions *content, bool is_delete) {
     struct class *result;
 
-    result = (struct class *)malloc(sizeof(struct class));
+    result = (struct class *)safe_malloc(sizeof(struct class));
     result->name = name;
     result->parent = parent;
     result->is_delete = is_delete;
@@ -89,7 +89,7 @@ struct class *new_class(char *name, char *parent, struct definitions *content, b
 struct variable *new_variable(int type, char *name, struct expression *expression) {
     struct variable *result;
 
-    result = (struct variable *)malloc(sizeof(struct variable));
+    result = (struct variable *)safe_malloc(sizeof(struct variable));
     result->type = type;
     result->name = name;
     result->expression = expression;
@@ -101,7 +101,7 @@ struct variable *new_variable(int type, char *name, struct expression *expressio
 struct expression *new_expression(int type, void *value) {
     struct expression *result;
 
-    result = (struct expression *)malloc(sizeof(struct expression));
+    result = (struct expression *)safe_malloc(sizeof(struct expression));
     result->type = type;
     result->string_value = NULL;
     result->head = NULL;
@@ -388,11 +388,11 @@ int rapify_file(char *source, char *target) {
 
     constants = constants_init();
 
-    lineref = (struct lineref *)malloc(sizeof(struct lineref));
+    lineref = (struct lineref *)safe_malloc(sizeof(struct lineref));
     lineref->num_files = 0;
     lineref->num_lines = 0;
-    lineref->file_index = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
-    lineref->line_number = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
+    lineref->file_index = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
+    lineref->line_number = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
 
     success = preprocess(source, f_temp, constants, lineref);
 

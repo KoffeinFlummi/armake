@@ -132,8 +132,8 @@ int read_material(struct material *material) {
     material->num_textures = 1;
     material->num_transforms = 1;
 
-    material->textures = (struct stage_texture *)malloc(sizeof(struct stage_texture) * material->num_textures);
-    material->transforms = (struct stage_transform *)malloc(sizeof(struct stage_transform) * material->num_transforms);
+    material->textures = (struct stage_texture *)safe_malloc(sizeof(struct stage_texture) * material->num_textures);
+    material->transforms = (struct stage_transform *)safe_malloc(sizeof(struct stage_transform) * material->num_transforms);
 
     material->textures[0].path[0] = 0;
     material->textures[0].texture_filter = 3;
@@ -222,8 +222,8 @@ int read_material(struct material *material) {
 
     free(material->textures);
     free(material->transforms);
-    material->textures = (struct stage_texture *)malloc(sizeof(struct stage_texture) * material->num_textures);
-    material->transforms = (struct stage_transform *)malloc(sizeof(struct stage_transform) * material->num_transforms);
+    material->textures = (struct stage_texture *)safe_malloc(sizeof(struct stage_texture) * material->num_textures);
+    material->transforms = (struct stage_transform *)safe_malloc(sizeof(struct stage_transform) * material->num_transforms);
 
     for (i = 0; i < material->num_textures; i++) {
         if (i == 0) {

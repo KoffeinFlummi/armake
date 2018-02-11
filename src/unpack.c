@@ -70,7 +70,7 @@ int cmd_inspect() {
     if (args.num_positionals != 2)
         return 128;
 
-    headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
+    headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
     strcpy(current_target, args.positionals[1]);
@@ -171,7 +171,7 @@ int cmd_unpack() {
     if (args.num_positionals < 3)
         return 128;
 
-    headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
+    headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
     strcpy(current_target, args.positionals[1]);
@@ -356,7 +356,7 @@ int cmd_cat() {
     if (args.num_positionals < 3)
         return 128;
 
-    headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
+    headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
     strcpy(current_target, args.positionals[1]);

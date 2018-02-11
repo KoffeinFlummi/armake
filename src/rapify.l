@@ -86,14 +86,14 @@ bool tmp;
 
 \s*[-+]?([0-9]*\.)?[0-9]+[eE][-+]?[0-9]+ {
     RESET_VARS;
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     return T_STRING;
 }
 
 \"(\\.|\"\"|[^"])*\"    {
     RESET_VARS;
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     unescape_string(yylval.string_value, yyleng + 1);
     return T_STRING;
@@ -101,7 +101,7 @@ bool tmp;
 
 '(\\.|''|[^'])*' {
     RESET_VARS;
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     unescape_string(yylval.string_value, yyleng + 1);
     return T_STRING;
@@ -122,7 +122,7 @@ bool tmp;
             "unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     trim(yylval.string_value, yyleng + 1);
     return T_STRING;
@@ -143,7 +143,7 @@ bool tmp;
             "unquoted-string", "String \"%s\" is not quoted properly.\n", yytext);
 
     RESET_VARS;
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     trim(yylval.string_value, yyleng + 1);
     return T_STRING;
@@ -157,7 +157,7 @@ bool tmp;
     RESET_VARS;
     last_was_class = tmp;
 
-    yylval.string_value = (char *)malloc(yyleng + 1);
+    yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
     return T_NAME;
 }

@@ -299,7 +299,7 @@ int paa2img(char *source, char *target) {
     datalen = 0;
     fread(&datalen, 3, 1, f);
 
-    compresseddata = (unsigned char *)malloc(datalen);
+    compresseddata = (unsigned char *)safe_malloc(datalen);
     fread(compresseddata, datalen, 1, f);
     fclose(f);
 
@@ -314,7 +314,7 @@ int paa2img(char *source, char *target) {
     imgdatalen = width * height;
     if (paatype == DXT1)
         imgdatalen /= 2;
-    imgdata = malloc(imgdatalen);
+    imgdata = safe_malloc(imgdatalen);
 
     if (compression == COMP_LZO) {
         out_len = imgdatalen;
@@ -341,7 +341,7 @@ int paa2img(char *source, char *target) {
 
     free(compresseddata);
 
-    outputdata = malloc(width * height * 4);
+    outputdata = safe_malloc(width * height * 4);
 
     switch (paatype) {
         case DXT1:

@@ -223,7 +223,7 @@ int img2paa(char *source, char *target) {
         return 2;
     }
 
-    tmp = (unsigned char *)malloc(width * height * 4);
+    tmp = (unsigned char *)safe_malloc(width * height * 4);
     memcpy(tmp, imgdata, width * height * 4);
     stbi_image_free(imgdata);
     imgdata = tmp;
@@ -264,7 +264,7 @@ int img2paa(char *source, char *target) {
         if (paatype == DXT1)
             datalen /= 2;
 
-        outputdata = (unsigned char *)malloc(datalen);
+        outputdata = (unsigned char *)safe_malloc(datalen);
 
         // Convert to output format
         switch (paatype) {
@@ -294,8 +294,8 @@ int img2paa(char *source, char *target) {
         compressed = args.compress && datalen > LZO1X_MEM_COMPRESS;
 
         if (compressed) {
-            tmp = (unsigned char *)malloc(datalen);
-            workmem = (unsigned char *)malloc(LZO1X_MEM_COMPRESS);
+            tmp = (unsigned char *)safe_malloc(datalen);
+            workmem = (unsigned char *)safe_malloc(LZO1X_MEM_COMPRESS);
             in_len = datalen;
 
             memcpy(tmp, outputdata, datalen);
@@ -342,7 +342,7 @@ int img2paa(char *source, char *target) {
 
         if (width < 4 || height < 4) { break; }
 
-        tmp = (unsigned char *)malloc(width * height * 4);
+        tmp = (unsigned char *)safe_malloc(width * height * 4);
         if (!stbir_resize_uint8(imgdata, width * 2, height * 2, 0, tmp, width, height, 0, 4)) {
             errorf("Failed to resize image.\n");
             free(tmp);

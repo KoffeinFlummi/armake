@@ -33,7 +33,7 @@
 #ifdef _WIN32
 
 char *strndup(const char *s, size_t n) {
-    char *result = (char *)malloc(n + 1);
+    char *result = (char *)safe_malloc(n + 1);
     strncpy(result, s, n);
     result[n] = 0;
     return result;
@@ -247,6 +247,30 @@ void lerrorf(char *file, int line, char *format, ...) {
 }
 
 
+void *safe_malloc(size_t size) {
+    void *result = malloc(size);
+
+    if (result == NULL) {
+        errorf("Failed to allocate %i bytes.\n", size);
+        exit(127);
+    }
+
+    return result;
+}
+
+
+void *safe_realloc(void *ptr, size_t size) {
+    void *result = realloc(ptr, size);
+
+    if (result == NULL) {
+        errorf("Failed to reallocate %i bytes.\n", size);
+        exit(127);
+    }
+
+    return result;
+}
+
+
 int get_line_number(FILE *f_source) {
     int line;
     long fp_start;
@@ -270,7 +294,7 @@ void reverse_endianness(void *ptr, size_t buffsize) {
     int i;
 
     buffer = (char *)ptr;
-    temp = malloc(buffsize);
+    temp = safe_malloc(buffsize);
 
     for (i = 0; i < buffsize; i++) {
         temp[(buffsize - 1) - i] = buffer[i];
@@ -385,7 +409,7 @@ void replace_string(char *string, size_t buffsize, char *search, char *replace, 
     int i;
     bool quote;
 
-    tmp = malloc(buffsize);
+    tmp = safe_malloc(buffsize);
     strncpy(tmp, string, buffsize);
 
     ptr_old = string;
@@ -519,7 +543,7 @@ void escape_string(char *buffer, size_t buffsize) {
     char *ptr;
     char tmp_array[3];
 
-    tmp = malloc(buffsize * 2);
+    tmp = safe_malloc(buffsize * 2);
     tmp[0] = 0;
     tmp_array[2] = 0;
 
@@ -552,7 +576,7 @@ void unescape_string(char *buffer, size_t buffsize) {
     char current;
     char quote;
 
-    tmp = malloc(buffsize);
+    tmp = safe_malloc(buffsize);
     tmp[0] = 0;
     tmp_array[1] = 0;
 

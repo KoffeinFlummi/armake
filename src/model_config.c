@@ -425,7 +425,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         }
 
         // Sort bones by parent
-        bones_tmp = (struct bone *)malloc(sizeof(struct bone) * MAXBONES);
+        bones_tmp = (struct bone *)safe_malloc(sizeof(struct bone) * MAXBONES);
         memset(bones_tmp, 0, sizeof(struct bone) * MAXBONES);
 
         sort_bones(skeleton->bones, bones_tmp, 0, "");

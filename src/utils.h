@@ -79,6 +79,10 @@ void lnwarningf(char *file, int line, char *name, char *format, ...);
 void errorf(char *format, ...);
 void lerrorf(char *file, int line, char *format, ...);
 
+void *safe_malloc(size_t size);
+
+void *safe_realloc(void *ptr, size_t size);
+
 int get_line_number(FILE *f_source);
 
 void reverse_endianness(void *ptr, size_t buffsize);

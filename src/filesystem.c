@@ -38,6 +38,7 @@
 #endif
 
 #include "filesystem.h"
+#include "utils.h"
 
 
 #ifdef _WIN32
@@ -62,7 +63,7 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
         return -1;
 
     if (bufptr == NULL) {
-        bufptr = malloc(128);
+        bufptr = safe_malloc(128);
         if (bufptr == NULL)
             return -1;
         size = 128;
@@ -71,7 +72,7 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
     while(c != EOF) {
         if ((p - bufptr) > (size - 1)) {
             size = size + 128;
-            bufptr = realloc(bufptr, size);
+            bufptr = safe_realloc(bufptr, size);
             p = bufptr + size - 128;
             if (bufptr == NULL)
                 return -1;
