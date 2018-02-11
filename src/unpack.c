@@ -176,10 +176,6 @@ int cmd_unpack() {
     current_operation = OP_UNPACK;
     strcpy(current_target, args.positionals[1]);
 
-    // remove trailing slash in target
-    if (args.positionals[1][strlen(args.positionals[1]) - 1] == PATHSEP)
-        args.positionals[1][strlen(args.positionals[1]) - 1] = 0;
-
     // open file
     f_source = fopen(args.positionals[1], "rb");
     if (!f_source) {
@@ -260,11 +256,11 @@ int cmd_unpack() {
         }
 
         // check if file is included
-        for (j = 0; j < args.num_includefolders; j++) {
+        for (j = 1; j < args.num_includefolders; j++) {
             if (matches_glob(headers[i].name, args.includefolders[j]))
                 break;
         }
-        if (args.num_includefolders > 0 && j == args.num_includefolders) {
+        if (args.num_includefolders > 1 && j == args.num_includefolders) {
             fseek(f_source, headers[i].data_size, SEEK_CUR);
             continue;
         }

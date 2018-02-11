@@ -214,12 +214,19 @@ int main(int argc, char *argv[]) {
     int i;
     int success;
 
+    append(&args.includefolders, &args.num_includefolders, ".");
+
     success = read_args(argc, argv);
 
     if (success < 0)
         return 0;
     if (success > 0)
         goto error;
+
+    for (i = 0; i < args.num_positionals; i++) {
+        if (args.positionals[i][strlen(args.positionals[i]) - 1] == PATHSEP)
+            args.positionals[i][strlen(args.positionals[i]) - 1] = 0;
+    }
 
     for (i = 0; i < args.num_includefolders; i++) {
         if (args.includefolders[i][strlen(args.includefolders[i]) - 1] == PATHSEP)
