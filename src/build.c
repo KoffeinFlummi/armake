@@ -215,6 +215,7 @@ int cmd_build() {
     extern int current_operation;
     extern char current_target[2048];
     int i;
+    int j;
 
     current_operation = OP_BUILD;
     strcpy(current_target, args.source);
@@ -331,7 +332,7 @@ int cmd_build() {
     current_operation = OP_BUILD;
     strcpy(current_target, args.source);
 
-    // write header extension
+    // write header extensions
     f_target = fopen(args.target, "wb");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     // write addonprefix with windows pathseps
@@ -340,6 +341,16 @@ int cmd_build() {
             fputc('\\', f_target);
         else
             fputc(addonprefix[i], f_target);
+    }
+    // write extra header extensions
+    for (i = 0; i < MAXHEADEREXTENSIONS && header_extensions[i][0] != 0; i++) {
+        printf("%s\n", header_extensions[i]);
+        for (j = 0; j <= strlen(header_extensions[i]); j++) {
+            if (header_extensions[i][j] == '=')
+                fputc(0, f_target);
+            else
+                fputc(header_extensions[i][j], f_target);
+        }
     }
     fputc(0, f_target);
     fclose(f_target);
