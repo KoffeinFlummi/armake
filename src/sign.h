@@ -19,9 +19,6 @@
 #pragma once
 
 
-#include "docopt.h"
-
-
 int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature);
 
 int cmd_sign();

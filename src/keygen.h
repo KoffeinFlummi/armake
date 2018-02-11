@@ -25,8 +25,6 @@
 
 #include <openssl/bn.h>
 
-#include "docopt.h"
-
 
 int generate_keypair(char *name, char *path_private, char *path_public);
 

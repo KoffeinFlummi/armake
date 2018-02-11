@@ -33,7 +33,7 @@
 #include <fts.h>
 #endif
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "preprocess.h"
@@ -647,12 +647,12 @@ int find_file(char *includepath, char *origin, char *actualpath) {
      * file does not exist.
      */
 
+    extern struct arguments args;
     int i;
     int success;
-    extern char include_folders[MAXINCLUDEFOLDERS][512];
 
-    for (i = 0; i < MAXINCLUDEFOLDERS && include_folders[i][0] != 0; i++) {
-        success = find_file_helper(includepath, origin, include_folders[i], actualpath, NULL);
+    for (i = 0; i < args.num_includefolders; i++) {
+        success = find_file_helper(includepath, origin, args.includefolders[i], actualpath, NULL);
 
         if (success != 2)
             return success;

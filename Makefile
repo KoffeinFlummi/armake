@@ -76,30 +76,6 @@ win32:
 win64:
     "$(MAKE)" CC=x86_64-w64-mingw32-gcc CLIBS="-I$(LIB) -lm -lcrypto -lws2_32 -lwsock32 -lole32 -lgdi32 -static" EXT=_w64.exe
 
-docopt:
-    mkdir tmp || rm -rf tmp/*
-    git clone https://github.com/docopt/docopt.c tmp/docopt.c
-    head -n 19 src/main.c > tmp/license
-    python2 ./tmp/docopt.c/docopt_c.py -o tmp/docopt src/usage
-    cat tmp/license > src/docopt.h
-    printf "#pragma once\n\n\n" >> src/docopt.h
-    grep -A 2 "#" tmp/docopt >> src/docopt.h
-    printf "#define MAXEXCLUDEFILES 32\n" >> src/docopt.h
-    printf "#define MAXINCLUDEFOLDERS 32\n" >> src/docopt.h
-    printf "#define MAXWARNINGS 32\n\n\n" >> src/docopt.h
-    grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n\n" tmp/docopt >> src/docopt.h
-    sed -e 's/\x0//g' -i src/docopt.h # I don't know why I suddenly need this
-    printf "\nDocoptArgs args;\n" >> src/docopt.h
-    printf "char exclude_files[MAXEXCLUDEFILES][512];\n" >> src/docopt.h
-    printf "char include_folders[MAXINCLUDEFOLDERS][512];\n" >> src/docopt.h
-    printf "char muted_warnings[MAXWARNINGS][512];\n\n\n" >> src/docopt.h
-    grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
-    sed -Ei 's/\)\s*\{/);\n/' src/docopt.h
-    cat tmp/license > src/docopt.c
-    printf "#include \"docopt.h\"\n\n\n" >> src/docopt.c
-    sed '/typedef struct/,/\} [a-zA-Z]*;/d' tmp/docopt >> src/docopt.c
-    rm -rf tmp
-
 # Use https://github.com/Infinidat/infi.docopt_completion
 docopt-completion: $(BIN)/armake
     mkdir -p completions

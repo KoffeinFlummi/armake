@@ -26,7 +26,7 @@
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "keygen.h"
@@ -205,21 +205,24 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
 
 
 int cmd_keygen() {
-    extern DocoptArgs args;
+    extern struct arguments args;
     char name[512];
     char path_private[2048];
     char path_public[2048];
     int success;
 
-    if (strrchr(args.target, PATHSEP) == NULL)
-        strcpy(name, args.target);
-    else
-        strcpy(name, strrchr(args.target, PATHSEP) + 1);
+    if (args.num_positionals != 2)
+        return 128;
 
-    strcpy(path_private, args.target);
+    if (strrchr(args.positionals[1], PATHSEP) == NULL)
+        strcpy(name, args.positionals[1]);
+    else
+        strcpy(name, strrchr(args.positionals[1], PATHSEP) + 1);
+
+    strcpy(path_private, args.positionals[1]);
     strcat(path_private, ".biprivatekey");
 
-    strcpy(path_public, args.target);
+    strcpy(path_public, args.positionals[1]);
     strcat(path_public, ".bikey");
 
     // check if target already exists

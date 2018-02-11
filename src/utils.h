@@ -20,8 +20,7 @@
 
 
 #include <stdint.h>
-
-#include "docopt.h"
+#include <stdbool.h>
 
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))

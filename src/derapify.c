@@ -28,6 +28,7 @@
 #include <windows.h>
 #endif
 
+#include "args.h"
 #include "filesystem.h"
 #include "rapify.h"
 #include "utils.h"
@@ -691,7 +692,7 @@ int derapify_array(FILE *f_source, FILE *f_target) {
 
 
 int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
-    extern DocoptArgs args;
+    extern struct arguments args;
     char buffer[4096];
     char inherited[2048];
     char indentation[2048];
@@ -708,14 +709,14 @@ int derapify_class(FILE *f_source, FILE *f_target, char *classname, int level) {
     indentation[0] = 0;
     for (i = 0; i < level; i++) {
         if (args.indent)
-            strcat(indentation, args.indentation);
+            strcat(indentation, args.indent);
         else
             strcat(indentation, "    ");
     }
 
     strcpy(indentation_wrapping, indentation);
     if (args.indent)
-        indentation_wrapping[strlen(indentation_wrapping) - strlen(args.indentation)] = 0;
+        indentation_wrapping[strlen(indentation_wrapping) - strlen(args.indent)] = 0;
     else
         indentation_wrapping[strlen(indentation_wrapping) - 4] = 0;
 
@@ -837,14 +838,11 @@ int derapify_file(char *source, char *target) {
 
     extern int current_operation;
     extern char current_target[2048];
-    FILE *f_temp;
     FILE *f_source;
     FILE *f_target;
-    char c;
     char buffer[4096];
-    int i;
+    int bytes;
     int success;
-    int datasize;
 
     current_operation = OP_DERAPIFY;
     if (strcmp(source, "-") == 0)
@@ -852,59 +850,35 @@ int derapify_file(char *source, char *target) {
     else
         strcpy(current_target, source);
 
-#ifdef _WIN32
-    char temp_name[2048];
-    if (!GetTempFileName(".", "amk", 0, temp_name)) {
-        errorf("Failed to get temp file name (system error %i).\n", GetLastError());
-        return 1;
-    }
-    f_temp = fopen(temp_name, "wb+");
-#else
-    f_temp = tmpfile();
-#endif
-
-    if (!f_temp) {
-        errorf("Failed to open temp file.\n");
-#ifdef _WIN32
-        DeleteFile(temp_name);
-#endif
-        return 1;
-    }
-
-    // Open source and read LODs
+    // Open source
     if (strcmp(source, "-") == 0) {
 #ifdef _WIN32
-        strcpy(buffer, temp_name);
-        strcat(buffer, "_in");
-        f_source = fopen(buffer, "wb+");
+        char temp_name[2048];
+        if (!GetTempFileName(".", "amk", 0, temp_name)) {
+            errorf("Failed to get temp file name (system error %i).\n", GetLastError());
+            return 1;
+        }
+        f_source = fopen(temp_name, "wb+");
 #else
         f_source = tmpfile();
 #endif
+
         if (!f_source) {
-            errorf("Failed to open source file.\n");
-            fclose(f_temp);
+            errorf("Failed to open temp file.\n");
 #ifdef _WIN32
             DeleteFile(temp_name);
 #endif
             return 1;
         }
 
-        while (true) {
-            c = fgetc(stdin);
-            if (feof(stdin))
-                break;
-            fputc(c, f_source);
-        }
+        while ((bytes = fread(buffer, 1, sizeof(buffer), stdin)))
+            fwrite(buffer, bytes, 1, f_source);
 
         fseek(f_source, 0, SEEK_SET);
     } else {
         f_source = fopen(source, "rb");
         if (!f_source) {
             errorf("Failed to open source file.\n");
-            fclose(f_temp);
-#ifdef _WIN32
-            DeleteFile(temp_name);
-#endif
             return 2;
         }
     }
@@ -912,83 +886,59 @@ int derapify_file(char *source, char *target) {
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "\0raP", 4) != 0) {
         errorf("Source file is not a rapified config.\n");
-        fclose(f_source);
-        fclose(f_temp);
-#ifdef _WIN32
-        DeleteFile(temp_name);
-#endif
+        if (strcmp(source, "-") != 0)
+            fclose(f_source);
         return -3;
     }
-
-    success = derapify_class(f_source, f_temp, "", 0);
-
-    fclose(f_source);
-
-    if (success) {
-        fclose(f_temp);
-#ifdef _WIN32
-        DeleteFile(temp_name);
-#endif
-        errorf("Failed to derapify root class.\n");
-        return 1;
-    }
-
-    // Write temp to target
-    fseek(f_temp, 0, SEEK_END);
-    datasize = ftell(f_temp);
 
     if (strcmp(target, "-") == 0) {
         f_target = stdout;
     } else {
         f_target = fopen(target, "wb");
         if (!f_target) {
-            fclose(f_temp);
-#ifdef _WIN32
-            DeleteFile(temp_name);
-#endif
+            if (strcmp(source, "-") != 0)
+                fclose(f_source);
             errorf("Failed to open target file.\n");
             return 2;
         }
     }
 
-    fseek(f_temp, 0, SEEK_SET);
-    for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
-        fread(buffer, sizeof(buffer), 1, f_temp);
-        fwrite(buffer, sizeof(buffer), 1, f_target);
-    }
-    fread(buffer, datasize - i, 1, f_temp);
-    fwrite(buffer, datasize - i, 1, f_target);
+    success = derapify_class(f_source, f_target, "", 0);
 
-    // Clean up
-    fclose(f_temp);
-    fclose(f_target);
-
+    fclose(f_source);
 #ifdef _WIN32
     DeleteFile(temp_name);
-    if (strcmp(args.source, "-") == 0) {
-        strcpy(buffer, temp_name);
-        strcat(buffer, "_in");
-        DeleteFile(buffer);
-    }
 #endif
+
+    if (strcmp(target, "-") != 0)
+        fclose(f_target);
+
+    if (success) {
+        errorf("Failed to derapify root class.\n");
+        return 1;
+    }
 
     return 0;
 }
 
 
 int cmd_derapify() {
-    extern DocoptArgs args;
+    extern struct arguments args;
+    int success;
 
-    // check if target already exists
-    if (strcmp(args.target, "-") != 0 && access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
-        return 1;
+    if (args.num_positionals == 1) {
+        success = derapify_file("-", "-");
+    } else if (args.num_positionals == 2) {
+        success = derapify_file(args.positionals[1], "-");
+    } else {
+        // check if target already exists
+        if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+            errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
+            return 1;
+        }
+
+        success = derapify_file(args.positionals[1], args.positionals[2]);
     }
 
-    int success = derapify_file(args.source, args.target);
-
-    if (success == -1)
-        return 1;
-
-    return success;
+    return abs(success);
 }

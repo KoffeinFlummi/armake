@@ -31,7 +31,7 @@
 #include <fts.h>
 #endif
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "rapify.h"
@@ -308,15 +308,21 @@ int binarize(char *source, char *target) {
 
 
 int cmd_binarize() {
-    extern DocoptArgs args;
+    int success;
 
-    // check if target already exists
-    if (access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
-        return 1;
+    if (args.num_positionals == 1) {
+        return 128;
+    } else if (args.num_positionals == 2) {
+        success = binarize(args.positionals[1], "-");
+    } else {
+        // check if target already exists
+        if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+            errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
+            return 1;
+        }
+
+        success = binarize(args.positionals[1], args.positionals[2]);
     }
-
-    int success = binarize(args.source, args.target);
 
     if (success == -1) {
         errorf("File is no P3D and doesn't seem rapifiable.\n");

@@ -78,14 +78,14 @@ $ sudo apt-get install armake
 armake
 
 Usage:
-    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
-    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>
-    armake inspect <target>
-    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>
-    armake cat <target> <name>
-    armake derapify [-f] [-d <indentation>] <source> <target>
-    armake keygen [-f] <target>
-    armake sign [-f] <privatekey> <target>
+    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <folder> <pbo>
+    armake inspect <pbo>
+    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>
+    armake cat <pbo> <name>
+    armake derapify [-f] [-d <indentation>] [<source> [<target>]]
+    armake keygen [-f] <keyname>
+    armake sign [-f] <privatekey> <pbo>
     armake paa2img [-f] <source> <target>
     armake img2paa [-f] [-z] [-t <paatype>] <source> <target>
     armake (-h | --help)
@@ -107,7 +107,6 @@ See `armake --help` for more.
 
 ### Used Libraries
 
-- [docopt](https://github.com/docopt/docopt.c)
 - [MiniLZO](http://www.oberhumer.com/opensource/lzo/)
 - [STB's image libraries](https://github.com/nothings/stb)
 - [Paul E. Jones's SHA-1 implementation](https://www.packetizer.com/security/sha1/)

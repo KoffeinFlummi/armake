@@ -23,7 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "unpack.h"
@@ -56,7 +56,7 @@ bool is_garbage(struct header *header) {
 
 
 int cmd_inspect() {
-    extern DocoptArgs args;
+    extern struct arguments args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f_target;
@@ -67,19 +67,22 @@ int cmd_inspect() {
     char buffer[2048];
     struct header *headers;
 
+    if (args.num_positionals != 2)
+        return 128;
+
     headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
-    strcpy(current_target, args.target);
+    strcpy(current_target, args.positionals[1]);
 
     // remove trailing slash in target
-    if (args.target[strlen(args.target) - 1] == PATHSEP)
-        args.target[strlen(args.target) - 1] = 0;
+    if (args.positionals[1][strlen(args.positionals[1]) - 1] == PATHSEP)
+        args.positionals[1][strlen(args.positionals[1]) - 1] = 0;
 
     // open file
-    f_target = fopen(args.target, "rb");
+    f_target = fopen(args.positionals[1], "rb");
     if (!f_target) {
-        errorf("Failed to open %s.\n", args.target);
+        errorf("Failed to open %s.\n", args.positionals[1]);
         free(headers);
         return 1;
     }
@@ -151,7 +154,7 @@ int cmd_inspect() {
 
 
 int cmd_unpack() {
-    extern DocoptArgs args;
+    extern struct arguments args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f_source;
@@ -165,26 +168,29 @@ int cmd_unpack() {
     char buffer[2048];
     struct header *headers;
 
+    if (args.num_positionals < 3)
+        return 128;
+
     headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
-    strcpy(current_target, args.source);
+    strcpy(current_target, args.positionals[1]);
 
     // remove trailing slash in target
-    if (args.target[strlen(args.target) - 1] == PATHSEP)
-        args.target[strlen(args.target) - 1] = 0;
+    if (args.positionals[1][strlen(args.positionals[1]) - 1] == PATHSEP)
+        args.positionals[1][strlen(args.positionals[1]) - 1] = 0;
 
     // open file
-    f_source = fopen(args.source, "rb");
+    f_source = fopen(args.positionals[1], "rb");
     if (!f_source) {
-        errorf("Failed to open %s.\n", args.source);
+        errorf("Failed to open %s.\n", args.positionals[1]);
         free(headers);
         return 1;
     }
 
     // create folder
-    if (create_folders(args.target)) {
-        errorf("Failed to create output folder %s.\n", args.target);
+    if (create_folders(args.positionals[2])) {
+        errorf("Failed to create output folder %s.\n", args.positionals[2]);
         fclose(f_source);
         free(headers);
         return 2;
@@ -244,21 +250,21 @@ int cmd_unpack() {
         }
 
         // check if file is excluded
-        for (j = 0; j < MAXEXCLUDEFILES && exclude_files[j][0] != 0; j++) {
-            if (matches_glob(headers[i].name, exclude_files[j]))
+        for (j = 0; j < args.num_excludefiles; j++) {
+            if (matches_glob(headers[i].name, args.excludefiles[j]))
                 break;
         }
-        if (exclude_files[j][0] != 0) {
+        if (j < args.num_excludefiles) {
             fseek(f_source, headers[i].data_size, SEEK_CUR);
             continue;
         }
 
         // check if file is included
-        for (j = 0; j < MAXINCLUDEFOLDERS && include_folders[j][0] != 0; j++) {
-            if (matches_glob(headers[i].name, include_folders[j]))
+        for (j = 0; j < args.num_includefolders; j++) {
+            if (matches_glob(headers[i].name, args.includefolders[j]))
                 break;
         }
-        if (include_folders[j][0] == 0 && j > 1) {
+        if (args.num_includefolders > 0 && j == args.num_includefolders) {
             fseek(f_source, headers[i].data_size, SEEK_CUR);
             continue;
         }
@@ -272,7 +278,7 @@ int cmd_unpack() {
 #endif
 
         // get full path
-        strcpy(full_path, args.target);
+        strcpy(full_path, args.positionals[2]);
         strcat(full_path, PATHSEP_STR);
         strcat(full_path, headers[i].name);
 
@@ -317,7 +323,7 @@ int cmd_unpack() {
     free(headers);
 
     // if prefix file wasn't included but there is a prefix, create one
-    strcpy(full_path, args.target);
+    strcpy(full_path, args.positionals[2]);
     strcat(full_path, PATHSEP_STR);
     strcat(full_path, "$PBOPREFIX$");
     if (access(full_path, F_OK) == -1 && strlen(prefix) > 0) {
@@ -338,11 +344,10 @@ int cmd_unpack() {
 
 
 int cmd_cat() {
-    extern DocoptArgs args;
+    extern struct arguments args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f_source;
-    FILE *f_target;
     int num_files;
     int file_index;
     long i;
@@ -352,15 +357,18 @@ int cmd_cat() {
     char buffer[2048];
     struct header *headers;
 
+    if (args.num_positionals < 3)
+        return 128;
+
     headers = (struct header *)malloc(sizeof(struct header) * MAXFILES);
 
     current_operation = OP_UNPACK;
-    strcpy(current_target, args.source);
+    strcpy(current_target, args.positionals[1]);
 
     // open file
-    f_source = fopen(args.source, "rb");
+    f_source = fopen(args.positionals[1], "rb");
     if (!f_source) {
-        errorf("Failed to open %s.\n", args.source);
+        errorf("Failed to open %s.\n", args.positionals[1]);
         free(headers);
         return 1;
     }
@@ -398,7 +406,7 @@ int cmd_cat() {
             break;
         }
 
-        if (stricmp(args.target, buffer) == 0)
+        if (stricmp(args.positionals[2], buffer) == 0)
             file_index = num_files;
 
         strcpy(headers[num_files].name, buffer);
@@ -416,7 +424,7 @@ int cmd_cat() {
     }
 
     if (file_index == -1) {
-        errorf("PBO does not contain the file %s.\n", args.target);
+        errorf("PBO does not contain the file %s.\n", args.positionals[2]);
         fclose(f_source);
         free(headers);
         return 5;
@@ -429,16 +437,13 @@ int cmd_cat() {
             continue;
         }
 
-        // open target file
-        f_target = stdout;
-
         // write to file
         for (j = 0; headers[i].data_size - j >= sizeof(buffer); j += sizeof(buffer)) {
             fread(buffer, sizeof(buffer), 1, f_source);
-            fwrite(buffer, sizeof(buffer), 1, f_target);
+            fwrite(buffer, sizeof(buffer), 1, stdout);
         }
         fread(buffer, headers[i].data_size - j, 1, f_source);
-        fwrite(buffer, headers[i].data_size - j, 1, f_target);
+        fwrite(buffer, headers[i].data_size - j, 1, stdout);
     }
 
     // clean up

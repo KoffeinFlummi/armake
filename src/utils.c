@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 
@@ -166,11 +166,11 @@ void lwarningf(char *file, int line, char *format, ...) {
 
 
 bool warning_muted(char *name) {
-    extern char muted_warnings[MAXWARNINGS][512];
+    extern struct arguments args;
     int i;
 
-    for (i = 0; i < MAXWARNINGS; i++) {
-        if (strcmp(muted_warnings[i], name) == 0)
+    for (i = 0; i < args.num_mutedwarnings; i++) {
+        if (strcmp(args.mutedwarnings[i], name) == 0)
             return true;
     }
     return false;

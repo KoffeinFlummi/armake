@@ -40,7 +40,7 @@
 #include "stb_dxt.h"
 #include "minilzo.h"
 
-#include "docopt.h"
+#include "args.h"
 #include "utils.h"
 #include "paa2img.h"
 #include "img2paa.h"
@@ -147,7 +147,7 @@ int img2paa(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    extern DocoptArgs args;
+    extern struct arguments args;
 
     FILE *f_target;
     uint32_t offsets[16];
@@ -370,13 +370,16 @@ int img2paa(char *source, char *target) {
 
 
 int cmd_img2paa() {
-    extern DocoptArgs args;
+    extern struct arguments args;
+
+    if (args.num_positionals != 3)
+        return 128;
 
     // check if target already exists
-    if (strcmp(args.target, "-") != 0 && access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
+    if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+        errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
         return 1;
     }
 
-    return img2paa(args.source, args.target);
+    return img2paa(args.positionals[1], args.positionals[2]);
 }

@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "rapify.h"
 #include "preprocess.h"
