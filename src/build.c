@@ -344,7 +344,6 @@ int cmd_build() {
     }
     // write extra header extensions
     for (i = 0; i < MAXHEADEREXTENSIONS && header_extensions[i][0] != 0; i++) {
-        printf("%s\n", header_extensions[i]);
         for (j = 0; j <= strlen(header_extensions[i]); j++) {
             if (header_extensions[i][j] == '=')
                 fputc(0, f_target);
