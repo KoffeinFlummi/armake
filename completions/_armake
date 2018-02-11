@@ -129,11 +129,13 @@ _armake-build ()
 		'(--include)--include[Folder to search for includes, defaults to CWD (repeatable).]' \
 		'(-x)-x[Glob patterns to exclude from PBO (repeatable).]' \
 		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable).]' \
+		'(-e)-e[Header extension (repeatable).]' \
+		'(--headerext)--headerext[Header extension (repeatable).]' \
 		'(-k)-k[Private key to use for signing the PBO.]' \
 		'(--key)--key[Private key to use for signing the PBO.]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<source>' '<target>')
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<headerextension>' '<privatekey>' '<source>' '<target>')
         _message_next_arg
     fi
 }

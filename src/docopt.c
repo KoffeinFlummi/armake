@@ -38,7 +38,7 @@ const char help_message[] =
 "\n"
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-e <headerextension>] [-k <privatekey>] <source> <target>\n"
 "    armake inspect <target>\n"
 "    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>\n"
 "    armake cat <target> <name>\n"
@@ -70,6 +70,8 @@ const char help_message[] =
 "                        For unpack: pattern to include in output folder (repeatable).\n"
 "    -x --exclude    Glob patterns to exclude from PBO (repeatable).\n"
 "                        For unpack: pattern to exclude from output folder (repeatable).\n"
+"    -e --headerext  Header extension (repeatable).\n"
+"                        Example: foo=bar\n"
 "    -k --key        Private key to use for signing the PBO.\n"
 "    -d --indent     String to use for indentation. \"    \" (4 spaces) by default.\n"
 "    -z --compress   Compress final PAA where possible.\n"
@@ -97,7 +99,7 @@ const char help_message[] =
 const char usage_pattern[] =
 "Usage:\n"
 "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>\n"
-"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>\n"
+"    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-e <headerextension>] [-k <privatekey>] <source> <target>\n"
 "    armake inspect <target>\n"
 "    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>\n"
 "    armake cat <target> <name>\n"
@@ -302,6 +304,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
             args->exclude = option->value;
         } else if (!strcmp(option->olong, "--force")) {
             args->force = option->value;
+        } else if (!strcmp(option->olong, "--headerext")) {
+            args->headerext = option->value;
         } else if (!strcmp(option->olong, "--help")) {
             args->help = option->value;
         } else if (!strcmp(option->olong, "--include")) {
@@ -350,6 +354,8 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
         argument = &elements->arguments[i];
         if (!strcmp(argument->name, "<excludepattern>")) {
             args->excludepattern = argument->value;
+        } else if (!strcmp(argument->name, "<headerextension>")) {
+            args->headerextension = argument->value;
         } else if (!strcmp(argument->name, "<includefolder>")) {
             args->includefolder = argument->value;
         } else if (!strcmp(argument->name, "<includepattern>")) {
@@ -383,7 +389,7 @@ int elems_to_args(Elements *elements, DocoptArgs *args, bool help,
 DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     DocoptArgs args = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-        NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         usage_pattern, help_message
     };
     Tokens ts;
@@ -401,6 +407,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
     };
     Argument arguments[] = {
         {"<excludepattern>", NULL, NULL},
+        {"<headerextension>", NULL, NULL},
         {"<includefolder>", NULL, NULL},
         {"<includepattern>", NULL, NULL},
         {"<indentation>", NULL, NULL},
@@ -416,6 +423,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-z", "--compress", 0, 0, NULL},
         {"-x", "--exclude", 0, 0, NULL},
         {"-f", "--force", 0, 0, NULL},
+        {"-e", "--headerext", 0, 0, NULL},
         {"-h", "--help", 0, 0, NULL},
         {"-i", "--include", 0, 0, NULL},
         {"-d", "--indent", 0, 0, NULL},
@@ -425,7 +433,7 @@ DocoptArgs docopt(int argc, char *argv[], bool help, const char *version) {
         {"-v", "--version", 0, 0, NULL},
         {"-w", "--warning", 0, 0, NULL}
     };
-    Elements elements = {10, 11, 11, commands, arguments, options};
+    Elements elements = {10, 12, 12, commands, arguments, options};
 
     ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

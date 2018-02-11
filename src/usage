@@ -2,7 +2,7 @@ armake
 
 Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> <target>
-    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <source> <target>
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-e <headerextension>] [-k <privatekey>] <source> <target>
     armake inspect <target>
     armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <source> <target>
     armake cat <target> <name>
@@ -34,6 +34,8 @@ Options:
                         For unpack: pattern to include in output folder (repeatable).
     -x --exclude    Glob patterns to exclude from PBO (repeatable).
                         For unpack: pattern to exclude from output folder (repeatable).
+    -e --headerext  Header extension (repeatable).
+                        Example: foo=bar
     -k --key        Private key to use for signing the PBO.
     -d --indent     String to use for indentation. "    " (4 spaces) by default.
     -z --compress   Compress final PAA where possible.

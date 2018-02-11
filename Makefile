@@ -86,12 +86,14 @@ docopt:
     grep -A 2 "#" tmp/docopt >> src/docopt.h
     printf "#define MAXEXCLUDEFILES 32\n" >> src/docopt.h
     printf "#define MAXINCLUDEFOLDERS 32\n" >> src/docopt.h
+    printf "#define MAXHEADEREXTENSIONS 32\n" >> src/docopt.h
     printf "#define MAXWARNINGS 32\n\n\n" >> src/docopt.h
     grep -Pzo "(?s)typedef struct.*?\{.*?\} [a-zA-Z]*?;\n\n" tmp/docopt >> src/docopt.h
     sed -e 's/\x0//g' -i src/docopt.h # I don't know why I suddenly need this
     printf "\nDocoptArgs args;\n" >> src/docopt.h
     printf "char exclude_files[MAXEXCLUDEFILES][512];\n" >> src/docopt.h
     printf "char include_folders[MAXINCLUDEFOLDERS][512];\n" >> src/docopt.h
+    printf "char header_extensions[MAXHEADEREXTENSIONS][512];\n" >> src/docopt.h
     printf "char muted_warnings[MAXWARNINGS][512];\n\n\n" >> src/docopt.h
     grep -E '^[a-zA-Z].*\(.*|^[^(]+\)' tmp/docopt >> src/docopt.h
     sed -Ei 's/\)\s*\{/);\n/' src/docopt.h

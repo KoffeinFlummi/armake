@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
     extern DocoptArgs args;
     extern char exclude_files[MAXEXCLUDEFILES][512];
     extern char include_folders[MAXINCLUDEFOLDERS][512];
+    extern char header_extensions[MAXHEADEREXTENSIONS][512];
     extern char muted_warnings[MAXWARNINGS][512];
     int i;
     int j;
@@ -87,6 +88,10 @@ int main(int argc, char *argv[]) {
             strncpy(include_folders[j], argv[i + 1], sizeof(include_folders[j]));
             if (include_folders[j][strlen(include_folders[j]) - 1] == PATHSEP)
                 include_folders[j][strlen(include_folders[j]) - 1] = 0;
+        }
+        if (strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--headerext") == 0) {
+            for (j = 0; j < MAXHEADEREXTENSIONS && header_extensions[j][0] != 0; j++);
+            strncpy(header_extensions[j], argv[i + 1], sizeof(header_extensions[j]));
         }
         if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--warning") == 0) {
             for (j = 0; j < MAXWARNINGS && muted_warnings[j][0] != 0; j++);

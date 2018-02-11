@@ -34,6 +34,7 @@
 
 #define MAXEXCLUDEFILES 32
 #define MAXINCLUDEFOLDERS 32
+#define MAXHEADEREXTENSIONS 32
 #define MAXWARNINGS 32
 
 
@@ -51,6 +52,7 @@ typedef struct {
     int unpack;
     /* arguments */
     char *excludepattern;
+    char *headerextension;
     char *includefolder;
     char *includepattern;
     char *indentation;
@@ -65,6 +67,7 @@ typedef struct {
     int compress;
     int exclude;
     int force;
+    int headerext;
     int help;
     int include;
     int indent;
@@ -117,6 +120,7 @@ typedef struct Tokens {
 DocoptArgs args;
 char exclude_files[MAXEXCLUDEFILES][512];
 char include_folders[MAXINCLUDEFOLDERS][512];
+char header_extensions[MAXHEADEREXTENSIONS][512];
 char muted_warnings[MAXWARNINGS][512];
 
 

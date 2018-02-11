@@ -59,7 +59,7 @@ _armake_build()
     cur="${COMP_WORDS[COMP_CWORD]}"
 
     if [ $COMP_CWORD -ge 2 ]; then
-        COMPREPLY=( $( compgen -fW '-f --force -p --packonly -w --warning -i --include -x --exclude -k --key ' -- $cur) )
+        COMPREPLY=( $( compgen -fW '-f --force -p --packonly -w --warning -i --include -x --exclude -e --headerext -k --key ' -- $cur) )
     fi
 }
 
