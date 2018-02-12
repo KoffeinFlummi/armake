@@ -354,7 +354,7 @@ int cmd_build() {
                     errorf("Invalid header extension format (%s).\n", args.headerextensions[i]);
                     remove_file(args.positionals[2]);
                     remove_folder(tempfolder);
-                    continue;
+                    return 6;
                 }
                 // write
                 fputs(buffer, f_target);
@@ -375,7 +375,7 @@ int cmd_build() {
         errorf("Failed to write some file header(s) to PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 6;
+        return 7;
     }
 
     // header boundary
@@ -384,7 +384,7 @@ int cmd_build() {
         errorf("Failed to write header boundary to PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 7;
+        return 8;
     }
     for (i = 0; i < 21; i++)
         fputc(0, f_target);
@@ -395,7 +395,7 @@ int cmd_build() {
         errorf("Failed to pack some file(s) into the PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 8;
+        return 9;
     }
 
     // write checksum to file
@@ -406,7 +406,7 @@ int cmd_build() {
         errorf("Failed to write checksum to file.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 9;
+        return 10;
     }
     fputc(0, f_target);
     fwrite(checksum, 20, 1, f_target);
@@ -415,7 +415,7 @@ int cmd_build() {
     // remove temp folder
     if (remove_folder(tempfolder)) {
         errorf("Failed to remove temp folder.\n");
-        return 10;
+        return 11;
     }
 
     // sign pbo
@@ -442,12 +442,12 @@ int cmd_build() {
         // check if target already exists
         if (access(path_signature, F_OK) != -1 && !args.force) {
             errorf("File %s already exists and --force was not set.\n", path_signature);
-            return 1;
+            return 2;
         }
 
         if (sign_pbo(args.positionals[2], args.privatekey, path_signature)) {
             errorf("Failed to sign file.\n");
-            return 2;
+            return 3;
         }
     }
 
