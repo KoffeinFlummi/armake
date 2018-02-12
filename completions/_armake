@@ -131,9 +131,11 @@ _armake-build ()
 		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable).]' \
 		'(-k)-k[Private key to use for signing the PBO.]' \
 		'(--key)--key[Private key to use for signing the PBO.]' \
+		'(-s)-s[Signature name to use for signing the PBO.]' \
+		'(--signature)--signature[Signature name to use for signing the PBO.]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<folder>' '<pbo>')
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<signature>' '<folder>' '<pbo>')
         _message_next_arg
     fi
 }
@@ -235,9 +237,11 @@ _armake-sign ()
         ':command:->command' \
 		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
 		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
+		'(-s)-s[Signature name to use for signing the PBO.]' \
+		'(--signature)--signature[Signature name to use for signing the PBO.]' \
 
     else
-        myargs=('<privatekey>' '<pbo>')
+        myargs=('<signature>' '<privatekey>' '<pbo>')
         _message_next_arg
     fi
 }
