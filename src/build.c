@@ -211,16 +211,14 @@ int hash_file(char *path, unsigned char *hash) {
 
 
 int cmd_build() {
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     int i;
     int j;
 
     if (args.num_positionals != 3)
         return 128;
 
-    current_operation = OP_BUILD;
-    strcpy(current_target, args.positionals[1]);
+    current_target = args.positionals[1];
 
     // check if target already exists
     FILE *f_target;
@@ -305,8 +303,7 @@ int cmd_build() {
     strcpy(notestpath + strlen(notestpath) - 11, "$NOBIN-NOTEST$");
     if (!args.packonly && access(nobinpath, F_OK) == -1 && access(notestpath, F_OK) == -1) {
         if (traverse_directory(tempfolder, binarize_callback, "")) {
-            current_operation = OP_BUILD;
-            strcpy(current_target, args.positionals[1]);
+            current_target = args.positionals[1];
             errorf("Failed to binarize some files.\n");
             remove_file(args.positionals[2]);
             remove_folder(tempfolder);
@@ -331,8 +328,7 @@ int cmd_build() {
         }
     }
 
-    current_operation = OP_BUILD;
-    strcpy(current_target, args.positionals[1]);
+    current_target = args.positionals[1];
 
     // write header extensions
     f_target = fopen(args.positionals[2], "wb");

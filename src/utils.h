@@ -52,8 +52,7 @@ struct point {
     uint32_t point_flags;
 };
 
-int current_operation;
-char current_target[2048];
+char *current_target;
 
 
 #ifdef _WIN32
@@ -80,8 +79,9 @@ void errorf(char *format, ...);
 void lerrorf(char *file, int line, char *format, ...);
 
 void *safe_malloc(size_t size);
-
 void *safe_realloc(void *ptr, size_t size);
+char *safe_strdup(const char *s);
+char *safe_strndup(const char *s, size_t n);
 
 int get_line_number(FILE *f_source);
 

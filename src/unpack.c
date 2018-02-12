@@ -57,8 +57,7 @@ bool is_garbage(struct header *header) {
 
 int cmd_inspect() {
     extern struct arguments args;
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f_target;
     int num_files;
     long i;
@@ -72,8 +71,7 @@ int cmd_inspect() {
 
     headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
-    current_operation = OP_UNPACK;
-    strcpy(current_target, args.positionals[1]);
+    current_target = args.positionals[1];
 
     // remove trailing slash in target
     if (args.positionals[1][strlen(args.positionals[1]) - 1] == PATHSEP)
@@ -155,8 +153,7 @@ int cmd_inspect() {
 
 int cmd_unpack() {
     extern struct arguments args;
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f_source;
     FILE *f_target;
     int num_files;
@@ -173,8 +170,7 @@ int cmd_unpack() {
 
     headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
-    current_operation = OP_UNPACK;
-    strcpy(current_target, args.positionals[1]);
+    current_target = args.positionals[1];
 
     // open file
     f_source = fopen(args.positionals[1], "rb");
@@ -341,8 +337,7 @@ int cmd_unpack() {
 
 int cmd_cat() {
     extern struct arguments args;
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f_source;
     int num_files;
     int file_index;
@@ -358,8 +353,7 @@ int cmd_cat() {
 
     headers = (struct header *)safe_malloc(sizeof(struct header) * MAXFILES);
 
-    current_operation = OP_UNPACK;
-    strcpy(current_target, args.positionals[1]);
+    current_target = args.positionals[1];
 
     // open file
     f_source = fopen(args.positionals[1], "rb");

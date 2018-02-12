@@ -57,8 +57,7 @@ int attempt_bis_binarize(char *source, char *target) {
      * success and a positive integer on failure.
      */
 
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     SECURITY_ATTRIBUTES secattr = { sizeof(secattr) };
     STARTUPINFO info = { sizeof(info) };
     PROCESS_INFORMATION processInfo;
@@ -76,8 +75,7 @@ int attempt_bis_binarize(char *source, char *target) {
     FILE *f_source;
     struct mlod_lod *mlod_lods;
 
-    current_operation = OP_P3D;
-    strcpy(current_target, source);
+    current_target = source;
 
     if (getenv("NATIVEBIN"))
         return -1;
@@ -205,7 +203,7 @@ int attempt_bis_binarize(char *source, char *target) {
         strcat(filename, dependencies[i]);
 
         if (find_file(filename, "", temp)) {
-            warningf("Failed to find file %s.\n", filename);
+            lwarningf(source, -1, "Failed to find file %s.\n", filename);
             continue;
         }
 
@@ -296,7 +294,7 @@ int binarize(char *source, char *target) {
         if (success >= 0)
             return success;
         if (!warned_bi_not_found) {
-            warningf("Failed to find BI tools, using internal binarizer.\n");
+            lwarningf(source, -1, "Failed to find BI tools, using internal binarizer.\n");
             warned_bi_not_found = true;
         }
 #endif

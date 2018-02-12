@@ -77,7 +77,7 @@ void infof(char *format, ...) {
     va_list argptr;
 
     va_start(argptr, format);
-    vsprintf(buffer, format, argptr);
+    vsnprintf(buffer, sizeof(buffer), format, argptr);
     va_end(argptr);
 
 #ifdef _WIN32
@@ -95,7 +95,7 @@ void debugf(char *format, ...) {
     va_list argptr;
 
     va_start(argptr, format);
-    vsprintf(buffer, format, argptr);
+    vsnprintf(buffer, sizeof(buffer), format, argptr);
     va_end(argptr);
 
 #ifdef _WIN32
@@ -109,14 +109,11 @@ void debugf(char *format, ...) {
 
 
 void warningf(char *format, ...) {
-    extern int current_operation;
-    extern char current_target[2048];
-    char filename[2048];
     char buffer[4096];
     va_list argptr;
 
     va_start(argptr, format);
-    vsprintf(buffer, format, argptr);
+    vsnprintf(buffer, sizeof(buffer), format, argptr);
     va_end(argptr);
 
 #ifdef _WIN32
@@ -124,28 +121,6 @@ void warningf(char *format, ...) {
 #else
     fprintf(stderr, "%swarning:%s %s", COLOR_YELLOW, COLOR_RESET, buffer);
 #endif
-
-    if (strchr(current_target, PATHSEP) == NULL)
-        strcpy(filename, current_target);
-    else
-        strcpy(filename, strrchr(current_target, PATHSEP) + 1);
-
-    if (current_operation == OP_BUILD)
-        fprintf(stderr, "    (encountered while building %s)\n", filename);
-    //else if (current_operation == OP_PREPROCESS)
-    //    fprintf(stderr, "    (encountered while preprocessing %s)\n", filename);
-    //else if (current_operation == OP_RAPIFY)
-    //    fprintf(stderr, "    (encountered while rapifying %s)\n", filename);
-    else if (current_operation == OP_P3D)
-        fprintf(stderr, "    (encountered while converting %s)\n", filename);
-    else if (current_operation == OP_MODELCONFIG)
-        fprintf(stderr, "    (encountered while reading model config for %s)\n", filename);
-    else if (current_operation == OP_MATERIAL)
-        fprintf(stderr, "    (encountered while reading %s)\n", filename);
-    else if (current_operation == OP_UNPACK)
-        fprintf(stderr, "    (encountered while unpacking %s)\n", filename);
-    else if (current_operation == OP_DERAPIFY)
-        fprintf(stderr, "    (encountered while derapifying %s)\n", filename);
 
     fflush(stderr);
 }
@@ -159,7 +134,10 @@ void lwarningf(char *file, int line, char *format, ...) {
     vsprintf(buffer, format, argptr);
     va_end(argptr);
 
-    fprintf(stderr, "In file %s:%i: ", file, line);
+    if (line > 0)
+        fprintf(stderr, "In file %s:%i: ", file, line);
+    else
+        fprintf(stderr, "In file %s: ", file);
 
     warningf(buffer);
 }
@@ -206,16 +184,18 @@ void lnwarningf(char *file, int line, char *name, char *format, ...) {
     vsprintf(buffer, format, argptr);
     va_end(argptr);
 
-    if (!warning_muted(name))
-        fprintf(stderr, "In file %s:%i: ", file, line);
+    if (!warning_muted(name)) {
+        if (line > 0)
+            fprintf(stderr, "In file %s:%i: ", file, line);
+        else
+            fprintf(stderr, "In file %s: ", file);
+    }
 
     nwarningf(name, buffer);
 }
 
 
 void errorf(char *format, ...) {
-    extern int current_operation;
-    extern char current_target[2048];
     char buffer[4096];
     va_list argptr;
 
@@ -241,7 +221,10 @@ void lerrorf(char *file, int line, char *format, ...) {
     vsprintf(buffer, format, argptr);
     va_end(argptr);
 
-    fprintf(stderr, "In file %s:%i: ", file, line);
+    if (line > 0)
+        fprintf(stderr, "In file %s:%i: ", file, line);
+    else
+        fprintf(stderr, "In file %s: ", file);
 
     errorf(buffer);
 }
@@ -264,6 +247,30 @@ void *safe_realloc(void *ptr, size_t size) {
 
     if (result == NULL) {
         errorf("Failed to reallocate %i bytes.\n", size);
+        exit(127);
+    }
+
+    return result;
+}
+
+
+char *safe_strdup(const char *s) {
+    char *result = strdup(s);
+
+    if (result == NULL) {
+        errorf("Failed to reallocate %i bytes.\n", strlen(s) + 1);
+        exit(127);
+    }
+
+    return result;
+}
+
+
+char *safe_strndup(const char *s, size_t n) {
+    char *result = strndup(s, n);
+
+    if (result == NULL) {
+        errorf("Failed to reallocate %i bytes.\n", n + 1);
         exit(127);
     }
 
