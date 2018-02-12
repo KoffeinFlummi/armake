@@ -356,10 +356,16 @@ int cmd_sign() {
         strcpy(keyname, strrchr(args.positionals[1], PATHSEP) + 1);
     *strrchr(keyname, '.') = 0;
 
-    strcpy(path_signature, args.positionals[2]);
-    strcat(path_signature, ".");
-    strcat(path_signature, keyname);
-    strcat(path_signature, ".bisign");
+    if (args.signature) {
+        strcpy(path_signature, args.signature);
+        if (strlen(path_signature) < 7 || strcmp(&path_signature[strlen(path_signature) - 7], ".bisign") != 0)
+            strcat(path_signature, ".bisign");
+    } else {
+        strcpy(path_signature, args.positionals[2]);
+        strcat(path_signature, ".");
+        strcat(path_signature, keyname);
+        strcat(path_signature, ".bisign");
+    }
 
     // check if target already exists
     if (access(path_signature, F_OK) != -1 && !args.force) {
