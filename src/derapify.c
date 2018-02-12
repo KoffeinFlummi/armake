@@ -836,19 +836,17 @@ int derapify_file(char *source, char *target) {
      * returned. 0 is returned on success and a positive integer on failure.
      */
 
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f_source;
     FILE *f_target;
     char buffer[4096];
     int bytes;
     int success;
 
-    current_operation = OP_DERAPIFY;
     if (strcmp(source, "-") == 0)
-        strcpy(current_target, "stdin");
+        current_target = "stdin";
     else
-        strcpy(current_target, source);
+        current_target = source;
 
     // Open source
     if (strcmp(source, "-") == 0) {

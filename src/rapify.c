@@ -306,6 +306,7 @@ int rapify_file(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
+    extern char *current_target;
     FILE *f_temp;
     FILE *f_target;
     int i;
@@ -316,8 +317,7 @@ int rapify_file(char *source, char *target) {
     struct constants *constants;
     struct lineref *lineref;
 
-    current_operation = OP_RAPIFY;
-    strcpy(current_target, source);
+    current_target = source;
 
     // Check if the file is already rapified
     f_temp = fopen(source, "rb");
@@ -396,8 +396,7 @@ int rapify_file(char *source, char *target) {
 
     success = preprocess(source, f_temp, constants, lineref);
 
-    current_operation = OP_RAPIFY;
-    strcpy(current_target, source);
+    current_target = source;
 
     if (success) {
         errorf("Failed to preprocess %s.\n", source);

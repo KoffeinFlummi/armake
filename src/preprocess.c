@@ -671,8 +671,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
      * Returns 0 on success, a positive integer on failure.
      */
 
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     extern char include_stack[MAXINCLUDES][1024];
     int file_index;
     int line = 0;
@@ -692,8 +691,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
     char actualpath[2048];
     FILE *f_source;
 
-    current_operation = OP_PREPROCESS;
-    strcpy(current_target, source);
+    current_target = source;
 
     for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++) {
         if (strcmp(source, include_stack[i]) == 0) {
@@ -891,8 +889,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
                 for (i = 0; i < MAXINCLUDES && include_stack[i][0] != 0; i++);
                 include_stack[i - 1][0] = 0;
 
-                current_operation = OP_PREPROCESS;
-                strcpy(current_target, source);
+                current_target = source;
 
                 if (success)
                     return success;

@@ -97,8 +97,7 @@ int read_material(struct material *material) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f;
     char actual_path[2048];
     char rapified_path[2048];
@@ -150,29 +149,27 @@ int read_material(struct material *material) {
     material->dummy_texture.type11_bool = 0;
 
     if (find_file(temp, "", actual_path)) {
-        warningf("Failed to find material \"%s\".\n", temp);
+        lwarningf(current_target, -1, "Failed to find material \"%s\".\n", temp);
         return 1;
     }
 
-    current_operation = OP_MATERIAL;
-    strcpy(current_target, temp);
+    current_target = temp;
 
     strcpy(rapified_path, actual_path);
     strcat(rapified_path, ".armake.bin"); // it is assumed that this doesn't exist
 
     // Rapify file
     if (rapify_file(actual_path, rapified_path)) {
-        warningf("Failed to rapify %s.\n", actual_path);
+        lwarningf(current_target, -1, "Failed to rapify %s.\n", actual_path);
         return 2;
     }
 
-    current_operation = OP_MATERIAL;
-    strcpy(current_target, material->path);
+    current_target = material->path;
 
     // Open rapified file
     f = fopen(rapified_path, "rb");
     if (!f) {
-        warningf("Failed to open rapified material.\n");
+        lwarningf(current_target, -1, "Failed to open rapified material.\n");
         return 3;
     }
 
@@ -193,7 +190,7 @@ int read_material(struct material *material) {
                 break;
         }
         if (i == sizeof(pixelshaders) / sizeof(struct shader_ref)) {
-            warningf("Unrecognized pixel shader: \"%s\", assuming \"Normal\".\n", shader);
+            lwarningf(current_target, -1, "Unrecognized pixel shader: \"%s\", assuming \"Normal\".\n", shader);
             i = 0;
         }
         material->pixelshader_id = pixelshaders[i].id;
@@ -205,7 +202,7 @@ int read_material(struct material *material) {
                 break;
         }
         if (i == sizeof(vertexshaders) / sizeof(struct shader_ref)) {
-            warningf("Unrecognized vertex shader: \"%s\", assuming \"Basic\".\n", shader);
+            lwarningf(current_target, -1, "Unrecognized vertex shader: \"%s\", assuming \"Basic\".\n", shader);
             i = 0;
         }
         material->vertexshader_id = vertexshaders[i].id;
@@ -261,7 +258,7 @@ int read_material(struct material *material) {
     // Clean up
     fclose(f);
     if (remove_file(rapified_path)) {
-        warningf("Failed to remove temporary material.\n");
+        lwarningf(current_target, -1, "Failed to remove temporary material.\n");
         return 4;
     }
 

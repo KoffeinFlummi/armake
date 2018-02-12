@@ -579,12 +579,12 @@ uint32_t add_point(struct odol_lod *odol_lod, struct mlod_lod *mlod_lod, struct 
                 continue;
 
             if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 4) {
-                warningf("Vertex %u of LOD %f is part of more than 4 bones.\n", point_index_mlod, mlod_lod->resolution);
+                lwarningf(current_target, -1, "Vertex %u of LOD %f is part of more than 4 bones.\n", point_index_mlod, mlod_lod->resolution);
                 continue;
             }
 
             if (odol_lod->vertexboneref[odol_lod->num_points].num_bones == 1 && model_info->skeleton->is_discrete) {
-                warningf("Vertex %u of LOD %f is part of more than 1 bone in a discrete skeleton.\n", point_index_mlod, mlod_lod->resolution);
+                lwarningf(current_target, -1, "Vertex %u of LOD %f is part of more than 1 bone in a discrete skeleton.\n", point_index_mlod, mlod_lod->resolution);
                 continue;
             }
 
@@ -669,8 +669,7 @@ bool is_alpha(struct mlod_face *face) {
 
 void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         struct model_info *model_info) {
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     unsigned long i;
     unsigned long j;
     unsigned long k;
@@ -680,7 +679,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     size_t size;
     char *ptr;
     char textures[MAXTEXTURES][512];
-    char temp[2048];
+    char *temp;
     bool *tileU;
     bool *tileV;
     struct triplet normal;
@@ -743,7 +742,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         mlod_lod->faces[i].texture_index = j;
 
         if (j >= MAXTEXTURES) {
-            warningf("Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
+            lwarningf(current_target, -1, "Maximum amount of textures per LOD (%i) exceeded.", MAXTEXTURES);
             break;
         }
 
@@ -761,21 +760,20 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         mlod_lod->faces[i].material_index = (strlen(mlod_lod->faces[i].material_name) > 0) ? j : -1;
 
         if (j >= MAXMATERIALS) {
-            warningf("Maximum amount of materials per LOD (%i) exceeded.", MAXMATERIALS);
+            lwarningf(current_target, -1, "Maximum amount of materials per LOD (%i) exceeded.", MAXMATERIALS);
             break;
         }
 
         if (odol_lod->materials[j].path[0] != 0 || mlod_lod->faces[i].material_name[0] == 0)
             continue;
 
-        strcpy(temp, current_target);
+        temp = current_target;
 
         strcpy(odol_lod->materials[j].path, mlod_lod->faces[i].material_name);
         odol_lod->num_materials++;
         read_material(&odol_lod->materials[j]);
 
-        current_operation = OP_P3D;
-        strcpy(current_target, temp);
+        current_target = temp;
     }
 
     odol_lod->textures = (char *)safe_malloc(size);
@@ -1123,7 +1121,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         }
 
         if (j >= mlod_lod->num_faces) {
-            nwarningf("no-proxy-face", "No face found for proxy \"%s\".\n", mlod_lod->selections[i].name + 6);
+            lnwarningf(current_target, -1, "no-proxy-face", "No face found for proxy \"%s\".\n", mlod_lod->selections[i].name + 6);
             odol_lod->num_proxies--;
             continue;
         }
@@ -1692,7 +1690,7 @@ void write_animations(FILE *f_target, uint32_t num_lods, struct mlod_lod *mlod_l
 
             if (index == -1) {
                 if (i == 0) { // we only report errors for the first LOD
-                    nwarningf("unknown-bone", "Failed to find bone \"%s\" for animation \"%s\".\n",
+                    lnwarningf(current_target, -1, "unknown-bone", "Failed to find bone \"%s\" for animation \"%s\".\n",
                             model_info->skeleton->bones[k].name, anim->name);
                 }
                 continue;
@@ -1722,8 +1720,7 @@ int mlod2odol(char *source, char *target) {
      */
 
     extern struct arguments args;
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f_source;
     FILE *f_temp;
     FILE *f_target;
@@ -1740,8 +1737,7 @@ int mlod2odol(char *source, char *target) {
     struct model_info model_info;
     struct odol_lod odol_lod;
 
-    current_operation = OP_P3D;
-    strcpy(current_target, source);
+    current_target = source;
 
 #ifdef _WIN32
     char temp_name[2048];
@@ -1822,8 +1818,7 @@ int mlod2odol(char *source, char *target) {
         return success;
     }
 
-    current_operation = OP_P3D;
-    strcpy(current_target, source);
+    current_target = source;
 
     write_model_info(f_temp, num_lods, &model_info);
 

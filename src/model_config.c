@@ -119,7 +119,7 @@ int read_animations(FILE *f, char *config_path, struct skeleton *skeleton) {
         // Read anim type
         sprintf(value_path, "%s >> %s >> type", config_path, anim_names[i]);
         if (read_string(f, value_path, value, sizeof(value))) {
-            warningf("Animation type for %s could not be found.\n", anim_names[i]);
+            lwarningf(current_target, -1, "Animation type for %s could not be found.\n", anim_names[i]);
             continue;
         }
 
@@ -143,12 +143,12 @@ int read_animations(FILE *f, char *config_path, struct skeleton *skeleton) {
             skeleton->animations[j].type = TYPE_TRANSLATION_Z;
         } else if (strcmp(value, "direct") == 0) {
             skeleton->animations[j].type = TYPE_DIRECT;
-            warningf("Direct animations aren't supported yet.\n");
+            lwarningf(current_target, -1, "Direct animations aren't supported yet.\n");
             continue;
         } else if (strcmp(value, "hide") == 0) {
             skeleton->animations[j].type = TYPE_HIDE;
         } else {
-            warningf("Unknown animation type: %s\n", value);
+            warningf(current_target, -1, "Unknown animation type: %s\n", value);
             continue;
         }
 
@@ -172,7 +172,7 @@ int read_animations(FILE *f, char *config_path, struct skeleton *skeleton) {
         skeleton->animations[j].hide_value = 0.0f;
         skeleton->animations[j].unhide_value = -1.0f;
 
-#define ERROR_READING(key) warningf("Error reading %s for %s.\n", key, anim_names[i]);
+#define ERROR_READING(key) lwarningf(current_target, -1, "Error reading %s for %s.\n", key, anim_names[i]);
 
         sprintf(value_path, "%s >> %s >> source", config_path, anim_names[i]);
         if (read_string(f, value_path, skeleton->animations[j].source, sizeof(skeleton->animations[j].source)) > 0)
@@ -248,7 +248,7 @@ int read_animations(FILE *f, char *config_path, struct skeleton *skeleton) {
             } else if (strcmp(value, "loop") == 0) {
                 skeleton->animations[j].source_address = SOURCE_LOOP;
             } else {
-                warningf("Unknown source address \"%s\" in \"%s\".\n", value, skeleton->animations[j].name);
+                lwarningf(current_target, -1, "Unknown source address \"%s\" in \"%s\".\n", value, skeleton->animations[j].name);
                 continue;
             }
         }
@@ -300,8 +300,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
      * and a positive integer on failure.
      */
 
-    extern int current_operation;
-    extern char current_target[2048];
+    extern char *current_target;
     FILE *f;
     int i;
     int success;
@@ -313,8 +312,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     char buffer[512];
     struct bone *bones_tmp;
 
-    current_operation = OP_MODELCONFIG;
-    strcpy(current_target, path);
+    current_target = path;
 
     // Extract model.cfg path
     strncpy(model_config_path, path, sizeof(model_config_path));
@@ -336,8 +334,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
         return 1;
     }
 
-    current_operation = OP_MODELCONFIG;
-    strcpy(current_target, path);
+    current_target = path;
 
     // Extract model name and convert to lower case
     if (strrchr(path, PATHSEP) != NULL)
@@ -367,7 +364,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     }
 
     if (strchr(model_name, '_') == NULL)
-        nwarningf("model-without-prefix", "Model has a model config entry but doesn't seem to have a prefix (missing _).\n");
+        lnwarningf(path, -1, "model-without-prefix", "Model has a model config entry but doesn't seem to have a prefix (missing _).\n");
 
     // Read name
     sprintf(config_path, "CfgModels >> %s >> skeletonName", model_name);
@@ -485,7 +482,7 @@ int read_model_config(char *path, struct skeleton *skeleton) {
     }
 
     if (strlen(skeleton->name) == 0 && skeleton->num_animations > 0)
-        warningf("animated-without-skeleton", "Model doesn't have a skeleton but is animated.\n");
+        lwarningf(path, -1, "animated-without-skeleton", "Model doesn't have a skeleton but is animated.\n");
 
     // Read thermal stuff
     sprintf(config_path, "CfgModels >> %s >> htMin", model_name);
