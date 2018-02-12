@@ -214,6 +214,9 @@ int cmd_build() {
     extern char *current_target;
     int i;
     int j;
+    int k;
+    char buffer[512];
+    bool valid;
 
     if (args.num_positionals != 3)
         return 128;
@@ -342,11 +345,26 @@ int cmd_build() {
     }
     // write extra header extensions
     for (i = 0; i < args.num_headerextensions && args.headerextensions[i][0] != 0; i++) {
+        k = 0;
+        valid = false;
         for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
-            if (args.headerextensions[i][j] == '=')
+            if (args.headerextensions[i][j] == '=' || args.headerextensions[i][j] == '\0') {
+                // validate
+                if (args.headerextensions[i][j] == '\0' && !valid) {
+                    errorf("Invalid header extension format (%s).\n", args.headerextensions[i]);
+                    remove_file(args.positionals[2]);
+                    remove_folder(tempfolder);
+                    continue;
+                }
+                // write
+                fputs(buffer, f_target);
                 fputc(0, f_target);
-            else
-                fputc(args.headerextensions[i][j], f_target);
+                k = 0;
+                valid = true;
+            } else {
+                buffer[k++] = args.headerextensions[i][j];
+                buffer[k] = '\0';
+            }
         }
     }
     fputc(0, f_target);
