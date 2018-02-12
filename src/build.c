@@ -251,20 +251,44 @@ int cmd_build() {
     strcat(prefixpath, args.positionals[1]);
     strcat(prefixpath, PATHSEP_STR);
     strcat(prefixpath, "$PBOPREFIX$");
-    f_prefix = fopen(prefixpath, "rb");
-    if (!f_prefix) {
-        if (strrchr(args.positionals[1], PATHSEP) == NULL)
-            strncpy(addonprefix, args.positionals[1], sizeof(addonprefix));
-        else
-            strncpy(addonprefix, strrchr(args.positionals[1], PATHSEP) + 1, sizeof(addonprefix));
-    } else {
-        fgets(addonprefix, sizeof(addonprefix), f_prefix);
-        fclose(f_prefix);
+
+    for (i = 0; i < args.num_headerextensions && args.headerextensions[i][0] != 0; i++) {
+        k = 0;
+        valid = false;
+        for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
+            if (args.headerextensions[i][j] == '=' || args.headerextensions[i][j] == '\0') {
+                if (strcmp(buffer, "prefix") == 0) {
+                    k = 0;
+                    valid = true;
+                } else if (valid) {
+                    strcat(addonprefix, buffer);
+                } else {
+                    break;
+                }
+            } else {
+                buffer[k++] = args.headerextensions[i][j];
+                buffer[k] = '\0';
+            }
+        }
     }
-    if (addonprefix[strlen(addonprefix) - 1] == '\n')
-        addonprefix[strlen(addonprefix) - 1] = '\0';
-    if (addonprefix[strlen(addonprefix) - 1] == '\r')
-        addonprefix[strlen(addonprefix) - 1] = '\0';
+
+    if (!valid) {
+        f_prefix = fopen(prefixpath, "rb");
+        if (!f_prefix) {
+            if (strrchr(args.positionals[1], PATHSEP) == NULL)
+                strncpy(addonprefix, args.positionals[1], sizeof(addonprefix));
+            else
+                strncpy(addonprefix, strrchr(args.positionals[1], PATHSEP) + 1, sizeof(addonprefix));
+        } else {
+            fgets(addonprefix, sizeof(addonprefix), f_prefix);
+            fclose(f_prefix);
+        }
+
+        if (addonprefix[strlen(addonprefix) - 1] == '\n')
+            addonprefix[strlen(addonprefix) - 1] = '\0';
+        if (addonprefix[strlen(addonprefix) - 1] == '\r')
+            addonprefix[strlen(addonprefix) - 1] = '\0';
+    }
 
     // replace pathseps on linux
 #ifndef _WIN32
@@ -349,6 +373,10 @@ int cmd_build() {
         valid = false;
         for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
             if (args.headerextensions[i][j] == '=' || args.headerextensions[i][j] == '\0') {
+                // prefix is already written above
+                if (strcmp(buffer, "prefix") == 0)
+                    break;
+
                 // validate
                 if (args.headerextensions[i][j] == '\0' && !valid) {
                     errorf("Invalid header extension format (%s).\n", args.headerextensions[i]);
@@ -356,6 +384,7 @@ int cmd_build() {
                     remove_folder(tempfolder);
                     return 6;
                 }
+
                 // write
                 fputs(buffer, f_target);
                 fputc(0, f_target);
