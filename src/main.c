@@ -41,7 +41,7 @@ void print_usage() {
            "\n"
            "Usage:\n"
            "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]\n"
-           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-e <headerextensions>] [-k <privatekey>] <folder> <pbo>\n"
+           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-e <headerextension>] [-k <privatekey>] <folder> <pbo>\n"
            "    armake inspect <pbo>\n"
            "    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>\n"
            "    armake cat <pbo> <name>\n"

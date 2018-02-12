@@ -345,12 +345,12 @@ int cmd_build() {
             fputc(addonprefix[i], f_target);
     }
     // write extra header extensions
-    for (i = 0; i < MAXHEADEREXTENSIONS && header_extensions[i][0] != 0; i++) {
-        for (j = 0; j <= strlen(header_extensions[i]); j++) {
-            if (header_extensions[i][j] == '=')
+    for (i = 0; i < args.num_headerextensions && args.headerextensions[i][0] != 0; i++) {
+        for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
+            if (args.headerextensions[i][j] == '=')
                 fputc(0, f_target);
             else
-                fputc(header_extensions[i][j], f_target);
+                fputc(args.headerextensions[i][j], f_target);
         }
     }
     fputc(0, f_target);
