@@ -76,7 +76,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
     while (IS_MACRO_CHAR(*ptr))
         ptr++;
 
-    name = strndup(definition, ptr - definition);
+    name = safe_strndup(definition, ptr - definition);
 
     if (constants_remove(constants, name))
         lnwarningf(current_target, line, "redefinition-wo-undef",
@@ -86,7 +86,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
 
     c->num_args = 0;
     if (*ptr == '(') {
-        argstr = strdup(ptr + 1);
+        argstr = safe_strdup(ptr + 1);
         if (strchr(argstr, ')') == NULL) {
             lerrorf(current_target, line,
                     "Missing ) in argument list of \"%s\".\n", c->name);
@@ -101,7 +101,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
         while (tok) {
             if (c->num_args % 4 == 0)
                 args = (char **)safe_realloc(args, sizeof(char *) * (c->num_args + 4));
-            args[c->num_args] = strdup(tok);
+            args[c->num_args] = safe_strdup(tok);
             trim(args[c->num_args], strlen(args[c->num_args]) + 1);
             c->num_args++;
             tok = strtok(NULL, ",");
@@ -116,7 +116,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
     c->num_occurences = 0;
     if (c->num_args > 0) {
         c->occurrences = (int (*)[2])safe_malloc(sizeof(int) * 4 * 2);
-        c->value = strdup("");
+        c->value = safe_strdup("");
         len = 0;
 
         while (true) {
@@ -165,7 +165,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
             while (IS_MACRO_CHAR(*ptr))
                 ptr++;
 
-            tok = strndup(start, ptr - start);
+            tok = safe_strndup(start, ptr - start);
             for (i = 0; i < c->num_args; i++) {
                 if (strcmp(tok, args[i]) == 0)
                     break;
@@ -221,7 +221,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
         *(ptr + 1) = 0;
     } else {
         c->occurrences = NULL;
-        c->value = strdup(ptr);
+        c->value = safe_strdup(ptr);
         trim(c->value, strlen(c->value) + 1);
     }
 
@@ -343,7 +343,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
                 } else if (level == 0 && (*ptr == ',' || *ptr == ')')) {
                     if (num_args > 0 && num_args % 4 == 0)
                         args = (char **)safe_realloc(args, sizeof(char *) * (num_args + 4));
-                    args[num_args] = strndup(start, ptr - start);
+                    args[num_args] = safe_strndup(start, ptr - start);
                     num_args++;
                     if (*ptr == ')') {
                         break;
@@ -418,12 +418,12 @@ char *constant_value(struct constants *constants, struct constant *constant,
     }
 
     if (num_args == 0) {
-        result = strdup(constant->value);
+        result = safe_strdup(constant->value);
     } else {
-        result = strdup("");
+        result = safe_strdup("");
         ptr = constant->value;
         for (i = 0; i < constant->num_occurences; i++) {
-            tmp = strndup(ptr, constant->occurrences[i][1] - (ptr - constant->value));
+            tmp = safe_strndup(ptr, constant->occurrences[i][1] - (ptr - constant->value));
             result = (char *)safe_realloc(result, strlen(result) + strlen(tmp) + strlen(args[constant->occurrences[i][0]]) + 1);
             strcat(result, tmp);
             free(tmp);

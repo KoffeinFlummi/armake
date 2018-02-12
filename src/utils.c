@@ -271,6 +271,30 @@ void *safe_realloc(void *ptr, size_t size) {
 }
 
 
+char *safe_strdup(const char *s) {
+    char *result = strdup(s);
+
+    if (result == NULL) {
+        errorf("Failed to reallocate %i bytes.\n", strlen(s) + 1);
+        exit(127);
+    }
+
+    return result;
+}
+
+
+char *safe_strndup(const char *s, size_t n) {
+    char *result = strndup(s, n);
+
+    if (result == NULL) {
+        errorf("Failed to reallocate %i bytes.\n", n + 1);
+        exit(127);
+    }
+
+    return result;
+}
+
+
 int get_line_number(FILE *f_source) {
     int line;
     long fp_start;
