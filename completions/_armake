@@ -135,7 +135,7 @@ _armake-build ()
 		'(--key)--key[Private key to use for signing the PBO.]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<headerextension>' '<privatekey>' '<source>' '<target>')
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<headerextension>' '<privatekey>' '<folder>' '<pbo>')
         _message_next_arg
     fi
 }
@@ -150,7 +150,7 @@ _armake-inspect ()
         ':command:->command' \
 
     else
-        myargs=('<target>')
+        myargs=('<pbo>')
         _message_next_arg
     fi
 }
@@ -171,7 +171,7 @@ _armake-unpack ()
 		'(--exclude)--exclude[Glob patterns to exclude from PBO (repeatable).]' \
 
     else
-        myargs=('<includepattern>' '<excludepattern>' '<source>' '<target>')
+        myargs=('<includepattern>' '<excludepattern>' '<pbo>' '<folder>')
         _message_next_arg
     fi
 }
@@ -186,7 +186,7 @@ _armake-cat ()
         ':command:->command' \
 
     else
-        myargs=('<target>' '<name>')
+        myargs=('<pbo>' '<name>')
         _message_next_arg
     fi
 }
@@ -201,8 +201,8 @@ _armake-derapify ()
         ':command:->command' \
 		'(-f)-f[Overwrite the target file/folder if it already exists.]' \
 		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
-		'(-d)-d[String to use for indentation. "    " (4 spaces) by default.]' \
-		'(--indent)--indent[String to use for indentation. "    " (4 spaces) by default.]' \
+		'(-d)-d[String to use for indentation.  (4 spaces) by default.]' \
+		'(--indent)--indent[String to use for indentation.  (4 spaces) by default.]' \
 
     else
         myargs=('<indentation>' '<source>' '<target>')
@@ -222,7 +222,7 @@ _armake-keygen ()
 		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 
     else
-        myargs=('<target>')
+        myargs=('<keyname>')
         _message_next_arg
     fi
 }
@@ -239,7 +239,7 @@ _armake-sign ()
 		'(--force)--force[Overwrite the target file/folder if it already exists.]' \
 
     else
-        myargs=('<privatekey>' '<target>')
+        myargs=('<privatekey>' '<pbo>')
         _message_next_arg
     fi
 }
