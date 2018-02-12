@@ -25,7 +25,7 @@
 #include <openssl/bn.h>
 
 #include "sha1.h"
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "keygen.h"
@@ -337,23 +337,26 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
 
 int cmd_sign() {
-    extern DocoptArgs args;
+    extern struct arguments args;
     char keyname[512];
     char path_signature[2048];
     int success;
 
-    if (strcmp(strrchr(args.source, '.'), ".biprivatekey") != 0) {
-        errorf("File %s doesn't seem to be a valid private key.\n", args.source);
+    if (args.num_positionals != 3)
+        return 128;
+
+    if (strcmp(strrchr(args.positionals[1], '.'), ".biprivatekey") != 0) {
+        errorf("File %s doesn't seem to be a valid private key.\n", args.positionals[1]);
         return 1;
     }
 
-    if (strchr(args.source, PATHSEP) == NULL)
-        strcpy(keyname, args.source);
+    if (strchr(args.positionals[1], PATHSEP) == NULL)
+        strcpy(keyname, args.positionals[1]);
     else
-        strcpy(keyname, strrchr(args.source, PATHSEP) + 1);
+        strcpy(keyname, strrchr(args.positionals[1], PATHSEP) + 1);
     *strrchr(keyname, '.') = 0;
 
-    strcpy(path_signature, args.target);
+    strcpy(path_signature, args.positionals[2]);
     strcat(path_signature, ".");
     strcat(path_signature, keyname);
     strcat(path_signature, ".bisign");
@@ -364,7 +367,7 @@ int cmd_sign() {
         return 1;
     }
 
-    success = sign_pbo(args.target, args.source, path_signature);
+    success = sign_pbo(args.positionals[2], args.positionals[1], path_signature);
 
     if (success)
         errorf("Failed to sign file.\n");

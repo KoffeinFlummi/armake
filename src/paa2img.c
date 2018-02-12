@@ -36,7 +36,7 @@
 #include "stb_image_write.h"
 #include "minilzo.h"
 
-#include "docopt.h"
+#include "args.h"
 #include "utils.h"
 #include "paa2img.h"
 
@@ -264,7 +264,7 @@ int paa2img(char *source, char *target) {
     int imgdatalen;
     lzo_uint out_len;
 
-    f = fopen(args.source, "rb");
+    f = fopen(source, "rb");
     if (!f) {
         errorf("Couldn't open source file.\n");
         return 1;
@@ -299,7 +299,7 @@ int paa2img(char *source, char *target) {
     datalen = 0;
     fread(&datalen, 3, 1, f);
 
-    compresseddata = (unsigned char *)malloc(datalen);
+    compresseddata = (unsigned char *)safe_malloc(datalen);
     fread(compresseddata, datalen, 1, f);
     fclose(f);
 
@@ -314,7 +314,7 @@ int paa2img(char *source, char *target) {
     imgdatalen = width * height;
     if (paatype == DXT1)
         imgdatalen /= 2;
-    imgdata = malloc(imgdatalen);
+    imgdata = safe_malloc(imgdatalen);
 
     if (compression == COMP_LZO) {
         out_len = imgdatalen;
@@ -341,7 +341,7 @@ int paa2img(char *source, char *target) {
 
     free(compresseddata);
 
-    outputdata = malloc(width * height * 4);
+    outputdata = safe_malloc(width * height * 4);
 
     switch (paatype) {
         case DXT1:
@@ -389,7 +389,7 @@ int paa2img(char *source, char *target) {
 
     free(imgdata);
 
-    if (!stbi_write_png(args.target, width, height, 4, outputdata, width * 4)) {
+    if (!stbi_write_png(target, width, height, 4, outputdata, width * 4)) {
         errorf("Failed to write image to output.\n");
         free(outputdata);
         return 5;
@@ -402,13 +402,16 @@ int paa2img(char *source, char *target) {
 
 
 int cmd_paa2img() {
-    extern DocoptArgs args;
+    extern struct arguments args;
+
+    if (args.num_positionals != 3)
+        return 128;
 
     // check if target already exists
-    if (strcmp(args.target, "-") != 0 && access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
+    if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+        errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
         return 1;
     }
 
-    return paa2img(args.source, args.target);
+    return paa2img(args.positionals[1], args.positionals[2]);
 }

@@ -28,7 +28,7 @@
 #endif
 
 #include "sha1.h"
-#include "docopt.h"
+#include "args.h"
 #include "binarize.h"
 #include "filesystem.h"
 #include "utils.h"
@@ -58,13 +58,13 @@ int binarize_callback(char *root, char *source, char *junk) {
 
 bool file_allowed(char *filename) {
     int i;
-    extern char exclude_files[MAXEXCLUDEFILES][512];
+    extern struct arguments args;
 
     if (strcmp(filename, "$PBOPREFIX$") == 0)
         return false;
 
-    for (i = 0; i < MAXEXCLUDEFILES && exclude_files[i][0] != 0; i++) {
-        if (matches_glob(filename, exclude_files[i]))
+    for (i = 0; i < args.num_excludefiles; i++) {
+        if (matches_glob(filename, args.excludefiles[i]))
             return false;
     }
 
@@ -211,31 +211,33 @@ int hash_file(char *path, unsigned char *hash) {
 
 
 int cmd_build() {
-    extern DocoptArgs args;
     extern int current_operation;
     extern char current_target[2048];
     int i;
     int j;
 
+    if (args.num_positionals != 3)
+        return 128;
+
     current_operation = OP_BUILD;
-    strcpy(current_target, args.source);
+    strcpy(current_target, args.positionals[1]);
 
     // check if target already exists
     FILE *f_target;
-    if (access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
+    if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+        errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
         return 1;
     }
 
     // remove trailing slash in source
-    if (args.source[strlen(args.source) - 1] == '\\')
-        args.source[strlen(args.source) - 1] = 0;
-    if (args.source[strlen(args.source) - 1] == '/')
-        args.source[strlen(args.source) - 1] = 0;
+    if (args.positionals[1][strlen(args.positionals[1]) - 1] == '\\')
+        args.positionals[1][strlen(args.positionals[1]) - 1] = 0;
+    if (args.positionals[1][strlen(args.positionals[1]) - 1] == '/')
+        args.positionals[1][strlen(args.positionals[1]) - 1] = 0;
 
-    f_target = fopen(args.target, "wb");
+    f_target = fopen(args.positionals[2], "wb");
     if (!f_target) {
-        errorf("Failed to open %s.\n", args.target);
+        errorf("Failed to open %s.\n", args.positionals[2]);
         return 2;
     }
     fclose(f_target);
@@ -245,15 +247,15 @@ int cmd_build() {
     char addonprefix[512];
     FILE *f_prefix;
     prefixpath[0] = 0;
-    strcat(prefixpath, args.source);
+    strcat(prefixpath, args.positionals[1]);
     strcat(prefixpath, PATHSEP_STR);
     strcat(prefixpath, "$PBOPREFIX$");
     f_prefix = fopen(prefixpath, "rb");
     if (!f_prefix) {
-        if (strrchr(args.source, PATHSEP) == NULL)
-            strncpy(addonprefix, args.source, sizeof(addonprefix));
+        if (strrchr(args.positionals[1], PATHSEP) == NULL)
+            strncpy(addonprefix, args.positionals[1], sizeof(addonprefix));
         else
-            strncpy(addonprefix, strrchr(args.source, PATHSEP) + 1, sizeof(addonprefix));
+            strncpy(addonprefix, strrchr(args.positionals[1], PATHSEP) + 1, sizeof(addonprefix));
     } else {
         fgets(addonprefix, sizeof(addonprefix), f_prefix);
         fclose(f_prefix);
@@ -284,12 +286,12 @@ int cmd_build() {
     char tempfolder[1024];
     if (create_temp_folder(addonprefix, tempfolder, sizeof(tempfolder))) {
         errorf("Failed to create temp folder.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         return 2;
     }
-    if (copy_directory(args.source, tempfolder)) {
+    if (copy_directory(args.positionals[1], tempfolder)) {
         errorf("Failed to copy to temp folder.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         remove_folder(tempfolder);
         return 3;
     }
@@ -304,9 +306,9 @@ int cmd_build() {
     if (!args.packonly && access(nobinpath, F_OK) == -1 && access(notestpath, F_OK) == -1) {
         if (traverse_directory(tempfolder, binarize_callback, "")) {
             current_operation = OP_BUILD;
-            strcpy(current_target, args.source);
+            strcpy(current_target, args.positionals[1]);
             errorf("Failed to binarize some files.\n");
-            remove_file(args.target);
+            remove_file(args.positionals[2]);
             remove_folder(tempfolder);
             return 4;
         }
@@ -322,7 +324,7 @@ int cmd_build() {
 #else
             if (remove(configpath)) {
 #endif
-                remove_file(args.target);
+                remove_file(args.positionals[2]);
                 remove_folder(tempfolder);
                 return 5;
             }
@@ -330,10 +332,10 @@ int cmd_build() {
     }
 
     current_operation = OP_BUILD;
-    strcpy(current_target, args.source);
+    strcpy(current_target, args.positionals[1]);
 
     // write header extensions
-    f_target = fopen(args.target, "wb");
+    f_target = fopen(args.positionals[2], "wb");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     // write addonprefix with windows pathseps
     for (i = 0; i <= strlen(addonprefix); i++) {
@@ -355,18 +357,18 @@ int cmd_build() {
     fclose(f_target);
 
     // write headers to file
-    if (traverse_directory(tempfolder, write_header_to_pbo, args.target)) {
+    if (traverse_directory(tempfolder, write_header_to_pbo, args.positionals[2])) {
         errorf("Failed to write some file header(s) to PBO.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         remove_folder(tempfolder);
         return 6;
     }
 
     // header boundary
-    f_target = fopen(args.target, "ab");
+    f_target = fopen(args.positionals[2], "ab");
     if (!f_target) {
         errorf("Failed to write header boundary to PBO.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         remove_folder(tempfolder);
         return 7;
     }
@@ -375,20 +377,20 @@ int cmd_build() {
     fclose(f_target);
 
     // write contents to file
-    if (traverse_directory(tempfolder, write_data_to_pbo, args.target)) {
+    if (traverse_directory(tempfolder, write_data_to_pbo, args.positionals[2])) {
         errorf("Failed to pack some file(s) into the PBO.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         remove_folder(tempfolder);
         return 8;
     }
 
     // write checksum to file
     unsigned char checksum[20];
-    hash_file(args.target, checksum);
-    f_target = fopen(args.target, "ab");
+    hash_file(args.positionals[2], checksum);
+    f_target = fopen(args.positionals[2], "ab");
     if (!f_target) {
         errorf("Failed to write checksum to file.\n");
-        remove_file(args.target);
+        remove_file(args.positionals[2]);
         remove_folder(tempfolder);
         return 9;
     }
@@ -403,12 +405,12 @@ int cmd_build() {
     }
 
     // sign pbo
-    if (args.key) {
+    if (args.privatekey) {
         char keyname[512];
         char path_signature[2048];
 
         if (strcmp(strrchr(args.privatekey, '.'), ".biprivatekey") != 0) {
-            errorf("File %s doesn't seem to be a valid private key.\n", args.source);
+            errorf("File %s doesn't seem to be a valid private key.\n", args.positionals[1]);
             return 1;
         }
 
@@ -418,7 +420,7 @@ int cmd_build() {
             strcpy(keyname, strrchr(args.privatekey, PATHSEP) + 1);
         *strrchr(keyname, '.') = 0;
 
-        strcpy(path_signature, args.target);
+        strcpy(path_signature, args.positionals[2]);
         strcat(path_signature, ".");
         strcat(path_signature, keyname);
         strcat(path_signature, ".bisign");
@@ -429,7 +431,7 @@ int cmd_build() {
             return 1;
         }
 
-        if (sign_pbo(args.target, args.privatekey, path_signature)) {
+        if (sign_pbo(args.positionals[2], args.privatekey, path_signature)) {
             errorf("Failed to sign file.\n");
             return 2;
         }

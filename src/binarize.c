@@ -31,7 +31,7 @@
 #include <fts.h>
 #endif
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "rapify.h"
@@ -108,7 +108,7 @@ int attempt_bis_binarize(char *source, char *target) {
 
     fseek(f_source, 8, SEEK_SET);
     fread(&num_lods, 4, 1, f_source);
-    mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
+    mlod_lods = (struct mlod_lod *)safe_malloc(sizeof(struct mlod_lod) * num_lods);
     num_lods = read_lods(f_source, mlod_lods, num_lods);
     fflush(stdout);
     if (num_lods < 0)
@@ -127,7 +127,7 @@ int attempt_bis_binarize(char *source, char *target) {
                         break;
                 }
                 if (k < MAXTEXTURES && dependencies[k] == 0) {
-                    dependencies[k] = (char *)malloc(2048);
+                    dependencies[k] = (char *)safe_malloc(2048);
                     strcpy(dependencies[k], mlod_lods[i].faces[j].texture_name);
                 }
             }
@@ -139,7 +139,7 @@ int attempt_bis_binarize(char *source, char *target) {
                         break;
                 }
                 if (k < MAXTEXTURES && dependencies[k] == 0) {
-                    dependencies[k] = (char *)malloc(2048);
+                    dependencies[k] = (char *)safe_malloc(2048);
                     strcpy(dependencies[k], mlod_lods[i].faces[j].material_name);
                 }
             }
@@ -308,15 +308,21 @@ int binarize(char *source, char *target) {
 
 
 int cmd_binarize() {
-    extern DocoptArgs args;
+    int success;
 
-    // check if target already exists
-    if (access(args.target, F_OK) != -1 && !args.force) {
-        errorf("File %s already exists and --force was not set.\n", args.target);
-        return 1;
+    if (args.num_positionals == 1) {
+        return 128;
+    } else if (args.num_positionals == 2) {
+        success = binarize(args.positionals[1], "-");
+    } else {
+        // check if target already exists
+        if (access(args.positionals[2], F_OK) != -1 && !args.force) {
+            errorf("File %s already exists and --force was not set.\n", args.positionals[2]);
+            return 1;
+        }
+
+        success = binarize(args.positionals[1], args.positionals[2]);
     }
-
-    int success = binarize(args.source, args.target);
 
     if (success == -1) {
         errorf("File is no P3D and doesn't seem rapifiable.\n");

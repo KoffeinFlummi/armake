@@ -19,10 +19,33 @@
 #pragma once
 
 
-int img2dxt1(unsigned char *input, unsigned char *output, int width, int height);
+#include <stdbool.h>
 
-int img2dxt5(unsigned char *input, unsigned char *output, int width, int height);
 
-int img2paa(char *source, char *target);
+struct arguments {
+    int num_positionals;
+    char **positionals;
+    bool help;
+    bool version;
+    bool force;
+    bool packonly;
+    bool compress;
+    char *privatekey;
+    char *indent;
+    char *paatype;
+    int num_mutedwarnings;
+    char **mutedwarnings;
+    int num_includefolders;
+    char **includefolders;
+    int num_excludefiles;
+    char **excludefiles;
+    int num_headerextensions;
+    char **headerextensions;
+} args;
 
-int cmd_img2paa();
+struct arg_option {
+    char *short_name;
+    char *long_name;
+    void *value;
+    int *length;
+};

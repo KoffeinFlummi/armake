@@ -31,7 +31,7 @@
 #include <windows.h>
 #endif
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "model_config.h"
@@ -82,22 +82,22 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
 
         if (empty) {
             mlod_lods[i].num_points = 1;
-            mlod_lods[i].points = (struct point *)malloc(sizeof(struct point));
+            mlod_lods[i].points = (struct point *)safe_malloc(sizeof(struct point));
             mlod_lods[i].points[0].x = 0.0f;
             mlod_lods[i].points[0].y = 0.0f;
             mlod_lods[i].points[0].z = 0.0f;
             mlod_lods[i].points[0].point_flags = 0;
         } else {
-            mlod_lods[i].points = (struct point *)malloc(sizeof(struct point) * mlod_lods[i].num_points);
+            mlod_lods[i].points = (struct point *)safe_malloc(sizeof(struct point) * mlod_lods[i].num_points);
             for (j = 0; j < mlod_lods[i].num_points; j++)
                 fread(&mlod_lods[i].points[j], sizeof(struct point), 1, f_source);
         }
 
-        mlod_lods[i].facenormals = (struct triplet *)malloc(sizeof(struct triplet) * mlod_lods[i].num_facenormals);
+        mlod_lods[i].facenormals = (struct triplet *)safe_malloc(sizeof(struct triplet) * mlod_lods[i].num_facenormals);
         for (j = 0; j < mlod_lods[i].num_facenormals; j++)
             fread(&mlod_lods[i].facenormals[j], sizeof(struct triplet), 1, f_source);
 
-        mlod_lods[i].faces = (struct mlod_face *)malloc(sizeof(struct mlod_face) * mlod_lods[i].num_faces);
+        mlod_lods[i].faces = (struct mlod_face *)safe_malloc(sizeof(struct mlod_face) * mlod_lods[i].num_faces);
         for (j = 0; j < mlod_lods[i].num_faces; j++) {
             fread(&mlod_lods[i].faces[j], 72, 1, f_source);
 
@@ -151,7 +151,7 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
                 break;
         }
 
-        mlod_lods[i].selections = (struct mlod_selection *)malloc(sizeof(struct mlod_selection) * mlod_lods[i].num_selections);
+        mlod_lods[i].selections = (struct mlod_selection *)safe_malloc(sizeof(struct mlod_selection) * mlod_lods[i].num_selections);
         for (j = 0; j < mlod_lods[i].num_selections; j++)
             mlod_lods[i].selections[j].name[0] = 0;
 
@@ -176,30 +176,30 @@ int read_lods(FILE *f_source, struct mlod_lod *mlod_lods, uint32_t num_lods) {
                 strcpy(mlod_lods[i].selections[j].name, buffer);
 
                 if (empty) {
-                    mlod_lods[i].selections[j].points = (uint8_t *)malloc(1);
+                    mlod_lods[i].selections[j].points = (uint8_t *)safe_malloc(1);
                     mlod_lods[i].selections[j].points[0] = 0;
                 } else {
-                    mlod_lods[i].selections[j].points = (uint8_t *)malloc(mlod_lods[i].num_points);
+                    mlod_lods[i].selections[j].points = (uint8_t *)safe_malloc(mlod_lods[i].num_points);
                     fread(mlod_lods[i].selections[j].points, mlod_lods[i].num_points, 1, f_source);
                 }
 
-                mlod_lods[i].selections[j].faces = (uint8_t *)malloc(mlod_lods[i].num_faces);
+                mlod_lods[i].selections[j].faces = (uint8_t *)safe_malloc(mlod_lods[i].num_faces);
                 fread(mlod_lods[i].selections[j].faces, mlod_lods[i].num_faces, 1, f_source);
             }
 
             if (strcmp(buffer, "#Mass#") == 0) {
                 if (empty) {
-                    mlod_lods[i].mass = (float *)malloc(sizeof(float));
+                    mlod_lods[i].mass = (float *)safe_malloc(sizeof(float));
                     mlod_lods[i].mass[0] = 0.0f;
                 } else {
-                    mlod_lods[i].mass = (float *)malloc(sizeof(float) * mlod_lods[i].num_points);
+                    mlod_lods[i].mass = (float *)safe_malloc(sizeof(float) * mlod_lods[i].num_points);
                     fread(mlod_lods[i].mass, sizeof(float) * mlod_lods[i].num_points, 1, f_source);
                 }
             }
 
             if (strcmp(buffer, "#SharpEdges#") == 0) {
                 mlod_lods[i].num_sharp_edges = tagg_len / (2 * sizeof(uint32_t));
-                mlod_lods[i].sharp_edges = (uint32_t *)malloc(tagg_len);
+                mlod_lods[i].sharp_edges = (uint32_t *)safe_malloc(tagg_len);
                 fread(mlod_lods[i].sharp_edges, tagg_len, 1, f_source);
             }
 
@@ -393,7 +393,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     struct triplet bbox_total_min;
     struct triplet bbox_total_max;
 
-    model_info->lod_resolutions = (float *)malloc(sizeof(float) * num_lods);
+    model_info->lod_resolutions = (float *)safe_malloc(sizeof(float) * num_lods);
 
     for (i = 0; i < num_lods; i++)
         model_info->lod_resolutions[i] = mlod_lods[i].resolution;
@@ -477,7 +477,7 @@ void build_model_info(struct mlod_lod *mlod_lods, uint32_t num_lods, struct mode
     model_info->prefer_shadow_volume = false; //@todo
     model_info->shadow_offset = 1.0f; //@todo
 
-    model_info->skeleton = (struct skeleton *)malloc(sizeof(struct skeleton));
+    model_info->skeleton = (struct skeleton *)safe_malloc(sizeof(struct skeleton));
     memset(model_info->skeleton, 0, sizeof(struct skeleton));
 
     model_info->map_type = 22; //@todo
@@ -689,8 +689,8 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     // Set sub skeleton references
     odol_lod->num_bones_skeleton = model_info->skeleton->num_bones;
     odol_lod->num_bones_subskeleton = model_info->skeleton->num_bones;
-    odol_lod->subskeleton_to_skeleton = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_bones_skeleton);
-    odol_lod->skeleton_to_subskeleton = (struct odol_bonelink *)malloc(sizeof(struct odol_bonelink) * odol_lod->num_bones_skeleton);
+    odol_lod->subskeleton_to_skeleton = (uint32_t *)safe_malloc(sizeof(uint32_t) * odol_lod->num_bones_skeleton);
+    odol_lod->skeleton_to_subskeleton = (struct odol_bonelink *)safe_malloc(sizeof(struct odol_bonelink) * odol_lod->num_bones_skeleton);
 
     for (i = 0; i < model_info->skeleton->num_bones; i++) {
         odol_lod->subskeleton_to_skeleton[i] = i;
@@ -729,7 +729,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     // Textures & Materials
     odol_lod->num_textures = 0;
     odol_lod->num_materials = 0;
-    odol_lod->materials = (struct material *)malloc(sizeof(struct material) * MAXMATERIALS);
+    odol_lod->materials = (struct material *)safe_malloc(sizeof(struct material) * MAXMATERIALS);
     memset(textures, 0, sizeof(textures));
     memset(odol_lod->materials, 0, sizeof(struct material) * MAXMATERIALS);
 
@@ -778,7 +778,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         strcpy(current_target, temp);
     }
 
-    odol_lod->textures = (char *)malloc(size);
+    odol_lod->textures = (char *)safe_malloc(size);
     ptr = odol_lod->textures;
     for (i = 0; i < odol_lod->num_textures; i++) {
         strncpy(ptr, textures[i], strlen(textures[i]) + 1);
@@ -789,14 +789,14 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     odol_lod->always_0 = 0;
 
-    odol_lod->faces = (struct odol_face *)malloc(sizeof(struct odol_face) * odol_lod->num_faces);
+    odol_lod->faces = (struct odol_face *)safe_malloc(sizeof(struct odol_face) * odol_lod->num_faces);
     memset(odol_lod->faces, 0, sizeof(struct odol_face) * odol_lod->num_faces);
 
     odol_lod->num_points = 0;
 
-    odol_lod->point_to_vertex = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
-    odol_lod->vertex_to_point = (uint32_t *)malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->face_lookup = (uint32_t *)malloc(sizeof(uint32_t) * mlod_lod->num_faces);
+    odol_lod->point_to_vertex = (uint32_t *)safe_malloc(sizeof(uint32_t) * odol_lod->num_points_mlod);
+    odol_lod->vertex_to_point = (uint32_t *)safe_malloc(sizeof(uint32_t) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->face_lookup = (uint32_t *)safe_malloc(sizeof(uint32_t) * mlod_lod->num_faces);
 
     for (i = 0; i < mlod_lod->num_faces; i++)
         odol_lod->face_lookup[i] = i;
@@ -804,17 +804,17 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
     for (i = 0; i < odol_lod->num_points_mlod; i++)
         odol_lod->point_to_vertex[i] = NOPOINT;
 
-    odol_lod->uv_coords = (struct uv_pair *)malloc(sizeof(struct uv_pair) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->points = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
-    odol_lod->normals = (struct triplet *)malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->uv_coords = (struct uv_pair *)safe_malloc(sizeof(struct uv_pair) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->points = (struct triplet *)safe_malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+    odol_lod->normals = (struct triplet *)safe_malloc(sizeof(struct triplet) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
     odol_lod->vertexboneref = 0;
     if (model_info->skeleton->num_bones > 0)
-        odol_lod->vertexboneref = (struct odol_vertexboneref *)malloc(sizeof(struct odol_vertexboneref) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
+        odol_lod->vertexboneref = (struct odol_vertexboneref *)safe_malloc(sizeof(struct odol_vertexboneref) * (odol_lod->num_faces * 4 + odol_lod->num_points_mlod));
 
     // Set face flags
-    tileU = (bool *)malloc(odol_lod->num_textures);
-    tileV = (bool *)malloc(odol_lod->num_textures);
+    tileU = (bool *)safe_malloc(odol_lod->num_textures);
+    tileV = (bool *)safe_malloc(odol_lod->num_textures);
     memset(tileU, 0, odol_lod->num_textures);
     memset(tileV, 0, odol_lod->num_textures);
     for (i = 0; i < mlod_lod->num_faces; i++) {
@@ -969,7 +969,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
             }
         }
 
-        odol_lod->sections = (struct odol_section *)malloc(sizeof(struct odol_section) * odol_lod->num_sections);
+        odol_lod->sections = (struct odol_section *)safe_malloc(sizeof(struct odol_section) * odol_lod->num_sections);
 
         face_start = 0;
         face_end = 0;
@@ -1013,7 +1013,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
     // Selections
     odol_lod->num_selections = mlod_lod->num_selections;
-    odol_lod->selections = (struct odol_selection *)malloc(sizeof(struct odol_selection) * odol_lod->num_selections);
+    odol_lod->selections = (struct odol_selection *)safe_malloc(sizeof(struct odol_selection) * odol_lod->num_selections);
     for (i = 0; i < odol_lod->num_selections; i++) {
         strcpy(odol_lod->selections[i].name, mlod_lod->selections[i].name);
         lower_case(odol_lod->selections[i].name);
@@ -1038,7 +1038,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 if (mlod_lod->selections[i].faces[odol_lod->face_lookup[odol_lod->sections[j].face_start]] > 0)
                     odol_lod->selections[i].num_sections++;
             }
-            odol_lod->selections[i].sections = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_sections);
+            odol_lod->selections[i].sections = (uint32_t *)safe_malloc(sizeof(uint32_t) * odol_lod->selections[i].num_sections);
             k = 0;
             for (j = 0; j < odol_lod->num_sections; j++) {
                 if (mlod_lod->selections[i].faces[odol_lod->face_lookup[odol_lod->sections[j].face_start]] > 0) {
@@ -1059,7 +1059,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
                 odol_lod->selections[i].num_faces++;
         }
 
-        odol_lod->selections[i].faces = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_faces);
+        odol_lod->selections[i].faces = (uint32_t *)safe_malloc(sizeof(uint32_t) * odol_lod->selections[i].num_faces);
         for (j = 0; j < odol_lod->selections[i].num_faces; j++)
             odol_lod->selections[i].faces[j] = NOPOINT;
 
@@ -1084,11 +1084,11 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
 
         odol_lod->selections[i].num_vertex_weights = odol_lod->selections[i].num_vertices;
 
-        odol_lod->selections[i].vertices = (uint32_t *)malloc(sizeof(uint32_t) * odol_lod->selections[i].num_vertices);
+        odol_lod->selections[i].vertices = (uint32_t *)safe_malloc(sizeof(uint32_t) * odol_lod->selections[i].num_vertices);
         for (j = 0; j < odol_lod->selections[i].num_vertices; j++)
             odol_lod->selections[i].vertices[j] = NOPOINT;
 
-        odol_lod->selections[i].vertex_weights = (uint8_t *)malloc(sizeof(uint8_t) * odol_lod->selections[i].num_vertex_weights);
+        odol_lod->selections[i].vertex_weights = (uint8_t *)safe_malloc(sizeof(uint8_t) * odol_lod->selections[i].num_vertex_weights);
 
         for (j = 0; j < odol_lod->num_points; j++) {
             if (mlod_lod->selections[i].points[odol_lod->vertex_to_point[j]] == 0)
@@ -1109,7 +1109,7 @@ void convert_lod(struct mlod_lod *mlod_lod, struct odol_lod *odol_lod,
         if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) == 0)
             odol_lod->num_proxies++;
     }
-    odol_lod->proxies = (struct odol_proxy *)malloc(sizeof(struct odol_proxy) * odol_lod->num_proxies);
+    odol_lod->proxies = (struct odol_proxy *)safe_malloc(sizeof(struct odol_proxy) * odol_lod->num_proxies);
     k = 0;
     for (i = 0; i < mlod_lod->num_selections; i++) {
         if (strncmp(mlod_lod->selections[i].name, "proxy:", 6) != 0)
@@ -1721,7 +1721,7 @@ int mlod2odol(char *source, char *target) {
      * Returns 0 on success and a positive integer on failure.
      */
 
-    extern DocoptArgs args;
+    extern struct arguments args;
     extern int current_operation;
     extern char current_target[2048];
     FILE *f_source;
@@ -1775,7 +1775,7 @@ int mlod2odol(char *source, char *target) {
 
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "MLOD", 4) != 0) {
-        if (args.binarize)
+        if (strcmp(args.positionals[0], "binarize") == 0)
             errorf("Source file is not MLOD.\n");
         fclose(f_temp);
         fclose(f_source);
@@ -1787,7 +1787,7 @@ int mlod2odol(char *source, char *target) {
 
     fseek(f_source, 8, SEEK_SET);
     fread(&num_lods, 4, 1, f_source);
-    mlod_lods = (struct mlod_lod *)malloc(sizeof(struct mlod_lod) * num_lods);
+    mlod_lods = (struct mlod_lod *)safe_malloc(sizeof(struct mlod_lod) * num_lods);
     num_lods = read_lods(f_source, mlod_lods, num_lods);
     if (num_lods < 0) {
         errorf("Failed to read LODs.\n");

@@ -19,9 +19,6 @@
 #pragma once
 
 
-#include "docopt.h"
-
-
 int binarize(char *source, char *target);
 
 int cmd_binarize();

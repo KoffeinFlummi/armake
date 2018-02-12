@@ -31,9 +31,6 @@
 #define COMP_LZO  2
 
 
-#include "docopt.h"
-
-
 int dxt12img(unsigned char *input, unsigned char *output, int width, int height);
 
 int dxt52img(unsigned char *input, unsigned char *output, int width, int height);

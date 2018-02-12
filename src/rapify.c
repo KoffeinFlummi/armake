@@ -29,7 +29,6 @@
 #include <wchar.h>
 #endif
 
-#include "docopt.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "preprocess.h"
@@ -40,7 +39,7 @@
 struct definitions *new_definitions() {
     struct definitions *result;
 
-    result = (struct definitions *)malloc(sizeof(struct definitions));
+    result = (struct definitions *)safe_malloc(sizeof(struct definitions));
     result->head = NULL;
 
     return result;
@@ -51,7 +50,7 @@ struct definitions *add_definition(struct definitions *head, int type, void *con
     struct definition *definition;
     struct definition *tmp;
 
-    definition = (struct definition *)malloc(sizeof(struct definition));
+    definition = (struct definition *)safe_malloc(sizeof(struct definition));
     definition->type = type;
     definition->content = content;
     definition->next = NULL;
@@ -77,7 +76,7 @@ struct definitions *add_definition(struct definitions *head, int type, void *con
 struct class *new_class(char *name, char *parent, struct definitions *content, bool is_delete) {
     struct class *result;
 
-    result = (struct class *)malloc(sizeof(struct class));
+    result = (struct class *)safe_malloc(sizeof(struct class));
     result->name = name;
     result->parent = parent;
     result->is_delete = is_delete;
@@ -90,7 +89,7 @@ struct class *new_class(char *name, char *parent, struct definitions *content, b
 struct variable *new_variable(int type, char *name, struct expression *expression) {
     struct variable *result;
 
-    result = (struct variable *)malloc(sizeof(struct variable));
+    result = (struct variable *)safe_malloc(sizeof(struct variable));
     result->type = type;
     result->name = name;
     result->expression = expression;
@@ -102,7 +101,7 @@ struct variable *new_variable(int type, char *name, struct expression *expressio
 struct expression *new_expression(int type, void *value) {
     struct expression *result;
 
-    result = (struct expression *)malloc(sizeof(struct expression));
+    result = (struct expression *)safe_malloc(sizeof(struct expression));
     result->type = type;
     result->string_value = NULL;
     result->head = NULL;
@@ -333,11 +332,16 @@ int rapify_file(char *source, char *target) {
             fclose(f_temp);
             return 0;
         }
-        f_target = fopen(target, "wb");
-        if (!f_target) {
-            errorf("Failed to open %s.\n", target);
-            fclose(f_temp);
-            return 2;
+
+        if (strcmp(target, "-") == 0) {
+            f_target = stdout;
+        } else {
+            f_target = fopen(target, "wb");
+            if (!f_target) {
+                errorf("Failed to open %s.\n", target);
+                fclose(f_temp);
+                return 2;
+            }
         }
 
         fseek(f_temp, 0, SEEK_END);
@@ -352,7 +356,8 @@ int rapify_file(char *source, char *target) {
         fwrite(buffer, datasize - i, 1, f_target);
 
         fclose(f_temp);
-        fclose(f_target);
+        if (strcmp(target, "-") != 0)
+            fclose(f_target);
 
         return 0;
     } else {
@@ -383,11 +388,11 @@ int rapify_file(char *source, char *target) {
 
     constants = constants_init();
 
-    lineref = (struct lineref *)malloc(sizeof(struct lineref));
+    lineref = (struct lineref *)safe_malloc(sizeof(struct lineref));
     lineref->num_files = 0;
     lineref->num_lines = 0;
-    lineref->file_index = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
-    lineref->line_number = (uint32_t *)malloc(sizeof(uint32_t) * LINEINTERVAL);
+    lineref->file_index = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
+    lineref->line_number = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
 
     success = preprocess(source, f_temp, constants, lineref);
 
@@ -436,11 +441,32 @@ int rapify_file(char *source, char *target) {
     }
 
     // Rapify file
-    f_target = fopen(target, "wb+");
-    if (!f_target) {
-        errorf("Failed to open %s.\n", target);
-        fclose(f_temp);
-        return 2;
+    if (strcmp(target, "-") == 0) {
+#ifdef _WIN32
+        char temp_name2[2048];
+        if (!GetTempFileName(".", "amk", 0, temp_name2)) {
+            errorf("Failed to get temp file name (system error %i).\n", GetLastError());
+            return 1;
+        }
+        f_target = fopen(temp_name, "wb+");
+#else
+        f_target = tmpfile();
+#endif
+
+        if (!f_target) {
+            errorf("Failed to open temp file.\n");
+#ifdef _WIN32
+            DeleteFile(temp_name2);
+#endif
+            return 1;
+        }
+    } else {
+        f_target = fopen(target, "wb+");
+        if (!f_target) {
+            errorf("Failed to open %s.\n", target);
+            fclose(f_temp);
+            return 2;
+        }
     }
     fwrite("\0raP", 4, 1, f_target);
     fwrite("\0\0\0\0\x08\0\0\0", 8, 1, f_target);
@@ -453,11 +479,25 @@ int rapify_file(char *source, char *target) {
     fseek(f_target, 12, SEEK_SET);
     fwrite(&enum_offset, 4, 1, f_target);
 
+    if (strcmp(target, "-") == 0) {
+        fseek(f_target, 0, SEEK_END);
+        datasize = ftell(f_target);
+
+        fseek(f_target, 0, SEEK_SET);
+        for (i = 0; datasize - i >= sizeof(buffer); i += sizeof(buffer)) {
+            fread(buffer, sizeof(buffer), 1, f_target);
+            fwrite(buffer, sizeof(buffer), 1, stdout);
+        }
+        fread(buffer, datasize - i, 1, f_target);
+        fwrite(buffer, datasize - i, 1, stdout);
+    }
+
     fclose(f_temp);
     fclose(f_target);
 
 #ifdef _WIN32
     DeleteFile(temp_name);
+    DeleteFile(temp_name2);
 #endif
 
     constants_free(constants);

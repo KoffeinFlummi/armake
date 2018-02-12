@@ -33,7 +33,7 @@
 #include <fts.h>
 #endif
 
-#include "docopt.h"
+#include "args.h"
 #include "filesystem.h"
 #include "utils.h"
 #include "preprocess.h"
@@ -55,14 +55,14 @@ char *strchrnul(const char *s, int c) {
 #endif
 
 struct constants *constants_init() {
-    struct constants *c = (struct constants *)malloc(sizeof(struct constants));
+    struct constants *c = (struct constants *)safe_malloc(sizeof(struct constants));
     c->head = NULL;
     c->tail = NULL;
     return c;
 }
 
 bool constants_parse(struct constants *constants, char *definition, int line) {
-    struct constant *c = (struct constant *)malloc(sizeof(struct constant));
+    struct constant *c = (struct constant *)safe_malloc(sizeof(struct constant));
     char *ptr = definition;
     char *name;
     char *argstr;
@@ -95,12 +95,12 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
         *strchr(argstr, ')') = 0;
         ptr += strlen(argstr) + 2;
 
-        args = (char **)malloc(sizeof(char *) * 4);
+        args = (char **)safe_malloc(sizeof(char *) * 4);
 
         tok = strtok(argstr, ",");
         while (tok) {
             if (c->num_args % 4 == 0)
-                args = (char **)realloc(args, sizeof(char *) * (c->num_args + 4));
+                args = (char **)safe_realloc(args, sizeof(char *) * (c->num_args + 4));
             args[c->num_args] = strdup(tok);
             trim(args[c->num_args], strlen(args[c->num_args]) + 1);
             c->num_args++;
@@ -115,7 +115,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
     
     c->num_occurences = 0;
     if (c->num_args > 0) {
-        c->occurrences = (int (*)[2])malloc(sizeof(int) * 4 * 2);
+        c->occurrences = (int (*)[2])safe_malloc(sizeof(int) * 4 * 2);
         c->value = strdup("");
         len = 0;
 
@@ -132,7 +132,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
 
             if (ptr - start > 0) {
                 len += ptr - start;
-                c->value = (char *)realloc(c->value, len + 1);
+                c->value = (char *)safe_realloc(c->value, len + 1);
                 strncat(c->value, start, ptr - start);
             }
 
@@ -177,17 +177,17 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
                     return false;
                 }
                 len += ptr - start;
-                c->value = (char *)realloc(c->value, len + 1);
+                c->value = (char *)safe_realloc(c->value, len + 1);
                 strcat(c->value, tok);
             } else {
                 if (c->num_occurences > 0 && c->num_occurences % 4 == 0)
-                    c->occurrences = (int (*)[2])realloc(c->occurrences, sizeof(int) * 2 * (c->num_occurences + 4));
+                    c->occurrences = (int (*)[2])safe_realloc(c->occurrences, sizeof(int) * 2 * (c->num_occurences + 4));
                 c->occurrences[c->num_occurences][0] = i;
 
                 if (quoted) {
                     c->occurrences[c->num_occurences][1] = len + 1;
                     len += 2;
-                    c->value = (char *)realloc(c->value, len + 1);
+                    c->value = (char *)safe_realloc(c->value, len + 1);
                     strcat(c->value, "\"\"");
                 } else {
                     c->occurrences[c->num_occurences][1] = len;
@@ -290,7 +290,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
     char in_string;
     struct constant *c;
 
-    result = (char *)malloc(1);
+    result = (char *)safe_malloc(1);
     result[0] = 0;
 
     while (true) {
@@ -301,7 +301,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
 
         if (ptr - start > 0) {
             len += ptr - start;
-            result = (char *)realloc(result, len + 1);
+            result = (char *)safe_realloc(result, len + 1);
             strncat(result, start, ptr - start);
         }
 
@@ -316,7 +316,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
         c = constants_find(constants, start, ptr - start);
         if (c == NULL || (c->num_args > 0 && *ptr != '(')) {
             len += ptr - start;
-            result = (char *)realloc(result, len + 1);
+            result = (char *)safe_realloc(result, len + 1);
             strncat(result, start, ptr - start);
             continue;
         }
@@ -324,7 +324,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
         args = NULL;
         num_args = 0;
         if (*ptr == '(') {
-            args = (char **)malloc(sizeof(char *) * 4);
+            args = (char **)safe_malloc(sizeof(char *) * 4);
             ptr++;
             start = ptr;
 
@@ -342,7 +342,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
                     level--;
                 } else if (level == 0 && (*ptr == ',' || *ptr == ')')) {
                     if (num_args > 0 && num_args % 4 == 0)
-                        args = (char **)realloc(args, sizeof(char *) * (num_args + 4));
+                        args = (char **)safe_realloc(args, sizeof(char *) * (num_args + 4));
                     args[num_args] = strndup(start, ptr - start);
                     num_args++;
                     if (*ptr == ')') {
@@ -373,7 +373,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
         }
 
         len += strlen(value);
-        result = (char *)realloc(result, len + 1);
+        result = (char *)safe_realloc(result, len + 1);
         strcat(result, value);
 
         free(value);
@@ -424,13 +424,13 @@ char *constant_value(struct constants *constants, struct constant *constant,
         ptr = constant->value;
         for (i = 0; i < constant->num_occurences; i++) {
             tmp = strndup(ptr, constant->occurrences[i][1] - (ptr - constant->value));
-            result = (char *)realloc(result, strlen(result) + strlen(tmp) + strlen(args[constant->occurrences[i][0]]) + 1);
+            result = (char *)safe_realloc(result, strlen(result) + strlen(tmp) + strlen(args[constant->occurrences[i][0]]) + 1);
             strcat(result, tmp);
             free(tmp);
             strcat(result, args[constant->occurrences[i][0]]);
             ptr = constant->value + constant->occurrences[i][1];
         }
-        result = (char *)realloc(result, strlen(result) + strlen(ptr) + 1);
+        result = (char *)safe_realloc(result, strlen(result) + strlen(ptr) + 1);
         strcat(result, ptr);
     }
 
@@ -647,12 +647,12 @@ int find_file(char *includepath, char *origin, char *actualpath) {
      * file does not exist.
      */
 
+    extern struct arguments args;
     int i;
     int success;
-    extern char include_folders[MAXINCLUDEFOLDERS][512];
 
-    for (i = 0; i < MAXINCLUDEFOLDERS && include_folders[i][0] != 0; i++) {
-        success = find_file_helper(includepath, origin, include_folders[i], actualpath, NULL);
+    for (i = 0; i < args.num_includefolders; i++) {
+        success = find_file_helper(includepath, origin, args.includefolders[i], actualpath, NULL);
 
         if (success != 2)
             return success;
@@ -744,18 +744,18 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
     // @todo
     // strcpy(constants[0].name, "__FILE__");
     // if (constants[0].value == 0)
-    //     constants[0].value = (char *)malloc(1024);
+    //     constants[0].value = (char *)safe_malloc(1024);
     // snprintf(constants[0].value, 1024, "\"%s\"", source);
 
     // strcpy(constants[1].name, "__LINE__");
 
     // strcpy(constants[2].name, "__EXEC");
     // if (constants[2].value == 0)
-    //     constants[2].value = (char *)malloc(1);
+    //     constants[2].value = (char *)safe_malloc(1);
 
     // strcpy(constants[3].name, "__EVAL");
     // if (constants[3].value == 0)
-    //     constants[3].value = (char *)malloc(1);
+    //     constants[3].value = (char *)safe_malloc(1);
 
     while (true) {
         // get line and add next lines if line ends with a backslash
@@ -774,7 +774,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
             if (buffer == NULL) {
                 buffer = ptr;
             } else {
-                buffer = (char *)realloc(buffer, strlen(buffer) + 2 + buffsize);
+                buffer = (char *)safe_realloc(buffer, strlen(buffer) + 2 + buffsize);
                 strcpy(buffer + strlen(buffer) - 2, ptr);
                 free(ptr);
             }
@@ -843,7 +843,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
         // second constant is line number
         // @todo
         // if (constants[1].value == 0)
-        //     constants[1].value = (char *)malloc(16);
+        //     constants[1].value = (char *)safe_malloc(16);
         // sprintf(constants[1].value, "%i", line - 1);
 
         if (level_comment == 0 && buffer[0] == '#') {
@@ -851,7 +851,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
             while (*ptr == ' ' || *ptr == '\t')
                 ptr++;
 
-            directive = (char *)malloc(strlen(ptr) + 1);
+            directive = (char *)safe_malloc(strlen(ptr) + 1);
             strcpy(directive, ptr);
             *(strchrnul(directive, ' ')) = 0;
             *(strchrnul(directive, '\t')) = 0;
@@ -945,8 +945,8 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
 
             lineref->num_lines++;
             if (lineref->num_lines % LINEINTERVAL == 0) {
-                lineref->file_index = (uint32_t *)realloc(lineref->file_index, 4 * (lineref->num_lines + LINEINTERVAL));
-                lineref->line_number = (uint32_t *)realloc(lineref->line_number, 4 * (lineref->num_lines + LINEINTERVAL));
+                lineref->file_index = (uint32_t *)safe_realloc(lineref->file_index, 4 * (lineref->num_lines + LINEINTERVAL));
+                lineref->line_number = (uint32_t *)safe_realloc(lineref->line_number, 4 * (lineref->num_lines + LINEINTERVAL));
             }
         }
 
