@@ -439,10 +439,13 @@ int rapify_file(char *source, char *target) {
         return 1;
     }
 
+#ifdef _WIN32
+    char temp_name2[2048];
+#endif
+
     // Rapify file
     if (strcmp(target, "-") == 0) {
 #ifdef _WIN32
-        char temp_name2[2048];
         if (!GetTempFileName(".", "amk", 0, temp_name2)) {
             errorf("Failed to get temp file name (system error %i).\n", GetLastError());
             return 1;
