@@ -88,13 +88,13 @@ int attempt_bis_binarize(char *source, char *target) {
 
     // Find binarize.exe
     buffsize = sizeof(command);
-    success = RegGetValue(HKEY_CURRENT_USER, "Software\\Valve\\Steam", "SteamPath",
+    success = RegGetValue(HKEY_CURRENT_USER, "Software\\Bohemia Interactive\\binarize", "path",
             RRF_RT_ANY, NULL, command, &buffsize);
 
     if (success != ERROR_SUCCESS)
         return -2;
 
-    strcat(command, "/steamapps/common/Arma 3 Tools/Binarize/binarize.exe");
+    strcat(command, "\\binarize.exe");
 
     if (!file_exists(command))
         return -3;
