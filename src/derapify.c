@@ -842,6 +842,9 @@ int derapify_file(char *source, char *target) {
     char buffer[4096];
     int bytes;
     int success;
+#ifdef _WIN32
+    char temp_name[2048];
+#endif
 
     if (strcmp(source, "-") == 0)
         current_target = "stdin";
@@ -851,7 +854,6 @@ int derapify_file(char *source, char *target) {
     // Open source
     if (strcmp(source, "-") == 0) {
 #ifdef _WIN32
-        char temp_name[2048];
         if (!GetTempFileName(".", "amk", 0, temp_name)) {
             errorf("Failed to get temp file name (system error %i).\n", GetLastError());
             return 1;
