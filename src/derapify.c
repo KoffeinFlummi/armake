@@ -906,8 +906,10 @@ int derapify_file(char *source, char *target) {
     success = derapify_class(f_source, f_target, "", 0);
 
     fclose(f_source);
+
 #ifdef _WIN32
-    DeleteFile(temp_name);
+    if (strcmp(source, "-") == 0)
+        DeleteFile(temp_name);
 #endif
 
     if (strcmp(target, "-") != 0)

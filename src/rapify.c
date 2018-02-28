@@ -499,7 +499,8 @@ int rapify_file(char *source, char *target) {
 
 #ifdef _WIN32
     DeleteFile(temp_name);
-    DeleteFile(temp_name2);
+    if (strcmp(target, "-") == 0)
+        DeleteFile(temp_name2);
 #endif
 
     constants_free(constants);
