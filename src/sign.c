@@ -143,7 +143,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         if (temp == 0)
             continue;
 
-        if (strchr(buffer, '.') != NULL && (
+/*        if (strchr(buffer, '.') != NULL && (
                 strcmp(strrchr(buffer, '.'), ".paa") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".jpg") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".p3d") == 0 ||
@@ -159,7 +159,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
                 strcmp(strrchr(buffer, '.'), ".wrp") == 0)) {
             fp_body += temp;
             continue;
-        }
+        }*/
 
         nothing = false;
 
