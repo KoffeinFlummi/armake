@@ -204,6 +204,7 @@ int attempt_bis_binarize(char *source, char *target) {
 
         if (find_file(filename, "", temp)) {
             lwarningf(source, -1, "Failed to find file %s.\n", filename);
+            free(dependencies[i]);
             continue;
         }
 
