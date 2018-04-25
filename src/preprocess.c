@@ -380,7 +380,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
     }
 
     free(source);
-    
+
     return result;
 }
 
@@ -650,13 +650,19 @@ int find_file(char *includepath, char *origin, char *actualpath) {
     extern struct arguments args;
     int i;
     int success;
+    char *temp = (char *)malloc(2048);
 
     for (i = 0; i < args.num_includefolders; i++) {
-        success = find_file_helper(includepath, origin, args.includefolders[i], actualpath, NULL);
+        strcpy(temp, args.includefolders[i]);
+        success = find_file_helper(includepath, origin, temp, actualpath, NULL);
 
-        if (success != 2)
+        if (success != 2) {
+            free(temp);
             return success;
+        }
     }
+
+    free(temp);
 
     return 2;
 }
