@@ -570,6 +570,9 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         if (strcmp(file.cFileName, ".") == 0 || strcmp(file.cFileName, "..") == 0)
             continue;
 
+        if (strcmp(file.cFileName, ".git") == 0)
+            continue;
+
         GetFullPathName(cwd, 2048, mask, NULL);
         sprintf(mask, "%s\\%s", mask, file.cFileName);
         if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -597,6 +600,9 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         return 1;
 
     while ((f = fts_read(tree))) {
+        if (strcmp(filename, ".git"))
+            fts_set(tree, f, FTS_SKIP);
+
         switch (f->fts_info) {
             case FTS_DNR:
             case FTS_ERR:
