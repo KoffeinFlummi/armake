@@ -573,11 +573,14 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         GetFullPathName(cwd, 2048, mask, NULL);
         sprintf(mask, "%s\\%s", mask, file.cFileName);
         if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (!find_file_helper(includepath, origin, includefolder, actualpath, mask))
+            if (!find_file_helper(includepath, origin, includefolder, actualpath, mask)) {
+                FindClose(handle);
                 return 0;
+            }
         } else {
             if (strcmp(filename, file.cFileName) == 0 && matches_includepath(mask, includepath, includefolder)) {
                 strncpy(actualpath, mask, 2048);
+                FindClose(handle);
                 return 0;
             }
         }
