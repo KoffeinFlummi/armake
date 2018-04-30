@@ -600,7 +600,7 @@ int find_file_helper(char *includepath, char *origin, char *includefolder, char 
         return 1;
 
     while ((f = fts_read(tree))) {
-        if (strcmp(filename, ".git"))
+        if (!strcmp(f->fts_name, ".git"))
             fts_set(tree, f, FTS_SKIP);
 
         switch (f->fts_info) {
