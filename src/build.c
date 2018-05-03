@@ -36,9 +36,32 @@
 #include "build.h"
 
 
+bool file_allowed(char *filename) {
+    int i;
+    extern struct arguments args;
+
+    if (strcmp(filename, "$PBOPREFIX$") == 0)
+        return false;
+
+    for (i = 0; i < args.num_excludefiles; i++) {
+        if (matches_glob(filename, args.excludefiles[i]))
+            return false;
+    }
+
+    return true;
+}
+
+
 int binarize_callback(char *root, char *source, char *junk) {
     int success;
     char target[2048];
+    char filename[1024];
+
+    filename[0] = 0;
+    strcat(filename, source + strlen(root) + 1);
+
+    if (!file_allowed(filename))
+        return 0;
 
     strncpy(target, source, sizeof(target));
 
@@ -53,22 +76,6 @@ int binarize_callback(char *root, char *source, char *junk) {
         return success * -1;
 
     return 0;
-}
-
-
-bool file_allowed(char *filename) {
-    int i;
-    extern struct arguments args;
-
-    if (strcmp(filename, "$PBOPREFIX$") == 0)
-        return false;
-
-    for (i = 0; i < args.num_excludefiles; i++) {
-        if (matches_glob(filename, args.excludefiles[i]))
-            return false;
-    }
-
-    return true;
 }
 
 
