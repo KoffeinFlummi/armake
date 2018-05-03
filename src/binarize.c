@@ -102,6 +102,7 @@ int attempt_bis_binarize(char *source, char *target) {
     char command[2048];
     char temp[2048];
     char tempfolder[2048];
+    char target_tempfolder[2048];
     char filename[2048];
     char *dependencies[MAXTEXTURES];
     char *root;
@@ -137,16 +138,20 @@ int attempt_bis_binarize(char *source, char *target) {
     // Read P3D and create a list of required files
     if (!is_rtm) {
         f_source = fopen(source, "rb");
-        if (!f_source)
+        if (!f_source) {
+            printf("Failed to open %s.\n", source);
             return 1;
+        }
 
         fseek(f_source, 8, SEEK_SET);
         fread(&num_lods, 4, 1, f_source);
         mlod_lods = (struct mlod_lod *)safe_malloc(sizeof(struct mlod_lod) * num_lods);
         num_lods = read_lods(f_source, mlod_lods, num_lods);
         fflush(stdout);
-        if (num_lods < 0)
+        if (num_lods < 0) {
+            printf("Source file seems to be invalid P3D.\n");
             return 2;
+        }
 
         fclose(f_source);
 
@@ -206,7 +211,17 @@ int attempt_bis_binarize(char *source, char *target) {
         return 1;
     }
 
-    strcpy(temp, (strchr(target, PATHSEP) == NULL) ? target : strrchr(target, PATHSEP) + 1);
+    // Create a temp target folder for binarize calls
+    if (strcmp(args.positionals[0], "binarize") == 0) {
+        strcpy(temp, filename);
+        strcat(temp, ".out");
+        if (create_temp_folder(temp, target_tempfolder, sizeof(target_tempfolder))) {
+            errorf("Failed to create temp folder.\n");
+            return 1;
+        }
+    }
+
+    strcpy(temp, (strchr(source, PATHSEP) == NULL) ? source : strrchr(source, PATHSEP) + 1);
     strcpy(filename, tempfolder);
     strcat(filename, temp);
 
@@ -269,8 +284,15 @@ int attempt_bis_binarize(char *source, char *target) {
     strcat(command, " -norecurse -always -silent -maxProcesses=0 ");
     strcat(command, tempfolder);
     strcat(command, " ");
-    GetFullPathName(target, 2048, temp, NULL);
-    *(strrchr(temp, PATHSEP)) = 0;
+
+    if (strcmp(args.positionals[0], "binarize") == 0) {
+        strcpy(temp, target_tempfolder);
+        *(strrchr(temp, PATHSEP)) = 0;
+    } else {
+        GetFullPathName(target, 2048, temp, NULL);
+        *(strrchr(temp, PATHSEP)) = 0;
+    }
+
     strcat(command, temp);
 
     if (getenv("BIOUTPUT"))
@@ -295,10 +317,24 @@ int attempt_bis_binarize(char *source, char *target) {
     if (getenv("BIOUTPUT"))
         debugf("done with binarize.exe\n");
 
+    // Copy final file to target
+    if (strcmp(args.positionals[0], "binarize") == 0) {
+        strcpy(temp, (strchr(source, PATHSEP) == NULL) ? source : strrchr(source, PATHSEP) + 1);
+        strcpy(filename, target_tempfolder);
+        strcat(filename, temp);
+        if (copy_file(filename, target))
+            return 4;
+
+        if (remove_folder(target_tempfolder)) {
+            errorf("Failed to remove temp folder.\n");
+            return 5;
+        }
+    }
+
     // Clean Up
     if (remove_folder(tempfolder)) {
         errorf("Failed to remove temp folder.\n");
-        return 4;
+        return 5;
     }
 
     return success;
