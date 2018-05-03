@@ -125,6 +125,10 @@ int write_header_to_pbo(char *root, char *source, char *target) {
     }
 #endif
 
+    // replace .p3do ending
+    if (strlen(filename) > 5 && !strcmp(filename + strlen(filename) - 5, ".p3do"))
+        filename[strlen(filename) - 1] = 0;
+
     fwrite(filename, strlen(filename), 1, f_target);
     fputc(0, f_target);
 
