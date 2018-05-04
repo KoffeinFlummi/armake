@@ -79,13 +79,13 @@ armake
 
 Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]
-    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <folder> <pbo>
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] [-e <headerextension>] <folder> <pbo>
     armake inspect <pbo>
     armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>
     armake cat <pbo> <name>
     armake derapify [-f] [-d <indentation>] [<source> [<target>]]
     armake keygen [-f] <keyname>
-    armake sign [-f] <privatekey> <pbo>
+    armake sign [-f] [-s <signature>] <privatekey> <pbo>
     armake paa2img [-f] <source> <target>
     armake img2paa [-f] [-z] [-t <paatype>] <source> <target>
     armake (-h | --help)

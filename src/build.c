@@ -36,9 +36,32 @@
 #include "build.h"
 
 
+bool file_allowed(char *filename) {
+    int i;
+    extern struct arguments args;
+
+    if (strcmp(filename, "$PBOPREFIX$") == 0)
+        return false;
+
+    for (i = 0; i < args.num_excludefiles; i++) {
+        if (matches_glob(filename, args.excludefiles[i]))
+            return false;
+    }
+
+    return true;
+}
+
+
 int binarize_callback(char *root, char *source, char *junk) {
     int success;
     char target[2048];
+    char filename[1024];
+
+    filename[0] = 0;
+    strcat(filename, source + strlen(root) + 1);
+
+    if (!file_allowed(filename))
+        return 0;
 
     strncpy(target, source, sizeof(target));
 
@@ -53,22 +76,6 @@ int binarize_callback(char *root, char *source, char *junk) {
         return success * -1;
 
     return 0;
-}
-
-
-bool file_allowed(char *filename) {
-    int i;
-    extern struct arguments args;
-
-    if (strcmp(filename, "$PBOPREFIX$") == 0)
-        return false;
-
-    for (i = 0; i < args.num_excludefiles; i++) {
-        if (matches_glob(filename, args.excludefiles[i]))
-            return false;
-    }
-
-    return true;
 }
 
 
@@ -117,6 +124,10 @@ int write_header_to_pbo(char *root, char *source, char *target) {
             filename[i] = '\\';
     }
 #endif
+
+    // replace .p3do ending
+    if (strlen(filename) > 5 && !strcmp(filename + strlen(filename) - 5, ".p3do"))
+        filename[strlen(filename) - 1] = 0;
 
     fwrite(filename, strlen(filename), 1, f_target);
     fputc(0, f_target);
@@ -213,6 +224,10 @@ int hash_file(char *path, unsigned char *hash) {
 int cmd_build() {
     extern char *current_target;
     int i;
+    int j;
+    int k;
+    char buffer[512];
+    bool valid;
 
     if (args.num_positionals != 3)
         return 128;
@@ -247,20 +262,44 @@ int cmd_build() {
     strcat(prefixpath, args.positionals[1]);
     strcat(prefixpath, PATHSEP_STR);
     strcat(prefixpath, "$PBOPREFIX$");
-    f_prefix = fopen(prefixpath, "rb");
-    if (!f_prefix) {
-        if (strrchr(args.positionals[1], PATHSEP) == NULL)
-            strncpy(addonprefix, args.positionals[1], sizeof(addonprefix));
-        else
-            strncpy(addonprefix, strrchr(args.positionals[1], PATHSEP) + 1, sizeof(addonprefix));
-    } else {
-        fgets(addonprefix, sizeof(addonprefix), f_prefix);
-        fclose(f_prefix);
+
+    for (i = 0; i < args.num_headerextensions && args.headerextensions[i][0] != 0; i++) {
+        k = 0;
+        valid = false;
+        for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
+            if (args.headerextensions[i][j] == '=' || args.headerextensions[i][j] == '\0') {
+                if (strcmp(buffer, "prefix") == 0) {
+                    k = 0;
+                    valid = true;
+                } else if (valid) {
+                    strcat(addonprefix, buffer);
+                } else {
+                    break;
+                }
+            } else {
+                buffer[k++] = args.headerextensions[i][j];
+                buffer[k] = '\0';
+            }
+        }
     }
-    if (addonprefix[strlen(addonprefix) - 1] == '\n')
-        addonprefix[strlen(addonprefix) - 1] = '\0';
-    if (addonprefix[strlen(addonprefix) - 1] == '\r')
-        addonprefix[strlen(addonprefix) - 1] = '\0';
+
+    if (!valid) {
+        f_prefix = fopen(prefixpath, "rb");
+        if (!f_prefix) {
+            if (strrchr(args.positionals[1], PATHSEP) == NULL)
+                strncpy(addonprefix, args.positionals[1], sizeof(addonprefix));
+            else
+                strncpy(addonprefix, strrchr(args.positionals[1], PATHSEP) + 1, sizeof(addonprefix));
+        } else {
+            fgets(addonprefix, sizeof(addonprefix), f_prefix);
+            fclose(f_prefix);
+        }
+
+        if (addonprefix[strlen(addonprefix) - 1] == '\n')
+            addonprefix[strlen(addonprefix) - 1] = '\0';
+        if (addonprefix[strlen(addonprefix) - 1] == '\r')
+            addonprefix[strlen(addonprefix) - 1] = '\0';
+    }
 
     // replace pathseps on linux
 #ifndef _WIN32
@@ -329,7 +368,7 @@ int cmd_build() {
 
     current_target = args.positionals[1];
 
-    // write header extension
+    // write header extensions
     f_target = fopen(args.positionals[2], "wb");
     fwrite("\0sreV\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0prefix\0", 28, 1, f_target);
     // write addonprefix with windows pathseps
@@ -339,6 +378,35 @@ int cmd_build() {
         else
             fputc(addonprefix[i], f_target);
     }
+    // write extra header extensions
+    for (i = 0; i < args.num_headerextensions && args.headerextensions[i][0] != 0; i++) {
+        k = 0;
+        valid = false;
+        for (j = 0; j <= strlen(args.headerextensions[i]); j++) {
+            if (args.headerextensions[i][j] == '=' || args.headerextensions[i][j] == '\0') {
+                // prefix is already written above
+                if (strcmp(buffer, "prefix") == 0)
+                    break;
+
+                // validate
+                if (args.headerextensions[i][j] == '\0' && !valid) {
+                    errorf("Invalid header extension format (%s).\n", args.headerextensions[i]);
+                    remove_file(args.positionals[2]);
+                    remove_folder(tempfolder);
+                    return 6;
+                }
+
+                // write
+                fputs(buffer, f_target);
+                fputc(0, f_target);
+                k = 0;
+                valid = true;
+            } else {
+                buffer[k++] = args.headerextensions[i][j];
+                buffer[k] = '\0';
+            }
+        }
+    }
     fputc(0, f_target);
     fclose(f_target);
 
@@ -347,7 +415,7 @@ int cmd_build() {
         errorf("Failed to write some file header(s) to PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 6;
+        return 7;
     }
 
     // header boundary
@@ -356,7 +424,7 @@ int cmd_build() {
         errorf("Failed to write header boundary to PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 7;
+        return 8;
     }
     for (i = 0; i < 21; i++)
         fputc(0, f_target);
@@ -367,7 +435,7 @@ int cmd_build() {
         errorf("Failed to pack some file(s) into the PBO.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 8;
+        return 9;
     }
 
     // write checksum to file
@@ -378,7 +446,7 @@ int cmd_build() {
         errorf("Failed to write checksum to file.\n");
         remove_file(args.positionals[2]);
         remove_folder(tempfolder);
-        return 9;
+        return 10;
     }
     fputc(0, f_target);
     fwrite(checksum, 20, 1, f_target);
@@ -387,7 +455,7 @@ int cmd_build() {
     // remove temp folder
     if (remove_folder(tempfolder)) {
         errorf("Failed to remove temp folder.\n");
-        return 10;
+        return 11;
     }
 
     // sign pbo
@@ -406,20 +474,26 @@ int cmd_build() {
             strcpy(keyname, strrchr(args.privatekey, PATHSEP) + 1);
         *strrchr(keyname, '.') = 0;
 
-        strcpy(path_signature, args.positionals[2]);
-        strcat(path_signature, ".");
-        strcat(path_signature, keyname);
-        strcat(path_signature, ".bisign");
+        if (args.signature) {
+            strcpy(path_signature, args.signature);
+            if (strlen(path_signature) < 7 || strcmp(&path_signature[strlen(path_signature) - 7], ".bisign") != 0)
+                strcat(path_signature, ".bisign");
+        } else {
+            strcpy(path_signature, args.positionals[2]);
+            strcat(path_signature, ".");
+            strcat(path_signature, keyname);
+            strcat(path_signature, ".bisign");
+        }
 
         // check if target already exists
         if (access(path_signature, F_OK) != -1 && !args.force) {
             errorf("File %s already exists and --force was not set.\n", path_signature);
-            return 1;
+            return 2;
         }
 
         if (sign_pbo(args.positionals[2], args.privatekey, path_signature)) {
             errorf("Failed to sign file.\n");
-            return 2;
+            return 3;
         }
     }
 

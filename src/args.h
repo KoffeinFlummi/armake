@@ -31,6 +31,7 @@ struct arguments {
     bool packonly;
     bool compress;
     char *privatekey;
+    char *signature;
     char *indent;
     char *paatype;
     int num_mutedwarnings;
@@ -39,6 +40,8 @@ struct arguments {
     char **includefolders;
     int num_excludefiles;
     char **excludefiles;
+    int num_headerextensions;
+    char **headerextensions;
 } args;
 
 struct arg_option {

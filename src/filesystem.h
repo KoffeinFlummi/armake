@@ -31,7 +31,9 @@
 
 
 #ifdef _WIN32
-size_t getline(char **lineptr, size_t *n, FILE *stream);
+ssize_t getdelim(char **buf, size_t *bufsiz, int delimiter, FILE *fp);
+
+ssize_t getline(char **buf, size_t *bufsiz, FILE *fp);
 #endif
 
 int get_temp_name(char *target, char *suffix);
