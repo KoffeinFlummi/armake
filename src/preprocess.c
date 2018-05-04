@@ -112,7 +112,7 @@ bool constants_parse(struct constants *constants, char *definition, int line) {
 
     while (*ptr == ' ' || *ptr == '\t')
         ptr++;
-    
+
     c->num_occurences = 0;
     if (c->num_args > 0) {
         c->occurrences = (int (*)[2])safe_malloc(sizeof(int) * 4 * 2);
