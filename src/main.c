@@ -41,7 +41,7 @@ void print_usage() {
            "\n"
            "Usage:\n"
            "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]\n"
-           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] <folder> <pbo>\n"
+           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] [-e <headerextension>] <folder> <pbo>\n"
            "    armake inspect <pbo>\n"
            "    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>\n"
            "    armake cat <pbo> <name>\n"
@@ -73,6 +73,8 @@ void print_usage() {
            "                        For unpack: pattern to include in output folder (repeatable).\n"
            "    -x --exclude    Glob patterns to exclude from PBO (repeatable).\n"
            "                        For unpack: pattern to exclude from output folder (repeatable).\n"
+           "    -e --headerext  Header extension (repeatable).\n"
+           "                        Example: foo=bar\n"
            "    -k --key        Private key to use for signing the PBO.\n"
            "    -s --signature  Signature name to use for signing the PBO.\n"
            "    -d --indent     String to use for indentation. "    " (4 spaces) by default.\n"
@@ -131,7 +133,8 @@ int read_args(int argc, char *argv[]) {
     const struct arg_option multi_options[] = {
         { "-w", "--warning", &args.mutedwarnings, &args.num_mutedwarnings },
         { "-i", "--include", &args.includefolders, &args.num_includefolders },
-        { "-x", "--exclude", &args.excludefiles, &args.num_excludefiles }
+        { "-x", "--exclude", &args.excludefiles, &args.num_excludefiles },
+        { "-e", "--headerext", &args.headerextensions, &args.num_headerextensions }
     };
 
     for (i = 1; i < argc; i++) {
@@ -277,6 +280,8 @@ done:
         free(args.includefolders);
     if (args.excludefiles)
         free(args.excludefiles);
+    if (args.headerextensions)
+        free(args.headerextensions);
 
     return success;
 }

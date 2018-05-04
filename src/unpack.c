@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -62,8 +63,8 @@ int cmd_inspect() {
     int num_files;
     long i;
     long fp_tmp;
-    char prefix[2048] = { 0 };
     char buffer[2048];
+    bool reading_headerext;
     struct header *headers;
 
     if (args.num_positionals != 2)
@@ -85,29 +86,37 @@ int cmd_inspect() {
         return 1;
     }
 
-    // read header extensions and prefix
+    // read header extensions
     fseek(f_target, 1, SEEK_SET);
     fgets(buffer, 5, f_target);
     if (strncmp(buffer, "sreV", 4) == 0) {
         fseek(f_target, 21, SEEK_SET);
+        printf("Header extensions:\n");
+        i = 0;
+        reading_headerext = false;
         while (true) {
             fp_tmp = ftell(f_target);
-            if (strcmp(buffer, "prefix") == 0) {
-                fgets(prefix, sizeof(prefix), f_target);
-                fseek(f_target, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-                strcpy(buffer, prefix);
-            } else {
-                fgets(buffer, sizeof(buffer), f_target);
-                fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+            buffer[i++] = fgetc(f_target);
+            buffer[i] = '\0';
+            if (buffer[i - 1] == '\0') {
+                if (buffer[i - 2] == '\0') {
+                    break;
+                } else {
+                    if (reading_headerext) {
+                        printf("%s\n", buffer);
+                        reading_headerext = false;
+                    } else {
+                        printf("- %s=", buffer);
+                        reading_headerext = true;
+                    }
+                    i = 0;
+                }
             }
-            if (strlen(buffer) == 0)
-                break;
         }
+        printf("\n");
     } else {
         fseek(f_target, 0, SEEK_SET);
     }
-
-    printf("Prefix: \"%s\"\n", prefix);
 
     // read headers
     for (num_files = 0; num_files <= MAXFILES; num_files++) {
@@ -160,9 +169,9 @@ int cmd_unpack() {
     long i;
     long j;
     long fp_tmp;
-    char prefix[2048] = { 0 };
     char full_path[2048];
     char buffer[2048];
+    bool reading_headerext;
     struct header *headers;
 
     if (args.num_positionals < 3)
@@ -188,24 +197,56 @@ int cmd_unpack() {
         return 2;
     }
 
-    // read header extensions and prefix
+    // create header extensions file
+    strcpy(full_path, args.positionals[2]);
+    strcat(full_path, PATHSEP_STR);
+    strcat(full_path, "$PBOPREFIX$");
+    if (access(full_path, F_OK) != -1 && !args.force) {
+        errorf("File %s already exists and --force was not set.\n", full_path);
+        fclose(f_source);
+        free(headers);
+        return 3;
+    }
+
+    // read header extensions
     fseek(f_source, 1, SEEK_SET);
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "sreV", 4) == 0) {
         fseek(f_source, 21, SEEK_SET);
+
+        // open header extensions file
+        f_target = fopen(full_path, "wb");
+        if (!f_target) {
+            errorf("Failed to open file %s.\n", full_path);
+            fclose(f_source);
+            free(headers);
+            return 4;
+        }
+
+        // read all header extensions
+        i = 0;
+        reading_headerext = false;
         while (true) {
             fp_tmp = ftell(f_source);
-            if (strcmp(buffer, "prefix") == 0) {
-                fgets(prefix, sizeof(prefix), f_source);
-                fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-                strcpy(buffer, prefix);
-            } else {
-                fgets(buffer, sizeof(buffer), f_source);
-                fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+            buffer[i++] = fgetc(f_source);
+            buffer[i] = '\0';
+            if (buffer[i - 1] == '\0') {
+                if (buffer[i - 2] == '\0') {
+                    break;
+                } else {
+                    fputs(buffer, f_target);
+                    if (reading_headerext) {
+                        fputc('\n', f_target);
+                        reading_headerext = false;
+                    } else {
+                        fputc('=', f_target);
+                        reading_headerext = true;
+                    }
+                    i = 0;
+                }
             }
-            if (strlen(buffer) == 0)
-                break;
         }
+        fclose(f_target);
     } else {
         fseek(f_source, 0, SEEK_SET);
     }
@@ -230,7 +271,7 @@ int cmd_unpack() {
         errorf("Maximum number of files (%i) exceeded.\n", MAXFILES);
         fclose(f_source);
         free(headers);
-        return 4;
+        return 5;
     }
 
     // read files
@@ -281,7 +322,7 @@ int cmd_unpack() {
             if (create_folders(buffer)) {
                 errorf("Failed to create folder %s.\n", buffer);
                 fclose(f_source);
-                return 5;
+                return 6;
             }
         }
 
@@ -289,13 +330,13 @@ int cmd_unpack() {
         if (access(full_path, F_OK) != -1 && !args.force) {
             errorf("File %s already exists and --force was not set.\n", full_path);
             fclose(f_source);
-            return 6;
+            return 7;
         }
         f_target = fopen(full_path, "wb");
         if (!f_target) {
             errorf("Failed to open file %s.\n", full_path);
             fclose(f_source);
-            return 7;
+            return 8;
         }
 
         // write to file
@@ -314,23 +355,6 @@ int cmd_unpack() {
     fclose(f_source);
     free(headers);
 
-    // if prefix file wasn't included but there is a prefix, create one
-    strcpy(full_path, args.positionals[2]);
-    strcat(full_path, PATHSEP_STR);
-    strcat(full_path, "$PBOPREFIX$");
-    if (access(full_path, F_OK) == -1 && strlen(prefix) > 0) {
-        f_target = fopen(full_path, "wb");
-        if (!f_target) {
-            errorf("Failed to open file %s.\n", full_path);
-            return 8;
-        }
-
-        fputs(prefix, f_target);
-        fputc('\n', f_target);
-
-        fclose(f_target);
-    }
-
     return 0;
 }
 
@@ -344,7 +368,6 @@ int cmd_cat() {
     long i;
     long j;
     long fp_tmp;
-    char prefix[2048] = { 0 };
     char buffer[2048];
     struct header *headers;
 
@@ -363,22 +386,17 @@ int cmd_cat() {
         return 1;
     }
 
-    // read header extensions and prefix
+    // read header extensions
     fseek(f_source, 1, SEEK_SET);
     fgets(buffer, 5, f_source);
     if (strncmp(buffer, "sreV", 4) == 0) {
         fseek(f_source, 21, SEEK_SET);
+        i = 0;
         while (true) {
             fp_tmp = ftell(f_source);
-            if (strcmp(buffer, "prefix") == 0) {
-                fgets(prefix, sizeof(prefix), f_source);
-                fseek(f_source, fp_tmp + strlen(prefix) + 1, SEEK_SET);
-                strcpy(buffer, prefix);
-            } else {
-                fgets(buffer, sizeof(buffer), f_source);
-                fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
-            }
-            if (strlen(buffer) == 0)
+            buffer[i++] = fgetc(f_source);
+            buffer[i] = '\0';
+            if (buffer[i - 1] == '\0' && buffer[i - 2] == '\0')
                 break;
         }
     } else {

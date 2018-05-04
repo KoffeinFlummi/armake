@@ -79,7 +79,7 @@ armake
 
 Usage:
     armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]
-    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] <folder> <pbo>
+    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] [-e <headerextension>] <folder> <pbo>
     armake inspect <pbo>
     armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>
     armake cat <pbo> <name>

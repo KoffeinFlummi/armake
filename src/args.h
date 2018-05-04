@@ -40,6 +40,8 @@ struct arguments {
     char **includefolders;
     int num_excludefiles;
     char **excludefiles;
+    int num_headerextensions;
+    char **headerextensions;
 } args;
 
 struct arg_option {

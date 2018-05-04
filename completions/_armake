@@ -133,9 +133,11 @@ _armake-build ()
 		'(--key)--key[Private key to use for signing the PBO.]' \
 		'(-s)-s[Signature name to use for signing the PBO.]' \
 		'(--signature)--signature[Signature name to use for signing the PBO.]' \
+		'(-e)-e[Header extension (repeatable).]' \
+		'(--headerext)--headerext[Header extension (repeatable).]' \
 
     else
-        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<signature>' '<folder>' '<pbo>')
+        myargs=('<wname>' '<includefolder>' '<xlist>' '<privatekey>' '<signature>' '<headerextension>' '<folder>' '<pbo>')
         _message_next_arg
     fi
 }
