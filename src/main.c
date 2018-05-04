@@ -41,13 +41,13 @@ void print_usage() {
            "\n"
            "Usage:\n"
            "    armake binarize [-f] [-w <wname>] [-i <includefolder>] <source> [<target>]\n"
-           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] <folder> <pbo>\n"
+           "    armake build [-f] [-p] [-w <wname>] [-i <includefolder>] [-x <xlist>] [-k <privatekey>] [-s <signature>] <folder> <pbo>\n"
            "    armake inspect <pbo>\n"
            "    armake unpack [-f] [-i <includepattern>] [-x <excludepattern>] <pbo> <folder>\n"
            "    armake cat <pbo> <name>\n"
            "    armake derapify [-f] [-d <indentation>] [<source> [<target>]]\n"
            "    armake keygen [-f] <keyname>\n"
-           "    armake sign [-f] <privatekey> <pbo>\n"
+           "    armake sign [-f] [-s <signature>] <privatekey> <pbo>\n"
            "    armake paa2img [-f] <source> <target>\n"
            "    armake img2paa [-f] [-z] [-t <paatype>] <source> <target>\n"
            "    armake (-h | --help)\n"
@@ -74,6 +74,7 @@ void print_usage() {
            "    -x --exclude    Glob patterns to exclude from PBO (repeatable).\n"
            "                        For unpack: pattern to exclude from output folder (repeatable).\n"
            "    -k --key        Private key to use for signing the PBO.\n"
+           "    -s --signature  Signature name to use for signing the PBO.\n"
            "    -d --indent     String to use for indentation. "    " (4 spaces) by default.\n"
            "    -z --compress   Compress final PAA where possible.\n"
            "    -t --type       PAA type. One of: DXT1, DXT3, DXT5, ARGB4444, ARGB1555, AI88\n"
@@ -122,6 +123,7 @@ int read_args(int argc, char *argv[]) {
 
     const struct arg_option single_options[] = {
         { "-k", "--key", &args.privatekey, NULL },
+        { "-s", "--signature", &args.signature, NULL },
         { "-d", "--indent", &args.indent, NULL },
         { "-t", "--type", &args.paatype, NULL }
     };

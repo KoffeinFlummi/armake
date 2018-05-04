@@ -31,6 +31,7 @@ struct arguments {
     bool packonly;
     bool compress;
     char *privatekey;
+    char *signature;
     char *indent;
     char *paatype;
     int num_mutedwarnings;
