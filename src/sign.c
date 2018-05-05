@@ -77,6 +77,9 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     FILE *f_pbo;
     FILE *f_privatekey;
     FILE *f_signature;
+    char buffer_tmp[4096];
+    int j;
+    int fileCount = 0;
 
     f_pbo = fopen(path_pbo, "rb");
     if (!f_pbo)
@@ -101,8 +104,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     fp_header = ftell(f_pbo);
 
-    // calculate name hash
-    SHA1Reset(&sha);
+    //count all file header entries
     do {
         fp_tmp = ftell(f_pbo);
         fread(buffer, sizeof(buffer), 1, f_pbo);
@@ -110,8 +112,76 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fseek(f_pbo, fp_tmp + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
         if (temp > 0)
-            SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
+            fileCount++;
     } while (strlen(buffer) > 0);
+
+    fp_body = ftell(f_pbo);
+
+    //get all file header entry pointers
+    fseek(f_pbo, fp_header, SEEK_SET);
+    long fPs[fileCount]; //unsorted file pointers
+    i = 0;
+    do {
+        fp_tmp = ftell(f_pbo);
+        fread(buffer, sizeof(buffer), 1, f_pbo);
+        lower_case(buffer);
+        fseek(f_pbo, fp_tmp + strlen(buffer) + 17, SEEK_SET);
+        fread(&temp, sizeof(temp), 1, f_pbo);
+        if (temp > 0) {
+            fPs[i] = fp_tmp;
+            i++;
+        }
+    } while (strlen(buffer) > 0);
+
+    //sort available files ascending
+    for (i = 0; i < fileCount; i++) {
+        fseek(f_pbo, fPs[i], SEEK_SET);
+        fread(buffer, sizeof(buffer), 1, f_pbo);
+        lower_case(buffer);
+        fseek(f_pbo, fPs[i] + strlen(buffer) + 17, SEEK_SET);
+        fread(&temp, sizeof(temp), 1, f_pbo);
+
+        for (j = 0; j < fileCount; j++) {
+
+            if (temp > 0) {
+                fseek(f_pbo, fPs[j], SEEK_SET);
+                fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
+                lower_case(buffer_tmp);
+                fseek(f_pbo, fPs[j] + strlen(buffer_tmp) + 17, SEEK_SET);
+                fread(&temp, sizeof(temp), 1, f_pbo);
+
+                if (temp > 0) {
+                    if (strcmp(buffer_tmp, buffer) < 0) {
+                        fp_tmp = fPs[i];
+                        fPs[i] = fPs[j];
+                        fPs[j] = fp_tmp;
+                    }
+                }
+            }
+        }
+    }
+
+    //reverse order to descending
+    for (j = 0; j < fileCount/2; j++) {
+        fp_tmp = fPs[fileCount - 1 - j];
+        fPs[fileCount - 1 - j] = fPs[j];
+        fPs[j] = fp_tmp;
+    }
+
+    //set to default header pointer
+    fseek(f_pbo, fp_header, SEEK_SET);
+
+    // calculate name hash
+    SHA1Reset(&sha);
+    for (j = 0; j < fileCount; j++) {
+        fseek(f_pbo, fPs[j], SEEK_SET);
+        fread(buffer, sizeof(buffer), 1, f_pbo);
+        lower_case(buffer);
+        fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
+        fread(&temp, sizeof(temp), 1, f_pbo);
+        if (temp > 0)
+            SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
+    }
 
     if (!SHA1Result(&sha)) {
         fclose(f_pbo);
@@ -122,8 +192,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
 
     memcpy(namehash, &sha.Message_Digest[0], 20);
-
-    fp_body = ftell(f_pbo);
 
     // calculate file hash
     SHA1Reset(&sha);
@@ -184,7 +252,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fclose(f_pbo);
         return 1;
     }
-
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
