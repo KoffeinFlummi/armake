@@ -53,6 +53,11 @@ struct lineref {
     uint32_t *line_number;
 };
 
+struct constant_stack {
+    struct constant *constant;
+    struct constant_stack *next;
+};
+
 
 char include_stack[MAXINCLUDES][1024];
 
@@ -61,11 +66,11 @@ struct constants *constants_init();
 bool constants_parse(struct constants *constants, char *definition, int line);
 bool constants_remove(struct constants *constants, char *name);
 struct constant *constants_find(struct constants *constants, char *name, int len);
-char *constants_preprocess(struct constants *constants, char *source, int line);
+char *constants_preprocess(struct constants *constants, char *source, int line, struct constant_stack *constant_stack);
 void constants_free(struct constants *constants);
 
 char *constant_value(struct constants *constants, struct constant *constant,
-        int num_args, char **args, int value);
+        int num_args, char **args, int value, struct constant_stack *constant_stack);
 void constant_free(struct constant *constant);
 
 bool matches_includepath(char *path, char *includepath, char *includefolder);
