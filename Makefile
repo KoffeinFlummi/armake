@@ -2,7 +2,7 @@
 %.c: %.y
 %.c: %.l
 
-VERSION = 0.6
+VERSION = 0.6.1
 DESTDIR =
 BIN = bin
 SRC = src
