@@ -1,3 +1,11 @@
+armake (0.6-1) bionic; urgency=low
+
+  * Rewrite config parse and preprocessor
+  * Various fixes
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Mon, 21 May 2018 16:48:00 +0200
+
+
 armake (0.5launchpadisshit-1) precise; urgency=low
 
   * This version only has to exist because launchpad is shit.
