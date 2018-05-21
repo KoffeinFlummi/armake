@@ -415,10 +415,6 @@ char *constant_value(struct constants *constants, struct constant *constant,
     char *tmp;
     struct constant_stack *cs;
 
-    cs = (struct constant_stack *)malloc(sizeof(struct constant_stack));
-    cs->next = constant_stack;
-    cs->constant = constant;
-
     if (num_args != constant->num_args) {
         if (num_args)
             lerrorf(current_target, line,
@@ -427,7 +423,7 @@ char *constant_value(struct constants *constants, struct constant *constant,
     }
 
     for (i = 0; i < num_args; i++) {
-        args[i] = constants_preprocess(constants, args[i], line, cs);
+        args[i] = constants_preprocess(constants, args[i], line, constant_stack);
         trim(args[i], strlen(args[i]) + 1);
         if (args[i] == NULL)
             return NULL;
@@ -449,6 +445,10 @@ char *constant_value(struct constants *constants, struct constant *constant,
         result = (char *)safe_realloc(result, strlen(result) + strlen(ptr) + 1);
         strcat(result, ptr);
     }
+
+    cs = (struct constant_stack *)malloc(sizeof(struct constant_stack));
+    cs->next = constant_stack;
+    cs->constant = constant;
 
     result = constants_preprocess(constants, result, line, cs);
     trim(result, strlen(result) + 1);
