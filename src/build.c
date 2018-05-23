@@ -227,7 +227,7 @@ int cmd_build() {
     int j;
     int k;
     char buffer[512];
-    bool valid;
+    bool valid = false;
 
     if (args.num_positionals != 3)
         return 128;
