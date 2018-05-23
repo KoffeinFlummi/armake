@@ -64,7 +64,6 @@ int cmd_inspect() {
     long i;
     long fp_tmp;
     char buffer[2048];
-    bool reading_headerext;
     struct header *headers;
 
     if (args.num_positionals != 2)
@@ -92,26 +91,29 @@ int cmd_inspect() {
     if (strncmp(buffer, "sreV", 4) == 0) {
         fseek(f_target, 21, SEEK_SET);
         printf("Header extensions:\n");
-        i = 0;
-        reading_headerext = false;
         while (true) {
             fp_tmp = ftell(f_target);
-            buffer[i++] = fgetc(f_target);
-            buffer[i] = '\0';
-            if (buffer[i - 1] == '\0') {
-                if (buffer[i - 2] == '\0') {
-                    break;
-                } else {
-                    if (reading_headerext) {
-                        printf("%s\n", buffer);
-                        reading_headerext = false;
-                    } else {
-                        printf("- %s=", buffer);
-                        reading_headerext = true;
-                    }
-                    i = 0;
-                }
+            fgets(buffer, 2048, f_target);
+            if (strnlen(buffer, 2048) == 2048) {
+                errorf("Header extension exceeds maximum size.");
+                return 4;
             }
+            fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+
+            if (strlen(buffer) == 0)
+                break;
+
+            printf("- %s=", buffer);
+
+            fp_tmp = ftell(f_target);
+            fgets(buffer, 2048, f_target);
+            if (strnlen(buffer, 2048) == 2048) {
+                errorf("Header extension exceeds maximum size.");
+                return 4;
+            }
+            fseek(f_target, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+
+            printf("%s\n", buffer);
         }
         printf("\n");
     } else {
@@ -171,7 +173,6 @@ int cmd_unpack() {
     long fp_tmp;
     char full_path[2048];
     char buffer[2048];
-    bool reading_headerext;
     struct header *headers;
 
     if (args.num_positionals < 3)
@@ -224,29 +225,30 @@ int cmd_unpack() {
         }
 
         // read all header extensions
-        i = 0;
-        reading_headerext = false;
         while (true) {
             fp_tmp = ftell(f_source);
-            buffer[i++] = fgetc(f_source);
-            buffer[i] = '\0';
-            if (buffer[i - 1] == '\0') {
-                if (buffer[i - 2] == '\0') {
-                    break;
-                } else {
-                    fputs(buffer, f_target);
-                    if (reading_headerext) {
-                        fputc('\n', f_target);
-                        reading_headerext = false;
-                    } else {
-                        fputc('=', f_target);
-                        reading_headerext = true;
-                    }
-                    i = 0;
-                }
+            fgets(buffer, 2048, f_source);
+            if (strnlen(buffer, 2048) == 2048) {
+                errorf("Header extension exceeds maximum size.");
+                return 4;
             }
+            fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+
+            if (strlen(buffer) == 0)
+                break;
+
+            fprintf(f_target, "%s=", buffer);
+
+            fp_tmp = ftell(f_source);
+            fgets(buffer, 2048, f_source);
+            if (strnlen(buffer, 2048) == 2048) {
+                errorf("Header extension exceeds maximum size.");
+                return 4;
+            }
+            fseek(f_source, fp_tmp + strlen(buffer) + 1, SEEK_SET);
+
+            fprintf(f_target, "%s\n", buffer);
         }
-        fclose(f_target);
     } else {
         fseek(f_source, 0, SEEK_SET);
     }
