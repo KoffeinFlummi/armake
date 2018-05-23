@@ -46,3 +46,4 @@ test.*
 !test/**/test.*
 
 armake_*
+debian/files
