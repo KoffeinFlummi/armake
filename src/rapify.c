@@ -214,23 +214,13 @@ void rapify_expression(struct expression *expr, FILE *f_target) {
 
 
 void rapify_variable(struct variable *var, FILE *f_target) {
-    struct expression *tmp;
-    uint32_t num_entries;
-
     if (var->type == TYPE_VAR) {
         fputc(1, f_target);
         fputc((char)((var->expression->type == TYPE_STRING) ? 0 : ((var->expression->type == TYPE_FLOAT) ? 1 : 2 )), f_target);
     } else {
         fputc((char)((var->type == TYPE_ARRAY) ? 2 : 5), f_target);
         if (var->type == TYPE_ARRAY_EXPANSION) {
-            num_entries = 0;
-            tmp = var->expression->head;
-            while (tmp != NULL) {
-                num_entries++;
-                tmp = tmp->next;
-            }
-
-            fwrite(&num_entries, 4, 1, f_target);
+            fwrite("\x01\0\0\0", 4, 1, f_target);
         }
     }
 
