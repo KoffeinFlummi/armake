@@ -277,7 +277,7 @@ struct constant *constants_find(struct constants *constants, char *name, int len
     return c;
 }
 
-char *constants_preprocess(struct constants *constants, char *source, int line) {
+char *constants_preprocess(struct constants *constants, char *source, int line, struct constant_stack *constant_stack) {
     char *ptr = source;
     char *start;
     char *result;
@@ -289,6 +289,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
     int level;
     char in_string;
     struct constant *c;
+    struct constant_stack *cs;
 
     result = (char *)safe_malloc(1);
     result[0] = 0;
@@ -319,6 +320,16 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
             result = (char *)safe_realloc(result, len + 1);
             strncat(result, start, ptr - start);
             continue;
+        }
+
+        // prevent infinite loop
+        if (constant_stack != NULL) {
+            for (cs = constant_stack; cs != NULL; cs = cs->next) {
+                if (cs->constant == c)
+                    break;
+            }
+            if (cs != NULL && cs->constant == c)
+                continue;
         }
 
         args = NULL;
@@ -362,7 +373,7 @@ char *constants_preprocess(struct constants *constants, char *source, int line) 
             }
         }
 
-        value = constant_value(constants, c, num_args, args, line);
+        value = constant_value(constants, c, num_args, args, line, constant_stack);
         if (!value)
             return NULL;
 
@@ -397,11 +408,12 @@ void constants_free(struct constants *constants) {
 }
 
 char *constant_value(struct constants *constants, struct constant *constant,
-        int num_args, char **args, int line) {
+        int num_args, char **args, int line, struct constant_stack *constant_stack) {
     int i;
     char *result;
     char *ptr;
     char *tmp;
+    struct constant_stack *cs;
 
     if (num_args != constant->num_args) {
         if (num_args)
@@ -411,7 +423,7 @@ char *constant_value(struct constants *constants, struct constant *constant,
     }
 
     for (i = 0; i < num_args; i++) {
-        args[i] = constants_preprocess(constants, args[i], line);
+        args[i] = constants_preprocess(constants, args[i], line, constant_stack);
         trim(args[i], strlen(args[i]) + 1);
         if (args[i] == NULL)
             return NULL;
@@ -434,8 +446,14 @@ char *constant_value(struct constants *constants, struct constant *constant,
         strcat(result, ptr);
     }
 
-    result = constants_preprocess(constants, result, line);
+    cs = (struct constant_stack *)malloc(sizeof(struct constant_stack));
+    cs->next = constant_stack;
+    cs->constant = constant;
+
+    result = constants_preprocess(constants, result, line, cs);
     trim(result, strlen(result) + 1);
+
+    free(cs);
 
     return result;
 }
@@ -858,7 +876,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
         // if (constants[1].value == 0)
         //     constants[1].value = (char *)safe_malloc(16);
         // sprintf(constants[1].value, "%i", line - 1);
-        
+
         if (level_comment == 0 && buffer[0] == '#') {
             ptr = buffer+1;
             while (*ptr == ' ' || *ptr == '\t')
@@ -950,7 +968,7 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
 
             free(directive);
         } else if (strlen(buffer) > 1) {
-            buffer = constants_preprocess(constants, buffer, line);
+            buffer = constants_preprocess(constants, buffer, line, NULL);
             if (buffer == NULL) {
                 lerrorf(source, line, "Failed to resolve macros.\n");
                 fclose(f_source);

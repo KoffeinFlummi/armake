@@ -58,8 +58,8 @@ int img2dxt1(unsigned char *input, unsigned char *output, int width, int height)
     int i;
     int j;
 
-    for (i = 0; i < width; i += 4) {
-        for (j = 0; j < height; j += 4) {
+    for (i = 0; i < height; i += 4) {
+        for (j = 0; j < width; j += 4) {
             memcpy(img_block +  0, input + (i + 0) * width * 4 + j * 4, 16);
             memcpy(img_block + 16, input + (i + 1) * width * 4 + j * 4, 16);
             memcpy(img_block + 32, input + (i + 2) * width * 4 + j * 4, 16);
@@ -87,8 +87,8 @@ int img2dxt5(unsigned char *input, unsigned char *output, int width, int height)
     int i;
     int j;
 
-    for (i = 0; i < width; i += 4) {
-        for (j = 0; j < height; j += 4) {
+    for (i = 0; i < height; i += 4) {
+        for (j = 0; j < width; j += 4) {
             memcpy(img_block +  0, input + (i + 0) * width * 4 + j * 4, 16);
             memcpy(img_block + 16, input + (i + 1) * width * 4 + j * 4, 16);
             memcpy(img_block + 32, input + (i + 2) * width * 4 + j * 4, 16);

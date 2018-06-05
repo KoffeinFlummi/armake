@@ -3,7 +3,7 @@ Upstream-Name: armake
 Source: http://github.com/KoffeinFlummi/armake
 
 Files: *
-Copyright: 2016 Felix "KoffeinFlummi" Wiegand
+Copyright: 2018 Felix "KoffeinFlummi" Wiegand
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

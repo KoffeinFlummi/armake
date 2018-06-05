@@ -1,3 +1,32 @@
+armake (0.6.3-1) bionic; urgency=low
+
+  * Fix uninitialized value used for header extensions
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Wed, 23 May 2018 18:33:00 +0200
+
+
+armake (0.6.2-1) bionic; urgency=low
+
+  * Fix issue with rapification of += arrays.
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Wed, 23 May 2018 16:01:00 +0200
+
+
+armake (0.6.1-1) bionic; urgency=low
+
+  * Fix issue with constant stack for macro arguments
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Mon, 21 May 2018 16:48:00 +0200
+
+
+armake (0.6-1) bionic; urgency=low
+
+  * Rewrite config parse and preprocessor
+  * Various fixes
+
+ -- Felix Wiegand <koffeinflummi@gmail.com>  Mon, 21 May 2018 16:48:00 +0200
+
+
 armake (0.5launchpadisshit-1) precise; urgency=low
 
   * This version only has to exist because launchpad is shit.
