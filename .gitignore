@@ -46,3 +46,6 @@ test.*
 !test/**/test.*
 
 armake_*
+
+.vscode
+

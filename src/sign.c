@@ -46,6 +46,22 @@ void pad_hash(unsigned char *hash, char *buffer, size_t buffsize) {
     memcpy(buffer + buffsize - 20, hash, 20);
 }
 
+bool hasLowerValue(const char *str1, const char *str2) {
+    int i, str1_len, str2_len, max_len;
+    str1_len = strlen(str1);
+    str2_len = strlen(str2);
+    max_len = str1_len <= str2_len ? str1_len : str2_len;
+
+    for (i = 0; i < max_len; i++) {
+        if (str1[i] < str2[i]) {
+            return true;
+        } else if (str1[i] > str2[i]) {
+            return false;
+        }
+    }
+
+    return false;
+}
 
 int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     SHA1Context sha;
@@ -120,6 +136,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     //get all file header entry pointers
     fseek(f_pbo, fp_header, SEEK_SET);
     long fPs[fileCount]; //unsorted file pointers
+
     i = 0;
     do {
         fp_tmp = ftell(f_pbo);
@@ -133,40 +150,26 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         }
     } while (strlen(buffer) > 0);
 
-    //sort available files ascending
     for (i = 0; i < fileCount; i++) {
         fseek(f_pbo, fPs[i], SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
         lower_case(buffer);
-        fseek(f_pbo, fPs[i] + strlen(buffer) + 17, SEEK_SET);
-        fread(&temp, sizeof(temp), 1, f_pbo);
 
         for (j = 0; j < fileCount; j++) {
+            fseek(f_pbo, fPs[j], SEEK_SET);
+            fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
+            lower_case(buffer_tmp);
 
-            if (temp > 0) {
-                fseek(f_pbo, fPs[j], SEEK_SET);
-                fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
-                lower_case(buffer_tmp);
-                fseek(f_pbo, fPs[j] + strlen(buffer_tmp) + 17, SEEK_SET);
-                fread(&temp, sizeof(temp), 1, f_pbo);
-
-                if (temp > 0) {
-                    if (strcmp(buffer_tmp, buffer) < 0) {
-                        fp_tmp = fPs[i];
-                        fPs[i] = fPs[j];
-                        fPs[j] = fp_tmp;
-                    }
-                }
+            printf("%s\n", buffer_tmp);
+            if (hasLowerValue(buffer, buffer_tmp)) {
+                fp_tmp = fPs[j];
+                fPs[j] = fPs[i];
+                fPs[i] = fp_tmp;
             }
         }
     }
 
-    //reverse order to descending
-    for (j = 0; j < fileCount/2; j++) {
-        fp_tmp = fPs[fileCount - 1 - j];
-        fPs[fileCount - 1 - j] = fPs[j];
-        fPs[j] = fp_tmp;
-    }
+    printf("\n");
 
     //set to default header pointer
     fseek(f_pbo, fp_header, SEEK_SET);
@@ -177,8 +180,10 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fseek(f_pbo, fPs[j], SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
         lower_case(buffer);
+        printf("%s\n", buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
+
         if (temp > 0)
             SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
     }
@@ -353,37 +358,41 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         return 1;
     }
 
-    fwrite(keyname, strlen(keyname) + 1, 1, f_signature);
+    fwrite(keyname, strlen(keyname) + 1, 1, f_signature); //max. 512
     temp = keylength / 8 + 20;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
-    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature);
-    fwrite("RSA1", 4, 1, f_signature);
-    fwrite(&keylength, sizeof(keylength), 1, f_signature);
-    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4
+    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature); //8
+    fwrite("RSA1", 4, 1, f_signature); //4
+    fwrite(&keylength, sizeof(keylength), 1, f_signature); //4
+    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature); //4
 
     custom_bn2lebinpad(modulus, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature); //128
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature);//4
 
     custom_bn2lebinpad(sig1, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature);//128
 
     temp = 2;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature);//4
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature);//4
 
+
+    //erroring pattern start
     custom_bn2lebinpad(sig2, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature);//128
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature);//4
 
     custom_bn2lebinpad(sig3, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature);//128
+    //erroring pattern end
+
 
     // clean up
     BN_CTX_free(bignum_context);
@@ -401,7 +410,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     return 0;
 }
-
 
 int cmd_sign() {
     extern struct arguments args;
