@@ -182,7 +182,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         lower_case(buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
-        printf("%s, %d \n", buffer, temp);
 
         if (temp > 0)
             SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
