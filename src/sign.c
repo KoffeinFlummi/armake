@@ -163,7 +163,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
             fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
             lower_case(buffer_tmp);
 
-            if (!hasLowerValue(buffer, buffer_tmp)) {
+            if (hasLowerValue(buffer_tmp, buffer)) {
                 fp_tmp = fPs[j];
                 fPs[j] = fPs[j+1];
                 fPs[j+1] = fp_tmp;
@@ -182,6 +182,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         lower_case(buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
+        printf("%s, %d \n", buffer, temp);
 
         if (temp > 0)
             SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
@@ -228,8 +229,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
                 strcmp(strrchr(buffer, '.'), ".rtm") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".pac") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".fxy") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".wrp") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".dep") == 0)) {
+                strcmp(strrchr(buffer, '.'), ".wrp") == 0)) {
             fp_body += temp;
             continue;
         }

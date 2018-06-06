@@ -9,7 +9,6 @@ cp test/signing/*.pbo /tmp/amktest/
 ./bin/armake sign test/signing/*.biprivatekey /tmp/amktest/ace_vehiclelock.pbo
 ./bin/armake sign test/signing/*.biprivatekey /tmp/amktest/dbo_old_bike.pbo
 ./bin/armake sign test/signing/*.biprivatekey /tmp/amktest/ace_medical.pbo
-./bin/armake sign test/signing/*.biprivatekey /tmp/amktest/17ba0791__alessio_base.pbo
 
 cmp --silent test/signing/ace_fcs.pbo.*.bisign /tmp/amktest/ace_fcs.pbo.*.bisign || {
     rm -rf /tmp/amktest
