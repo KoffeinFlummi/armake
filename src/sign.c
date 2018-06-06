@@ -174,15 +174,12 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     //set to default header pointer
     fseek(f_pbo, fp_header, SEEK_SET);
 
-    printf("\n\n");
     // calculate name hash
     SHA1Reset(&sha);
     for (j = 0; j < fileCount; j++) {
         fseek(f_pbo, fPs[j], SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
         lower_case(buffer);
-
-        printf("%s\n", buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
 

@@ -35,10 +35,4 @@ cmp --silent test/signing/ace_medical.pbo.*.bisign /tmp/amktest/ace_medical.pbo.
     exit 1
 }
 
-cmp --silent test/signing/17ba0791__alessio_base.pbo.*.bisign /tmp/amktest/17ba0791__alessio_base.pbo.*.bisign || {
-    rm -rf /tmp/amktest
-    echo "17ba0791__alessio_base"
-    exit 1
-}
-
 rm -rf /tmp/amktest
