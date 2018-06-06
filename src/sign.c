@@ -150,26 +150,24 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         }
     } while (strlen(buffer) > 0);
 
+    //sort file paths
     for (i = 0; i < fileCount; i++) {
-        fseek(f_pbo, fPs[i], SEEK_SET);
-        fread(buffer, sizeof(buffer), 1, f_pbo);
-        lower_case(buffer);
-
-        for (j = 0; j < fileCount; j++) {
+        for (j = 0; j < fileCount-1; j++) {
             fseek(f_pbo, fPs[j], SEEK_SET);
+            fread(buffer, sizeof(buffer), 1, f_pbo);
+            lower_case(buffer);
+
+            fseek(f_pbo, fPs[j+1], SEEK_SET);
             fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
             lower_case(buffer_tmp);
 
-            printf("%s\n", buffer_tmp);
-            if (hasLowerValue(buffer, buffer_tmp)) {
+            if (!hasLowerValue(buffer, buffer_tmp)) {
                 fp_tmp = fPs[j];
-                fPs[j] = fPs[i];
-                fPs[i] = fp_tmp;
+                fPs[j] = fPs[j+1];
+                fPs[j+1] = fp_tmp;
             }
         }
     }
-
-    printf("\n");
 
     //set to default header pointer
     fseek(f_pbo, fp_header, SEEK_SET);
@@ -180,7 +178,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fseek(f_pbo, fPs[j], SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
         lower_case(buffer);
-        printf("%s\n", buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
 
@@ -358,39 +355,39 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         return 1;
     }
 
-    fwrite(keyname, strlen(keyname) + 1, 1, f_signature); //max. 512
+    fwrite(keyname, strlen(keyname) + 1, 1, f_signature); //max. 512 B
     temp = keylength / 8 + 20;
-    fwrite(&temp, sizeof(temp), 1, f_signature); //4
-    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature); //8
-    fwrite("RSA1", 4, 1, f_signature); //4
-    fwrite(&keylength, sizeof(keylength), 1, f_signature); //4
-    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature); //4
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
+    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature); //8 B
+    fwrite("RSA1", 4, 1, f_signature); //4 B
+    fwrite(&keylength, sizeof(keylength), 1, f_signature); //4 B
+    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature); //4 B
 
     custom_bn2lebinpad(modulus, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature); //128
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);//4
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     custom_bn2lebinpad(sig1, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);//128
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = 2;
-    fwrite(&temp, sizeof(temp), 1, f_signature);//4
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);//4
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
 
     //erroring pattern start
     custom_bn2lebinpad(sig2, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);//128
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);//4
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     custom_bn2lebinpad(sig3, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);//128
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
     //erroring pattern end
 
 
