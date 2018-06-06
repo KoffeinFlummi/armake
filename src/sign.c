@@ -228,7 +228,8 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
                 strcmp(strrchr(buffer, '.'), ".rtm") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".pac") == 0 ||
                 strcmp(strrchr(buffer, '.'), ".fxy") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".wrp") == 0)) {
+                strcmp(strrchr(buffer, '.'), ".wrp") == 0) ||
+                strcmp(strrchr(buffer, '.'), ".dep") == 0)) {
             fp_body += temp;
             continue;
         }
