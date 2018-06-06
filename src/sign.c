@@ -48,14 +48,16 @@ void pad_hash(unsigned char *hash, char *buffer, size_t buffsize) {
 
 bool hasLowerValue(const char *str1, const char *str2) {
     int i, str1_len, str2_len, max_len;
+    unsigned const char * str1unsigned = (unsigned const char*)str1;
+    unsigned const char * str2unsigned = (unsigned const char*)str2;
     str1_len = strlen(str1);
     str2_len = strlen(str2);
     max_len = str1_len <= str2_len ? str1_len : str2_len;
 
     for (i = 0; i < max_len; i++) {
-        if (str1[i] < str2[i]) {
+        if (str1unsigned[i] < str2unsigned[i]) {
             return true;
-        } else if (str1[i] > str2[i]) {
+        } else if (str1unsigned[i] > str2unsigned[i]) {
             return false;
         }
     }
@@ -172,12 +174,15 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     //set to default header pointer
     fseek(f_pbo, fp_header, SEEK_SET);
 
+    printf("\n\n");
     // calculate name hash
     SHA1Reset(&sha);
     for (j = 0; j < fileCount; j++) {
         fseek(f_pbo, fPs[j], SEEK_SET);
         fread(buffer, sizeof(buffer), 1, f_pbo);
         lower_case(buffer);
+
+        printf("%s\n", buffer);
         fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
 
