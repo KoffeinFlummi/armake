@@ -27,6 +27,7 @@
 #define MAXCONSTS 4096
 #define MAXARGS 32
 #define MAXINCLUDES 64
+#define FILEINTERVAL 32
 #define LINEINTERVAL 1024
 
 
@@ -48,7 +49,7 @@ struct constants {
 struct lineref {
     uint32_t num_files;
     uint32_t num_lines;
-    char file_names[MAXINCLUDES][1024];
+    char **file_names;
     uint32_t *file_index;
     uint32_t *line_number;
 };

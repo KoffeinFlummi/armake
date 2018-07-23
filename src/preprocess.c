@@ -760,15 +760,13 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
 
     file_index = lineref->num_files;
     if (strchr(source, PATHSEP) == NULL)
-        strcpy(lineref->file_names[file_index], source);
+        lineref->file_names[file_index] = strdup(source);
     else
-        strcpy(lineref->file_names[file_index], strrchr(source, PATHSEP) + 1);
+        lineref->file_names[file_index] = strdup(strrchr(source, PATHSEP) + 1);
 
     lineref->num_files++;
-    if (lineref->num_files >= MAXINCLUDES) {
-        errorf("Number of included files exceeds MAXINCLUDES.\n");
-        fclose(f_source);
-        return 1;
+    if (lineref->num_files % FILEINTERVAL == 0) {
+        lineref->file_names = (char **)safe_realloc(lineref->file_names, sizeof(char **) * (lineref->num_files + FILEINTERVAL));
     }
 
     // first constant is file name

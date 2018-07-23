@@ -381,6 +381,7 @@ int rapify_file(char *source, char *target) {
     lineref = (struct lineref *)safe_malloc(sizeof(struct lineref));
     lineref->num_files = 0;
     lineref->num_lines = 0;
+    lineref->file_names = (char **)safe_malloc(sizeof(char **) * FILEINTERVAL);
     lineref->file_index = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
     lineref->line_number = (uint32_t *)safe_malloc(sizeof(uint32_t) * LINEINTERVAL);
 
@@ -495,6 +496,9 @@ int rapify_file(char *source, char *target) {
 
     constants_free(constants);
 
+    for (i = 0; i < lineref->num_files; i++)
+        free(lineref->file_names[i]);
+    free(lineref->file_names);
     free(lineref->file_index);
     free(lineref->line_number);
     free(lineref);
