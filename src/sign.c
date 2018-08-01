@@ -46,6 +46,24 @@ void pad_hash(unsigned char *hash, char *buffer, size_t buffsize) {
     memcpy(buffer + buffsize - 20, hash, 20);
 }
 
+bool hasLowerValue(const char *str1, const char *str2) {
+    int i, str1_len, str2_len, max_len;
+    unsigned const char * str1unsigned = (unsigned const char*)str1;
+    unsigned const char * str2unsigned = (unsigned const char*)str2;
+    str1_len = strlen(str1);
+    str2_len = strlen(str2);
+    max_len = str1_len <= str2_len ? str1_len : str2_len;
+
+    for (i = 0; i < max_len; i++) {
+        if (str1unsigned[i] < str2unsigned[i]) {
+            return true;
+        } else if (str1unsigned[i] > str2unsigned[i]) {
+            return false;
+        }
+    }
+
+    return false;
+}
 
 int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     SHA1Context sha;
@@ -77,6 +95,9 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     FILE *f_pbo;
     FILE *f_privatekey;
     FILE *f_signature;
+    char buffer_tmp[4096];
+    int j;
+    int fileCount = 0;
 
     f_pbo = fopen(path_pbo, "rb");
     if (!f_pbo)
@@ -101,8 +122,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     fp_header = ftell(f_pbo);
 
-    // calculate name hash
-    SHA1Reset(&sha);
+    //count all file header entries
     do {
         fp_tmp = ftell(f_pbo);
         fread(buffer, sizeof(buffer), 1, f_pbo);
@@ -110,8 +130,62 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fseek(f_pbo, fp_tmp + strlen(buffer) + 17, SEEK_SET);
         fread(&temp, sizeof(temp), 1, f_pbo);
         if (temp > 0)
-            SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
+            fileCount++;
     } while (strlen(buffer) > 0);
+
+    fp_body = ftell(f_pbo);
+
+    //get all file header entry pointers
+    fseek(f_pbo, fp_header, SEEK_SET);
+    long fPs[fileCount]; //unsorted file pointers
+
+    i = 0;
+    do {
+        fp_tmp = ftell(f_pbo);
+        fread(buffer, sizeof(buffer), 1, f_pbo);
+        lower_case(buffer);
+        fseek(f_pbo, fp_tmp + strlen(buffer) + 17, SEEK_SET);
+        fread(&temp, sizeof(temp), 1, f_pbo);
+        if (temp > 0) {
+            fPs[i] = fp_tmp;
+            i++;
+        }
+    } while (strlen(buffer) > 0);
+
+    //sort file paths
+    for (i = 0; i < fileCount; i++) {
+        for (j = 0; j < fileCount-1; j++) {
+            fseek(f_pbo, fPs[j], SEEK_SET);
+            fread(buffer, sizeof(buffer), 1, f_pbo);
+            lower_case(buffer);
+
+            fseek(f_pbo, fPs[j+1], SEEK_SET);
+            fread(buffer_tmp, sizeof(buffer_tmp), 1, f_pbo);
+            lower_case(buffer_tmp);
+
+            if (hasLowerValue(buffer_tmp, buffer)) {
+                fp_tmp = fPs[j];
+                fPs[j] = fPs[j+1];
+                fPs[j+1] = fp_tmp;
+            }
+        }
+    }
+
+    //set to default header pointer
+    fseek(f_pbo, fp_header, SEEK_SET);
+
+    // calculate name hash
+    SHA1Reset(&sha);
+    for (j = 0; j < fileCount; j++) {
+        fseek(f_pbo, fPs[j], SEEK_SET);
+        fread(buffer, sizeof(buffer), 1, f_pbo);
+        lower_case(buffer);
+        fseek(f_pbo, fPs[j] + strlen(buffer) + 17, SEEK_SET);
+        fread(&temp, sizeof(temp), 1, f_pbo);
+
+        if (temp > 0)
+            SHA1Input(&sha, (unsigned char *)buffer, strlen(buffer));
+    }
 
     if (!SHA1Result(&sha)) {
         fclose(f_pbo);
@@ -122,8 +196,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
 
     memcpy(namehash, &sha.Message_Digest[0], 20);
-
-    fp_body = ftell(f_pbo);
 
     // calculate file hash
     SHA1Reset(&sha);
@@ -184,7 +256,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         fclose(f_pbo);
         return 1;
     }
-
 
     for (i = 0; i < 5; i++)
         reverse_endianness(&sha.Message_Digest[i], sizeof(sha.Message_Digest[i]));
@@ -286,37 +357,41 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
         return 1;
     }
 
-    fwrite(keyname, strlen(keyname) + 1, 1, f_signature);
+    fwrite(keyname, strlen(keyname) + 1, 1, f_signature); //max. 512 B
     temp = keylength / 8 + 20;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
-    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature);
-    fwrite("RSA1", 4, 1, f_signature);
-    fwrite(&keylength, sizeof(keylength), 1, f_signature);
-    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
+    fwrite("\x06\x02\x00\x00\x00\x24\x00\x00", 8, 1, f_signature); //8 B
+    fwrite("RSA1", 4, 1, f_signature); //4 B
+    fwrite(&keylength, sizeof(keylength), 1, f_signature); //4 B
+    fwrite(&exponent_le, sizeof(exponent_le), 1, f_signature); //4 B
 
     custom_bn2lebinpad(modulus, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     custom_bn2lebinpad(sig1, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = 2;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
+
+    //erroring pattern start
     custom_bn2lebinpad(sig2, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
     temp = keylength / 8;
-    fwrite(&temp, sizeof(temp), 1, f_signature);
+    fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     custom_bn2lebinpad(sig3, (unsigned char *)buffer, keylength / 8);
-    fwrite(buffer, keylength / 8, 1, f_signature);
+    fwrite(buffer, keylength / 8, 1, f_signature); //128 B
+    //erroring pattern end
+
 
     // clean up
     BN_CTX_free(bignum_context);
@@ -334,7 +409,6 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
 
     return 0;
 }
-
 
 int cmd_sign() {
     extern struct arguments args;
