@@ -193,7 +193,7 @@ int generate_keypair(char *name, char *path_private, char *path_public) {
     fwrite(buffer, length / 8, 1, f_public);
 
     fclose(f_public);
-    
+
     // clean up
     BN_free(exponent);
     RSA_free(rsa);
@@ -213,6 +213,13 @@ int cmd_keygen() {
 
     if (args.num_positionals != 2)
         return 128;
+
+#ifdef _WIN32
+    int i;
+    for (i = 0; i < strlen(args.positionals[1]); i++)
+        if (args.positionals[1][i] == '/')
+            args.positionals[1][i] = PATHSEP;
+#endif
 
     if (strrchr(args.positionals[1], PATHSEP) == NULL)
         strcpy(name, args.positionals[1]);
