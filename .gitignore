@@ -47,3 +47,4 @@ test.*
 
 armake_*
 debian/files
+.vscode
