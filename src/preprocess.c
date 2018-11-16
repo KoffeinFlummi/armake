@@ -297,9 +297,16 @@ char *constants_preprocess(struct constants *constants, char *source, int line, 
     while (true) {
         // Non-tokens
         start = ptr;
-        while (*ptr != 0 && !IS_MACRO_CHAR(*ptr))
-            ptr++;
-
+        while (*ptr != 0 && !IS_MACRO_CHAR(*ptr)) {
+            if (*ptr == '"') {
+                ptr++;
+                while (*ptr != 0 && *ptr != '"')
+                    ptr++;
+            }
+            ptr++; //also skips ending "
+        }
+        
+        
         if (ptr - start > 0) {
             len += ptr - start;
             result = (char *)safe_realloc(result, len + 1);
