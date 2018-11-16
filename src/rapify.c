@@ -279,7 +279,7 @@ void rapify_class(struct class *class, FILE *f_target) {
             fp_temp = ftell(f_target);
             fseek(f_target, ((struct class *)(tmp->content))->offset_location, SEEK_SET);
             fwrite(&fp_temp, sizeof(uint32_t), 1, f_target);
-            fseek(f_target, 0, SEEK_END);
+            fseek(f_target, fp_temp, SEEK_SET);
 
             rapify_class(tmp->content, f_target);
         }
