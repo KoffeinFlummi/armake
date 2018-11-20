@@ -107,7 +107,7 @@ bool tmp;
     return T_STRING;
 }
 
-[^;{"' \t\n][^;{\n]*/[ \t\n]*; {
+[^;,{"' \t\n][^;{\n]*/[ \t\n]*; {
     if (!allow_val)
         REJECT;
 
