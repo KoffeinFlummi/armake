@@ -441,7 +441,7 @@ int rapify_file(char *source, char *target) {
             errorf("Failed to get temp file name (system error %i).\n", GetLastError());
             return 1;
         }
-        f_target = fopen(temp_name, "wb+");
+        f_target = fopen(temp_name2, "wb+");
 #else
         f_target = tmpfile();
 #endif

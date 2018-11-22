@@ -148,7 +148,7 @@ int read_animations(FILE *f, char *config_path, struct skeleton *skeleton) {
         } else if (strcmp(value, "hide") == 0) {
             skeleton->animations[j].type = TYPE_HIDE;
         } else {
-            warningf(current_target, -1, "Unknown animation type: %s\n", value);
+            lwarningf(current_target, -1, "Unknown animation type: %s\n", value);
             continue;
         }
 
