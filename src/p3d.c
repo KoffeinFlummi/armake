@@ -1507,16 +1507,16 @@ void write_odol_lod(FILE *f_target, struct odol_lod *odol_lod) {
     // neighbor bone ref
     fwrite("\0\0\0\0", 4, 1, f_target);
 
+    temp = ftell(f_target) - fp_vertextable_size;
+    fseek(f_target, fp_vertextable_size, SEEK_SET);
+    fwrite(&temp, 4, 1, f_target);
+    fseek(f_target, 0, SEEK_END);
+    
     // has Collimator info?
     fwrite("\0\0\0\0", sizeof(uint32_t), 1, f_target); //If 1 then need to write CollimatorInfo structure
 
     // unknown byte
     fwrite("\0", 1, 1, f_target);
-
-    temp = ftell(f_target) - fp_vertextable_size;
-    fseek(f_target, fp_vertextable_size, SEEK_SET);
-    fwrite(&temp, 4, 1, f_target);
-    fseek(f_target, 0, SEEK_END);
 }
 
 
