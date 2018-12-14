@@ -177,19 +177,16 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
             continue;
 
         if (strchr(buffer, '.') != NULL && (
-                strcmp(strrchr(buffer, '.'), ".paa") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".jpg") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".p3d") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".tga") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".rvmat") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".lip") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".ogg") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".wss") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".png") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".rtm") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".pac") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".fxy") == 0 ||
-                strcmp(strrchr(buffer, '.'), ".wrp") == 0)) {
+                strcmp(strrchr(buffer, '.'), ".sqf") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".inc") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".bikb") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".ext") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".fsm") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".sqm") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".hpp") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".cfg") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".sqs") != 0 &&
+                strcmp(strrchr(buffer, '.'), ".h") != 0)) {
             fp_body += temp;
             continue;
         }
@@ -209,7 +206,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     }
 
     if (nothing)
-        SHA1Input(&sha, (unsigned char *)"nothing", strlen("nothing"));
+        SHA1Input(&sha, (unsigned char *)"gnihton", strlen("gnihton"));
 
     fseek(f_pbo, 0, SEEK_END);
 
@@ -335,7 +332,7 @@ int sign_pbo(char *path_pbo, char *path_privatekey, char *path_signature) {
     custom_bn2lebinpad(sig1, (unsigned char *)buffer, keylength / 8);
     fwrite(buffer, keylength / 8, 1, f_signature); //128 B
 
-    temp = 2;
+    temp = 3; //version
     fwrite(&temp, sizeof(temp), 1, f_signature); //4 B
 
     temp = keylength / 8;
