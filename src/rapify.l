@@ -91,7 +91,7 @@ bool tmp;
     return T_STRING;
 }
 
-\"(\\.|\"\"|[^"])*\"    {
+\"(\"\"|[^"])*?\"    {
     RESET_VARS;
     yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
@@ -99,7 +99,7 @@ bool tmp;
     return T_STRING;
 }
 
-'(\\.|''|[^'])*' {
+'(''|[^'])*?' {
     RESET_VARS;
     yylval.string_value = (char *)safe_malloc(yyleng + 1);
     strcpy(yylval.string_value, yytext);
