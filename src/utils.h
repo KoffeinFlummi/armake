@@ -52,7 +52,7 @@ struct point {
     uint32_t point_flags;
 };
 
-char *current_target;
+extern char *current_target;
 
 
 #ifdef _WIN32

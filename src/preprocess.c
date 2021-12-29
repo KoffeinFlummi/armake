@@ -701,6 +701,7 @@ int find_file(char *includepath, char *origin, char *actualpath) {
     return 2;
 }
 
+char include_stack[MAXINCLUDES][1024];
 
 int preprocess(char *source, FILE *f_target, struct constants *constants, struct lineref *lineref) {
     /*
@@ -712,7 +713,6 @@ int preprocess(char *source, FILE *f_target, struct constants *constants, struct
      */
 
     extern char *current_target;
-    extern char include_stack[MAXINCLUDES][1024];
     int file_index;
     int line = 0;
     int i = 0;

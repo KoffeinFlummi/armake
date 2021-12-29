@@ -29,6 +29,7 @@
 #include "filesystem.h"
 #include "utils.h"
 
+char *current_target;
 
 #ifdef _WIN32
 
