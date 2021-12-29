@@ -42,7 +42,9 @@ struct arguments {
     char **excludefiles;
     int num_headerextensions;
     char **headerextensions;
-} args;
+};
+
+extern struct arguments args;
 
 struct arg_option {
     char *short_name;

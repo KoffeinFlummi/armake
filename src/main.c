@@ -112,9 +112,9 @@ void append(char ***array, int *num, char *value) {
     (*array)[*num - 1] = value;
 }
 
+struct arguments args;
 
 int read_args(int argc, char *argv[]) {
-    extern struct arguments args;
     int i, j;
 
     const struct arg_option bool_options[] = {

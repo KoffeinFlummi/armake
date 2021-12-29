@@ -38,6 +38,9 @@ vgcore.*
 *.tab.c
 *.yy.c
 
+# CMake build folders
+build*/
+
 # Tmp
 tmp/*
 

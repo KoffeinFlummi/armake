@@ -60,7 +60,7 @@ struct constant_stack {
 };
 
 
-char include_stack[MAXINCLUDES][1024];
+extern char include_stack[MAXINCLUDES][1024];
 
 
 struct constants *constants_init();
